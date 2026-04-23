@@ -1,5 +1,20 @@
 [
   {
+    "timestamp": "2026-04-23T17:09:37",
+    "count": 8,
+    "tickers": [
+      "MBLY",
+      "PENN",
+      "EQPT",
+      "NKLR",
+      "SKLZ",
+      "OBE",
+      "INV",
+      "KEEL"
+    ],
+    "clean_count": 0
+  },
+  {
     "timestamp": "2026-04-23T13:56:45",
     "count": 1,
     "tickers": [
