@@ -1,0 +1,16 @@
+# macOS junk
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# Your secrets (just in case)
+.env
+config.py
+
+# Local-only operational files
+scanner.log
+scanner.err.log

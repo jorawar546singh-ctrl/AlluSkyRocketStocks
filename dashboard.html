@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TTM · Breakout Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d0c;
+    --bg-elev: #12171a;
+    --bg-card: #161b1f;
+    --line: #1f2a2f;
+    --line-hot: #2a3940;
+    --fg: #d6e4e8;
+    --fg-dim: #7a8f96;
+    --fg-faint: #4a5b61;
+    --green: #00ff9d;
+    --green-dim: #009e64;
+    --red: #ff3355;
+    --amber: #ffb545;
+    --orange: #ff8040;
+    --cyan: #4fd8ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at top left, #0d3926 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, #1a0d26 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, #ffffff03 2px, #ffffff03 3px);
+    background-attachment: fixed;
+  }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-elev);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .brand { display: flex; align-items: baseline; gap: 14px; }
+  .brand .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    color: var(--green);
+    text-shadow: 0 0 20px var(--green-dim);
+  }
+  .brand .sub {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+  }
+  .status {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .status .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green);
+    animation: pulse 2s infinite;
+    margin-right: 6px;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .status .val { color: var(--fg); font-weight: 500; }
+  .status .lab { color: var(--fg-dim); }
+  #refreshBtn {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid var(--green-dim);
+    padding: 7px 14px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #refreshBtn:hover {
+    background: var(--green);
+    color: var(--bg);
+    box-shadow: 0 0 24px var(--green-dim);
+  }
+
+  main { padding: 28px; max-width: 1600px; margin: 0 auto; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--green);
+  }
+  .stat.red::before { background: var(--red); }
+  .stat.amber::before { background: var(--amber); }
+  .stat.cyan::before { background: var(--cyan); }
+  .stat .label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stat .value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .stat .meta {
+    font-size: 10px;
+    color: var(--fg-faint);
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ===== TIER SECTIONS ===== */
+  .tier-section {
+    margin-bottom: 36px;
+  }
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .panel-head h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .panel-head h2.clean    { color: var(--green); }
+  .panel-head h2.solid    { color: var(--amber); }
+  .panel-head h2.marginal { color: var(--orange); }
+  .panel-head h2.weak     { color: var(--red); }
+  .panel-head .muted {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+  }
+  .panel-head .count {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--fg);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 18px;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .card.clean    { border-color: var(--green-dim); box-shadow: 0 0 0 1px var(--green-dim) inset; }
+  .card.solid    { border-color: #7a5a1a; }
+  .card.marginal { border-color: #7a3a20; }
+  .card.weak     { border-color: #5a1520; opacity: 0.75; }
+  .card:hover { background: #181f24; transform: translateY(-1px); }
+
+  .card .grade-badge {
+    position: absolute;
+    top: -1px; right: -1px;
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'Syne', sans-serif;
+  }
+  .card.clean .grade-badge    { background: var(--green); color: var(--bg); }
+  .card.solid .grade-badge    { background: var(--amber); color: var(--bg); }
+  .card.marginal .grade-badge { background: var(--orange); color: var(--bg); }
+  .card.weak .grade-badge     { background: var(--red); color: var(--bg); }
+
+  .card .ticker-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-right: 90px;
+  }
+  .card .ticker {
+    font-family: 'Syne', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .card .price {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .card .score-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-bottom: 10px;
+  }
+  .card .score-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .card .spark {
+    height: 40px;
+    margin: 6px -4px 12px;
+  }
+
+  /* Score breakdown bars */
+  .breakdown {
+    border-top: 1px dashed var(--line-hot);
+    padding-top: 12px;
+    margin-bottom: 12px;
+  }
+  .bd-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 40px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 10.5px;
+  }
+  .bd-label {
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 9.5px;
+  }
+  .bd-bar {
+    height: 6px;
+    background: var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .bd-bar .fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--green-dim), var(--green));
+  }
+  .bd-bar.low .fill { background: var(--red); }
+  .bd-bar.mid .fill { background: var(--amber); }
+  .bd-val {
+    text-align: right;
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+    font-size: 11px;
+    border-top: 1px dashed var(--line-hot);
+    padding-top: 10px;
+  }
+  .metrics .k {
+    color: var(--fg-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 9.5px;
+  }
+  .metrics .v {
+    color: var(--fg);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .metrics .v.pos { color: var(--green); }
+  .metrics .v.neg { color: var(--red); }
+  .metrics .v.warn { color: var(--amber); }
+
+  .links {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .links a {
+    flex: 1;
+    text-align: center;
+    color: var(--fg-dim);
+    text-decoration: none;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 6px;
+    border: 1px solid var(--line-hot);
+    transition: all 0.15s;
+  }
+  .links a:hover { color: var(--green); border-color: var(--green-dim); }
+
+  .empty {
+    padding: 60px 20px;
+    text-align: center;
+    border: 1px dashed var(--line-hot);
+    color: var(--fg-dim);
+  }
+  .empty .big {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--fg);
+  }
+  .empty .sub { font-size: 12px; letter-spacing: 0.1em; }
+
+  .history { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .hist-row {
+    display: flex;
+    gap: 2px;
+    margin-top: 12px;
+    align-items: flex-end;
+    height: 48px;
+  }
+  .hist-bar {
+    flex: 1;
+    background: var(--line-hot);
+    min-width: 4px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .hist-bar.has-clean { background: var(--green-dim); }
+  .hist-bar:hover { background: var(--green); }
+  .hist-bar::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    border: 1px solid var(--green-dim);
+    padding: 4px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    margin-bottom: 4px;
+    transition: opacity 0.15s;
+  }
+  .hist-bar:hover::after { opacity: 1; }
+
+  footer {
+    margin-top: 40px;
+    padding: 20px 28px;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--fg-faint);
+    text-transform: uppercase;
+    border-top: 1px solid var(--line);
+  }
+  footer .dim { color: var(--fg-dim); }
+
+  .scanning::after {
+    content: '';
+    position: fixed;
+    left: 0; right: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scan 1.4s ease-in-out infinite;
+    z-index: 99;
+  }
+  @keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(100vh); } }
+
+  @media (max-width: 768px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    header { padding: 14px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .status { flex-wrap: wrap; gap: 12px; }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">TTM ▲</div>
+    <div class="sub">Darvas Breakout Terminal</div>
+  </div>
+  <div class="status">
+    <div><span class="dot"></span><span class="lab">Live</span></div>
+    <div><span class="lab">Last scan</span> <span class="val" id="lastScan">—</span></div>
+    <div><span class="lab">Next auto</span> <span class="val" id="nextScan">—</span></div>
+    <button id="refreshBtn">↻ Refresh</button>
+  </div>
+</header>
+
+<main>
+  <div class="stat-row">
+    <div class="stat">
+      <div class="label">Primary (A-grade)</div>
+      <div class="value" id="statClean">—</div>
+      <div class="meta">CLEAN setups · all criteria met</div>
+    </div>
+    <div class="stat amber">
+      <div class="label">Total Breakouts</div>
+      <div class="value" id="statCount">—</div>
+      <div class="meta" id="statCountMeta">Across all tiers</div>
+    </div>
+    <div class="stat cyan">
+      <div class="label">Highest Score</div>
+      <div class="value" id="statTopScore">—</div>
+      <div class="meta" id="statTopTicker">—</div>
+    </div>
+    <div class="stat red">
+      <div class="label">Avg Risk</div>
+      <div class="value" id="statRisk">—</div>
+      <div class="meta">Entry → stop distance</div>
+    </div>
+  </div>
+
+  <div id="tiersWrap"></div>
+
+  <div class="history">
+    <div class="panel-head">
+      <h2>Scan History</h2>
+      <span class="muted">Green = CLEAN setups found · 50 most recent runs</span>
+    </div>
+    <div class="hist-row" id="histRow"></div>
+  </div>
+</main>
+
+<footer>
+  <span class="dim">BUILT FOR YOU · NO ADS · NO SUBSCRIPTIONS · FULLY YOURS</span>
+</footer>
+
+<script>
+const LATEST = 'latest.json';
+const HIST   = 'history.json';
+
+const $ = s => document.querySelector(s);
+const fmtNum = n => new Intl.NumberFormat('en-US').format(n);
+const fmtTime = iso => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+    + ' · ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+function sparkline(values, w = 340, h = 40) {
+  if (!values || values.length < 2) return '';
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const step = w / (values.length - 1);
+  const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / range) * h).toFixed(1)}`).join(' ');
+  const last = values[values.length - 1], first = values[0];
+  const color = last >= first ? 'var(--green)' : 'var(--red)';
+  return `
+    <svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}">
+      <defs>
+        <linearGradient id="g_${Math.random().toString(36).slice(2,8)}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="${color}" stop-opacity="0.3"/>
+          <stop offset="1" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/>
+    </svg>`;
+}
+
+function barRow(label, val, max = 20) {
+  const pct = (val / max) * 100;
+  const cls = val >= 14 ? '' : (val >= 8 ? 'mid' : 'low');
+  return `
+    <div class="bd-row">
+      <div class="bd-label">${label}</div>
+      <div class="bd-bar ${cls}"><div class="fill" style="width:${pct}%"></div></div>
+      <div class="bd-val">${val}/20</div>
+    </div>`;
+}
+
+function renderCard(h) {
+  const tierClass = h.tier.toLowerCase();
+  const sb = h.score_breakdown || {};
+  const riskClass = h.risk_pct <= 7 ? 'pos' : (h.risk_pct <= 10 ? 'warn' : 'neg');
+  return `
+    <div class="card ${tierClass}">
+      <div class="grade-badge">${h.grade} · ${h.tier}</div>
+      <div class="ticker-row">
+        <div class="ticker">${h.ticker}</div>
+        <div class="price">$${h.price}</div>
+      </div>
+      <div class="score-row">
+        <span>Score</span>
+        <span class="score-num">${h.score}</span>
+        <span>/100</span>
+      </div>
+      ${sparkline(h.spark)}
+      <div class="breakdown">
+        ${barRow('Volume', sb.volume || 0)}
+        ${barRow('Clarity', sb.clarity || 0)}
+        ${barRow('Box Quality', sb.box_quality || 0)}
+        ${barRow('Risk/Reward', sb.risk_reward || 0)}
+        ${barRow('Trend', sb.trend || 0)}
+      </div>
+      <div class="metrics">
+        <div><div class="k">Entry</div><div class="v">$${h.price}</div></div>
+        <div><div class="k">Vol Ratio</div><div class="v pos">${h.vol_ratio}×</div></div>
+        <div><div class="k">Stop</div><div class="v neg">$${h.suggested_stop}</div></div>
+        <div><div class="k">Target</div><div class="v pos">$${h.target_30pct}</div></div>
+        <div><div class="k">Risk</div><div class="v ${riskClass}">${h.risk_pct}%</div></div>
+        <div><div class="k">R/R</div><div class="v">${h.rr_ratio}:1</div></div>
+      </div>
+      <div class="links">
+        <a href="https://finance.yahoo.com/quote/${h.ticker}" target="_blank" rel="noopener">Yahoo</a>
+        <a href="https://finviz.com/quote.ashx?t=${h.ticker}" target="_blank" rel="noopener">Finviz</a>
+        <a href="https://www.tradingview.com/symbols/${h.ticker}/" target="_blank" rel="noopener">TV</a>
+      </div>
+    </div>`;
+}
+
+function renderTiers(hits) {
+  const buckets = { CLEAN: [], SOLID: [], MARGINAL: [], WEAK: [] };
+  hits.forEach(h => (buckets[h.tier] || buckets.WEAK).push(h));
+
+  const sections = [
+    { key: 'CLEAN',    label: '🟢 Primary Candidates', hint: 'All criteria met · trade these first', cls: 'clean' },
+    { key: 'SOLID',    label: '🟡 Solid Setups',        hint: 'Strong but imperfect · secondary',    cls: 'solid' },
+    { key: 'MARGINAL', label: '🟠 Marginal Setups',     hint: 'Caution · one or two weak factors',   cls: 'marginal' },
+    { key: 'WEAK',     label: '🔴 Weak Setups',         hint: 'Skip unless you have a reason',       cls: 'weak' },
+  ];
+
+  let html = '';
+  let anyShown = false;
+
+  for (const s of sections) {
+    const items = buckets[s.key];
+    if (items.length === 0) continue;
+    anyShown = true;
+    html += `
+      <div class="tier-section">
+        <div class="panel-head">
+          <h2 class="${s.cls}">${s.label}</h2>
+          <span class="count">${items.length}</span>
+          <span class="muted">${s.hint}</span>
+        </div>
+        <div class="grid">${items.map(renderCard).join('')}</div>
+      </div>`;
+  }
+
+  if (!anyShown) {
+    html = `
+      <div class="empty">
+        <div class="big">No breakouts right now</div>
+        <div class="sub">The market gives nothing. That's also information. Patience is the edge.</div>
+      </div>`;
+  }
+
+  $('#tiersWrap').innerHTML = html;
+}
+
+async function loadData() {
+  document.body.classList.add('scanning');
+  try {
+    const res = await fetch(LATEST + '?_=' + Date.now());
+    if (!res.ok) throw new Error('latest.json not found');
+    const data = await res.json();
+
+    $('#lastScan').textContent = fmtTime(data.timestamp);
+    $('#statCount').textContent = data.count;
+
+    const hits = data.hits || [];
+    const clean = hits.filter(h => h.tier === 'CLEAN');
+    $('#statClean').textContent = clean.length;
+
+    if (hits.length) {
+      const top = [...hits].sort((a,b) => b.score - a.score)[0];
+      $('#statTopScore').textContent = top.score;
+      $('#statTopTicker').textContent = top.ticker + ' · ' + top.grade;
+      const avgRisk = (hits.reduce((a,h) => a + h.risk_pct, 0) / hits.length).toFixed(1);
+      $('#statRisk').textContent = avgRisk + '%';
+      $('#statCountMeta').textContent = `${clean.length} clean · ${hits.length - clean.length} other`;
+    } else {
+      $('#statTopScore').textContent = '—';
+      $('#statTopTicker').textContent = '—';
+      $('#statRisk').textContent = '—';
+      $('#statCountMeta').textContent = 'Across all tiers';
+    }
+
+    renderTiers(hits);
+  } catch (e) {
+    $('#tiersWrap').innerHTML = `
+      <div class="empty">
+        <div class="big">No data yet</div>
+        <div class="sub">Run python3 ttm_scanner.py once to generate latest.json</div>
+      </div>`;
+  }
+
+  try {
+    const res = await fetch(HIST + '?_=' + Date.now());
+    if (res.ok) {
+      const hist = await res.json();
+      const max = Math.max(1, ...hist.map(x => x.count));
+      $('#histRow').innerHTML = hist.slice().reverse().map(h => {
+        const pct = (h.count / max) * 100;
+        const t = fmtTime(h.timestamp);
+        const hasClean = (h.clean_count || 0) > 0;
+        const tip = `${t} · ${h.count} hits` + (h.clean_count ? ` · ${h.clean_count} CLEAN` : '');
+        return `<div class="hist-bar ${hasClean ? 'has-clean' : ''}" style="height:${Math.max(4, pct)}%" data-tooltip="${tip}"></div>`;
+      }).join('');
+    }
+  } catch (e) {}
+
+  setTimeout(() => document.body.classList.remove('scanning'), 800);
+}
+
+$('#refreshBtn').addEventListener('click', loadData);
+loadData();
+setInterval(loadData, 60000);
+
+function updateNextScan() {
+  const now = new Date();
+  const mins = now.getMinutes();
+  const nextMark = Math.ceil((mins + 0.01) / 15) * 15;
+  const next = new Date(now);
+  if (nextMark >= 60) { next.setHours(next.getHours() + 1); next.setMinutes(0); }
+  else next.setMinutes(nextMark);
+  next.setSeconds(0);
+  const diff = Math.max(0, Math.floor((next - now) / 1000));
+  const mm = String(Math.floor(diff / 60)).padStart(2, '0');
+  const ss = String(diff % 60).padStart(2, '0');
+  $('#nextScan').textContent = mm + ':' + ss;
+}
+updateNextScan();
+setInterval(updateNextScan, 1000);
+</script>
+</body>
+</html>
