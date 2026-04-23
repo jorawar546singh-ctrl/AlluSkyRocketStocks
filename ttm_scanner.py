@@ -1,18 +1,18 @@
 """
-TTM Breakout Scanner  --  cloud edition
-----------------------------------------
-Runs on GitHub Actions every 15 min during market hours.
-Reads Telegram credentials from environment variables (GitHub Secrets),
-not from code.
+TTM Breakout Scanner  --  cloud edition (widened universe)
+-----------------------------------------------------------
+Finds Darvas-style breakouts across the mid-to-small cap universe
+($2-$100 price range), with 5-factor scoring and A+/A/B/C/D grading.
 
-Outputs latest.json / history.json / breakouts_*.csv to the repo so
-your local dashboard can pull the data down via `git pull`.
+Sources (combined, de-duplicated):
+  - Finviz screener: cap_midunder (mid, small, micro), price $2-$100,
+    relvol > 1.5, gap up, 1-week perf up
+  - Yahoo Finance: most-active + gainers pages
 
-Sources:
-  - Finviz screener (small-cap breakout filter)
-  - Yahoo Finance most-active + gainers pages
 Verification:
   - Yahoo Finance daily OHLCV via yfinance
+
+Run:  python3 ttm_scanner.py
 """
 
 import time
@@ -29,7 +29,7 @@ from bs4 import BeautifulSoup
 
 
 # ============================================================
-# SECRETS FROM ENVIRONMENT (GitHub Actions injects these)
+# SECRETS FROM ENVIRONMENT
 # ============================================================
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -42,9 +42,9 @@ SEND_TELEGRAM = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
 DARVAS_BOX_DAYS = 14
 VOLUME_MULTIPLIER = 2.0
 MIN_PRICE = 2.0
-MAX_PRICE = 30.0
-MAX_RESULTS_TO_CHECK = 60
-TOP_N_TO_SHOW = 10
+MAX_PRICE = 100.0      # widened from 30 -> 100 to include mid-caps
+MAX_RESULTS_TO_CHECK = 80
+TOP_N_TO_SHOW = 12
 
 DEDUP_HOURS = 6
 DEDUP_FILE = "alerted.log"
@@ -68,13 +68,14 @@ def script_path(name):
 
 
 # ============================================================
-# SOURCE 1: Finviz
+# SOURCE 1: Finviz (widened to mid-caps, $2-$100)
 # ============================================================
 def get_finviz_candidates():
+    # cap_midunder = small + mid + micro. sh_price_o1u100 = $1-$100 range.
     url = (
         "https://finviz.com/screener.ashx?"
         "v=111&"
-        "f=cap_small,sh_avgvol_o300,sh_price_1to20,sh_relvol_o1.5,ta_gap_u,ta_perf_1w10o"
+        "f=cap_midunder,sh_avgvol_o300,sh_price_2to100,sh_relvol_o1.5,ta_gap_u,ta_perf_1w10o"
         "&ft=4"
     )
     print("  [Finviz] fetching...")
@@ -107,7 +108,6 @@ def get_yahoo_candidates():
         ("gainers",     "https://finance.yahoo.com/markets/stocks/gainers/"),
     ]
     tickers = []
-
     for label, url in pages:
         try:
             r = requests.get(url, headers=DEFAULT_HEADERS, timeout=15)

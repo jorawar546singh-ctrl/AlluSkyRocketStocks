@@ -1,15 +1,11 @@
 name: TTM Scanner
 
-# Schedule: every 15 minutes, Mon-Fri, 13:30-20:00 UTC (= 9:30am-4:00pm ET)
-# Note: GitHub's scheduler runs in UTC and can be delayed 5-15 min during
-# peak hours. That's normal and doesn't matter for breakout timing.
+# Every 15 min, Mon-Fri, 13:30-20:00 UTC (9:30am-4:00pm ET)
 on:
   schedule:
     - cron: "*/15 13-20 * * 1-5"
-  workflow_dispatch:  # allows manual trigger via GitHub UI (useful for testing)
+  workflow_dispatch:
 
-# Only one scanner run at a time, to avoid git conflicts when
-# writing results back to the repo.
 concurrency:
   group: scanner
   cancel-in-progress: false
@@ -19,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write  # allow the workflow to commit results back
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -38,18 +34,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run scanner
+      - name: Run breakout scanner
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: America/New_York
         run: python ttm_scanner.py
 
+      - name: Run position tracker
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: America/New_York
+        run: python position_tracker.py
+
       - name: Commit results back to repo
         run: |
           git config user.name  "ttm-scanner-bot"
           git config user.email "actions@github.com"
-          git add latest.json history.json alerted.log breakouts_*.csv 2>/dev/null || true
+          git add latest.json history.json alerted.log positions_state.json breakouts_*.csv 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "scan $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push

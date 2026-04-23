@@ -1,0 +1,17 @@
+{
+  "_instructions": [
+    "Add your open trades to the 'positions' list below.",
+    "The tracker runs every 15 min and will manage trailing stops automatically.",
+    "When a stop hits, Telegram pings you, you sell in your broker, then delete that entry.",
+    "Fields: ticker, shares, entry_price, entry_date (YYYY-MM-DD), initial_stop, notes (optional)."
+  ],
+  "_example_that_is_not_active": {
+    "ticker": "TLRY",
+    "shares": 13,
+    "entry_price": 7.72,
+    "entry_date": "2026-04-25",
+    "initial_stop": 7.09,
+    "notes": "CLEAN A+ breakout from $7.35 box"
+  },
+  "positions": []
+}
