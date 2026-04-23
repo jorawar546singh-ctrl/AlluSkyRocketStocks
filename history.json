@@ -1,5 +1,24 @@
 [
   {
+    "timestamp": "2026-04-23T18:40:42",
+    "count": 12,
+    "tickers": [
+      "MBLY",
+      "PENN",
+      "CHDN",
+      "EQPT",
+      "GSHD",
+      "HXL",
+      "NNBR",
+      "HELE",
+      "NKLR",
+      "SIGI",
+      "APLD",
+      "SKLZ"
+    ],
+    "clean_count": 0
+  },
+  {
     "timestamp": "2026-04-23T17:09:37",
     "count": 8,
     "tickers": [
