@@ -97,5 +97,38 @@
     "original_score": 61,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "CPRX",
+    "first_alerted": "2026-04-27T13:52:09",
+    "breakout_price": 29.17,
+    "breakout_box_top": 28.1,
+    "original_grade": "A",
+    "original_tier": "CLEAN",
+    "original_score": 89,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "ORKA",
+    "first_alerted": "2026-04-27T13:52:09",
+    "breakout_price": 79.98,
+    "breakout_box_top": 71.0,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 74,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "MANE",
+    "first_alerted": "2026-04-27T13:52:09",
+    "breakout_price": 91.04,
+    "breakout_box_top": 80.9,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 73,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]

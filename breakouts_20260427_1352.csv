@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+CPRX,29.17,28.1,24.69,3.79,6996276,1359640,5.15,27.54,37.91,5.58,5.38,12.14,25.76,True,13.2,89,A,CLEAN,🟢
+ORKA,79.98,71.0,55.1,12.65,5202396,1270060,4.1,69.58,103.97,13.0,2.31,22.39,62.74,True,27.48,74,B,SOLID,🟡
+MANE,91.04,80.9,53.68,12.53,2532360,442465,5.72,79.28,118.35,12.92,2.32,33.65,68.87,True,32.2,73,B,SOLID,🟡
+OGN,13.19,11.58,5.82,13.86,108289692,9053040,11.96,11.35,17.14,13.93,2.15,49.74,8.19,True,61.0,70,B,SOLID,🟡
