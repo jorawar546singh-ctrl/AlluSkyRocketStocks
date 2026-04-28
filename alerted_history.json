@@ -229,5 +229,60 @@
     "original_score": 68,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "BEN",
+    "first_alerted": "2026-04-28T17:44:52",
+    "breakout_price": 29.46,
+    "breakout_box_top": 28.28,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 80,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "NWBI",
+    "first_alerted": "2026-04-28T17:44:52",
+    "breakout_price": 14.16,
+    "breakout_box_top": 13.75,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 77,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "AXGN",
+    "first_alerted": "2026-04-28T17:44:52",
+    "breakout_price": 41.99,
+    "breakout_box_top": 39.99,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 68,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "PII",
+    "first_alerted": "2026-04-28T17:44:52",
+    "breakout_price": 66.47,
+    "breakout_box_top": 63.02,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 65,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "SEI",
+    "first_alerted": "2026-04-28T17:44:52",
+    "breakout_price": 74.44,
+    "breakout_box_top": 74.05,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 62,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
