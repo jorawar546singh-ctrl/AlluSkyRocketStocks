@@ -339,5 +339,38 @@
     "original_score": 68,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "ESI",
+    "first_alerted": "2026-04-29T17:46:48",
+    "breakout_price": 42.56,
+    "breakout_box_top": 41.2,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 80,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "CHEF",
+    "first_alerted": "2026-04-29T17:46:48",
+    "breakout_price": 75.7,
+    "breakout_box_top": 67.43,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 79,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "DK",
+    "first_alerted": "2026-04-29T17:46:48",
+    "breakout_price": 46.67,
+    "breakout_box_top": 43.59,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 72,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
