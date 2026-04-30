@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+INDV,38.44,35.33,30.11,8.8,3290651,1493205,2.2,34.63,49.98,9.93,3.02,14.79,32.66,True,17.71,76,B+,SOLID,🟡
+VIAV,53.15,48.89,37.66,8.71,14450409,5735050,2.52,47.91,69.1,9.85,3.04,22.97,42.9,True,23.9,71,B,SOLID,🟡
+GTX,25.22,21.25,18.77,18.65,3907971,1823200,2.14,20.83,32.79,17.41,1.72,11.69,19.91,True,26.67,69,C+,MARGINAL,🟠
+AUR,6.07,5.54,4.0,9.57,39139431,18292590,2.14,5.43,7.89,10.56,2.84,27.8,4.8,True,26.47,61,C+,MARGINAL,🟠
