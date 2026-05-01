@@ -1,5 +1,18 @@
 [
   {
+    "timestamp": "2026-05-01T16:11:27",
+    "count": 5,
+    "tickers": [
+      "BTSG",
+      "CORT",
+      "GME",
+      "SOUN",
+      "TEAM"
+    ],
+    "clean_count": 1,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-01T12:15:40",
     "count": 1,
     "tickers": [
