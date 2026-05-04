@@ -1,0 +1,4 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+GBTG,9.34,6.3,5.61,48.37,80463852,1221415,65.88,6.17,12.14,33.95,0.88,10.8,5.98,True,56.29,78,B+,SOLID,🟡
+TSN,68.75,65.56,62.98,4.87,6227242,2527710,2.46,64.25,89.38,6.55,4.58,3.94,64.57,True,6.48,76,B+,SOLID,🟡
+HNGE,48.89,45.99,38.27,6.31,1585810,712485,2.23,45.07,63.56,7.81,3.84,16.79,42.27,True,15.65,72,B,SOLID,🟡

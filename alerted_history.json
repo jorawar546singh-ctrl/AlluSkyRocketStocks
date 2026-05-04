@@ -515,5 +515,27 @@
     "original_score": 78,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "TSN",
+    "first_alerted": "2026-05-04T17:47:54",
+    "breakout_price": 68.75,
+    "breakout_box_top": 65.56,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 76,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "HNGE",
+    "first_alerted": "2026-05-04T17:47:54",
+    "breakout_price": 48.89,
+    "breakout_box_top": 45.99,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 72,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
