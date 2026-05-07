@@ -146,6 +146,17 @@
   .stack-item .v { font-size: 13px; color: var(--fg); font-weight: 500; }
   .stack-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line-hot); }
 
+  /* Vol/Box signal indicators - glow when active, dim when not */
+  .signal-on {
+    color: var(--green);
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(0, 255, 157, 0.6);
+  }
+  .signal-off {
+    color: var(--fg-faint);
+    font-weight: 500;
+  }
+
   .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .stat { background: var(--bg-card); border: 1px solid var(--line); padding: 16px 18px; position: relative; overflow: hidden; }
   .stat::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--green); }
@@ -230,7 +241,23 @@
     .panel-head h2 { font-size: 16px; }
     .total-pl { font-size: 18px; }
     .data-table-wrap { display: none; }
-    .stack-list { display: flex; }
+
+    /* 2-per-row stack cards on phones */
+    .stack-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .stack-card { padding: 10px; }
+    .stack-head { gap: 6px; margin-bottom: 8px; padding-bottom: 6px; }
+    .stack-head .ticker { font-size: 17px; }
+    .stack-head .gain { font-size: 14px; }
+    .stack-grid { grid-template-columns: 1fr; gap: 6px; }
+    .stack-item .k { font-size: 8px; letter-spacing: 0.1em; }
+    .stack-item .v { font-size: 11px; }
+    .stack-tags { margin-top: 8px; padding-top: 6px; }
+    .pos-tag { font-size: 8px; padding: 2px 6px; }
+
     .stat-row { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
     .stat { padding: 12px 14px; }
     .stat .value { font-size: 22px; }
@@ -250,10 +277,15 @@
     .results-meta { width: 100%; margin-left: 0; text-align: right; }
   }
 
-  @media (max-width: 380px) {
-    .stack-grid { grid-template-columns: 1fr; }
+  /* Very small phones: fall back to 1 card per row */
+  @media (max-width: 420px) {
+    .stack-list { grid-template-columns: 1fr; gap: 10px; }
+    .stack-card { padding: 12px; }
     .stack-head .ticker { font-size: 20px; }
     .stack-head .gain { font-size: 16px; }
+    .stack-grid { grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+    .stack-item .k { font-size: 9px; letter-spacing: 0.15em; }
+    .stack-item .v { font-size: 12px; }
   }
 </style>
 </head>
@@ -482,8 +514,8 @@ function renderStreakList() {
     const gainCls = s.pct_from_breakout >= 0 ? 'pl-pos' : 'pl-neg';
     const statusTag = s.status === 'trending' ? 'trending' : (s.status === 'fading' ? 'fading' : 'fresh');
     const statusLabel = s.status === 'trending' ? 'TRENDING' : (s.status === 'fading' ? 'FADING' : 'WATCHING');
-    const volOk = s.volume_ok_today ? '✓' : '—';
-    const boxOk = s.new_box_break_today ? '✓' : '—';
+    const volOk = s.volume_ok_today ? '<span class="signal-on">✓</span>' : '<span class="signal-off">—</span>';
+    const boxOk = s.new_box_break_today ? '<span class="signal-on">✓</span>' : '<span class="signal-off">—</span>';
     return `<tr><td><span class="t-ticker">${s.ticker}</span><span class="pos-tag ${statusTag}">${statusLabel}</span></td><td>${s.original_grade||'?'}</td><td>$${s.breakout_price.toFixed(2)} <span style="color:var(--fg-faint)">· ${(s.first_alerted||'').slice(5,10)}</span></td><td>$${s.today_close.toFixed(2)}</td><td class="${gainCls}">${s.pct_from_breakout>=0?'+':''}${s.pct_from_breakout.toFixed(1)}%</td><td>${s.days_since_breakout}d</td><td><strong>${s.current_streak}</strong> <span style="color:var(--fg-faint)">(peak ${s.peak_streak})</span></td><td style="color:var(--fg-dim)">Vol ${volOk} · Box ${boxOk}</td></tr>`;
   }).join('');
   tableWrap.innerHTML = `<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Ticker</th><th>Grade</th><th>Breakout</th><th>Now</th><th>Gain</th><th>Age</th><th>Streak</th><th>Today</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -492,8 +524,8 @@ function renderStreakList() {
     const gainCls = s.pct_from_breakout >= 0 ? 'pl-pos' : 'pl-neg';
     const statusTag = s.status === 'trending' ? 'trending' : (s.status === 'fading' ? 'fading' : 'watching');
     const statusLabel = s.status === 'trending' ? 'TRENDING' : (s.status === 'fading' ? 'FADING' : 'WATCHING');
-    const volOk = s.volume_ok_today ? `<span style="color:var(--green)">Vol ✓</span>` : `<span style="color:var(--fg-faint)">Vol —</span>`;
-    const boxOk = s.new_box_break_today ? `<span style="color:var(--green)">Box ✓</span>` : `<span style="color:var(--fg-faint)">Box —</span>`;
+    const volOk = s.volume_ok_today ? `<span class="signal-on">Vol ✓</span>` : `<span class="signal-off">Vol —</span>`;
+    const boxOk = s.new_box_break_today ? `<span class="signal-on">Box ✓</span>` : `<span class="signal-off">Box —</span>`;
     const cardCls = s.status === 'trending' ? 'trending' : (s.status === 'fading' ? 'fading' : '');
     const sign = s.pct_from_breakout >= 0 ? '+' : '';
     return `<div class="stack-card ${cardCls}"><div class="stack-head"><div class="ticker">${s.ticker}</div><div class="gain ${gainCls}">${sign}${s.pct_from_breakout.toFixed(1)}%</div></div><div class="stack-grid"><div class="stack-item"><div class="k">Grade</div><div class="v">${s.original_grade||'?'}</div></div><div class="stack-item"><div class="k">Age</div><div class="v">${s.days_since_breakout} days</div></div><div class="stack-item"><div class="k">Breakout</div><div class="v">$${s.breakout_price.toFixed(2)}</div></div><div class="stack-item"><div class="k">Now</div><div class="v">$${s.today_close.toFixed(2)}</div></div><div class="stack-item"><div class="k">Streak</div><div class="v"><strong>${s.current_streak}</strong> (peak ${s.peak_streak})</div></div><div class="stack-item"><div class="k">Today</div><div class="v">${volOk} · ${boxOk}</div></div></div><div class="stack-tags"><span class="pos-tag ${statusTag}">${statusLabel}</span></div></div>`;
