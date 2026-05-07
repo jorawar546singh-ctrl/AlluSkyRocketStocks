@@ -1,8 +1,11 @@
 name: TTM Scanner
 
+# Hourly cadence for reliability on GitHub Actions free tier.
+# Runs at the top of every hour, 13:00-20:00 UTC, Mon-Fri.
+# That's 9:30am-4:00pm Eastern (roughly), 7-8 runs per trading day.
 on:
   schedule:
-    - cron: "*/15 13-20 * * 1-5"
+    - cron: "0 13-20 * * 1-5"
   workflow_dispatch:
 
 concurrency:

@@ -582,12 +582,13 @@ loadAll();
 setInterval(loadAll,60000);
 
 function updateNextScan(){
-  const now=new Date(), mins=now.getMinutes();
-  const nextMark=Math.ceil((mins+0.01)/15)*15;
+  // Hourly cadence: countdown to top of next hour
+  const now=new Date();
   const next=new Date(now);
-  if(nextMark>=60){next.setHours(next.getHours()+1);next.setMinutes(0);}
-  else next.setMinutes(nextMark);
+  next.setHours(next.getHours()+1);
+  next.setMinutes(0);
   next.setSeconds(0);
+  next.setMilliseconds(0);
   const diff=Math.max(0,Math.floor((next-now)/1000));
   const mm=String(Math.floor(diff/60)).padStart(2,'0');
   const ss=String(diff%60).padStart(2,'0');
