@@ -38,7 +38,7 @@ VOLUME_MULT_FOR_CONTINUATION = 1.5
 RECENT_BOX_DAYS = 5
 MILESTONE_DAYS  = [3, 5, 7, 10, 15, 20]
 MAX_RED_DAYS_BEFORE_DROP = 5
-MAX_TRACK_DAYS = 30
+DAYS_AFTER_TREND_END = 30   # Keep tracking for N days after trend stops, then drop
 
 
 def script_path(name):
@@ -241,9 +241,20 @@ def main():
         except Exception:
             continue
 
-        age_days = (datetime.now() - first_alerted).days
-        if age_days > MAX_TRACK_DAYS:
-            continue   # Time decay: stop tracking
+        # --- SMART PRUNE: only drop if no longer trending AND grace period elapsed ---
+        prev = prev_by_ticker.get(ticker, {})
+        prev_status = prev.get("status", "fresh")
+        trend_end_str = prev.get("trend_end_date")
+
+        # If ticker has been not-trending for too long, drop it
+        if trend_end_str and prev_status != "trending":
+            try:
+                trend_end = datetime.fromisoformat(trend_end_str)
+                if (datetime.now() - trend_end).days > DAYS_AFTER_TREND_END:
+                    print(f"  {ticker}... dropping (no trend for {DAYS_AFTER_TREND_END}+ days)")
+                    continue
+            except Exception:
+                pass
 
         print(f"  {ticker}...", end=" ")
         data = fetch_history(ticker)
@@ -256,25 +267,34 @@ def main():
             print("not enough post-breakout data")
             continue
 
-        # Drop if 5+ consecutive red days
+        # Drop if 5+ consecutive red days (clearly dead)
         if st["red_streak"] >= MAX_RED_DAYS_BEFORE_DROP:
             print(f"dropping (red streak {st['red_streak']})")
             continue
 
-        prev = prev_by_ticker.get(ticker, {})
         last_milestone = prev.get("last_milestone_alerted", 0)
         peak_streak = max(prev.get("peak_streak", 0), st["streak"])
-        prev_status = prev.get("status", "fresh")
+        prev_trend_end = prev.get("trend_end_date")
 
-        # Determine alert
+        # Determine alert / status
         status = "trending"
-        if st["streak"] >= MAX_RED_DAYS_BEFORE_DROP:
+        new_trend_end = prev_trend_end  # default: keep what was there
+
+        if st["streak"] >= 2 or st["is_new_post_breakout_high"]:
+            # Still trending - clear any prior trend end timestamp
             status = "trending"
+            new_trend_end = None
         elif st["red_streak"] >= 1 and peak_streak >= 5 and prev_status == "trending":
+            # Just started fading after a real run
             status = "fading"
+            new_trend_end = datetime.now().isoformat(timespec="seconds")
             alerts.append(format_fading_alert(ticker, entry, st, peak_streak))
         else:
-            status = prev_status if st["streak"] <= 1 else "trending"
+            # Watching state - keep prior status
+            status = prev_status if prev_status in ("trending", "fading") else "fresh"
+            # If transitioning out of trending for the first time, mark it
+            if prev_status == "trending" and status != "trending" and not prev_trend_end:
+                new_trend_end = datetime.now().isoformat(timespec="seconds")
 
         # Milestone alert: all stacked conditions must pass
         fired_milestone = None
@@ -304,6 +324,7 @@ def main():
             "new_box_break_today": st["new_box_break"],
             "red_streak": st["red_streak"],
             "status": status,
+            "trend_end_date": new_trend_end,
         })
         pct = st["pct_from_breakout"]
         tag = "🔥" if status == "trending" else "⚠️" if status == "fading" else "\u2026"

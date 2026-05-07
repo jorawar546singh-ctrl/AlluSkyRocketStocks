@@ -27,7 +27,7 @@ DEDUP_FILE = "alerted.log"
 LATEST_JSON = "latest.json"
 HISTORY_JSON = "history.json"
 ALERTED_HISTORY = "alerted_history.json"   # NEW: 30-day breakout record
-HISTORY_RETENTION_DAYS = 30
+HISTORY_RETENTION_DAYS = 180  # Keep alert history long enough for multi-month winners
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_HEADERS = {
