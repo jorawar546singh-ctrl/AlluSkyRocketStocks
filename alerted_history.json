@@ -834,5 +834,38 @@
     "original_score": 58,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "BLBD",
+    "first_alerted": "2026-05-07T11:14:28",
+    "breakout_price": 79.14,
+    "breakout_box_top": 66.12,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 73,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "FUN",
+    "first_alerted": "2026-05-07T11:14:28",
+    "breakout_price": 22.8,
+    "breakout_box_top": 20.73,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 68,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "LIFE",
+    "first_alerted": "2026-05-07T11:14:28",
+    "breakout_price": 31.1,
+    "breakout_box_top": 23.25,
+    "original_grade": "C",
+    "original_tier": "MARGINAL",
+    "original_score": 58,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
