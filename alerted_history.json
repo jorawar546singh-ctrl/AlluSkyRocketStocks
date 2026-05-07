@@ -801,5 +801,38 @@
     "original_score": 70,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "HIMX",
+    "first_alerted": "2026-05-07T10:50:35",
+    "breakout_price": 17.22,
+    "breakout_box_top": 12.54,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 78,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "FLNC",
+    "first_alerted": "2026-05-07T10:50:35",
+    "breakout_price": 18.05,
+    "breakout_box_top": 14.72,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 67,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "XMTR",
+    "first_alerted": "2026-05-07T10:50:35",
+    "breakout_price": 76.89,
+    "breakout_box_top": 57.77,
+    "original_grade": "C",
+    "original_tier": "MARGINAL",
+    "original_score": 58,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]

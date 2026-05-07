@@ -1,0 +1,4 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+HIMX,17.22,12.54,10.68,37.32,14825727,2864895,5.17,12.29,22.39,28.63,1.05,14.83,11.47,True,50.11,78,B+,SOLID,🟡
+FLNC,18.05,14.72,11.34,22.59,19028940,4895515,3.89,14.43,23.46,20.06,1.5,23.0,13.51,True,33.52,67,C+,MARGINAL,🟠
+XMTR,76.89,57.77,44.32,33.1,1336669,647940,2.06,56.61,99.96,26.37,1.14,23.28,49.74,True,54.6,58,C,MARGINAL,🟠
