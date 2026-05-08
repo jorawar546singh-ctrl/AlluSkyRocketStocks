@@ -13,6 +13,14 @@
       "entry_date": "2026-04-27",
       "initial_stop": 27.54,
       "notes": "First real trade. TFSA. Stop-limit sell already placed at broker."
+    },
+    {
+      "ticker": "GTX",
+      "shares": 25,
+      "entry_price": 28.80,
+      "entry_date": "2026-05-08",
+      "initial_stop": 26.84,
+      "notes": "Late entry on day-6 of streak. Box top was $27.39. Larger than rules allow."
     }
   ]
 }
