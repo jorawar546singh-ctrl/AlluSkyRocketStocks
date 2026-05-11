@@ -1087,5 +1087,38 @@
     "original_score": 72,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "LQDA",
+    "first_alerted": "2026-05-11T15:19:48",
+    "breakout_price": 52.69,
+    "breakout_box_top": 42.96,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 74,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "BW",
+    "first_alerted": "2026-05-11T15:19:48",
+    "breakout_price": 18.55,
+    "breakout_box_top": 17.53,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 71,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "MRAM",
+    "first_alerted": "2026-05-11T15:19:48",
+    "breakout_price": 40.21,
+    "breakout_box_top": 27.63,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 64,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]

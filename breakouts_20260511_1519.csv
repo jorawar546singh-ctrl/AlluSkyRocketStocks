@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+LQDA,52.69,42.96,35.8,22.65,5565832,1007755,5.52,42.1,68.5,20.1,1.49,16.67,39.7,True,32.73,74,B,SOLID,🟡
+BW,18.55,17.53,13.58,5.84,7394711,2873350,2.57,17.18,24.12,7.41,4.05,22.53,16.01,True,15.87,71,B,SOLID,🟡
+HIMX,20.53,19.3,10.68,6.4,12248562,4591640,2.67,18.91,26.7,7.89,3.8,44.66,12.41,True,65.53,65,C+,MARGINAL,🟠
+MRAM,40.21,27.63,12.36,45.53,25169318,2301785,10.93,27.08,52.27,32.66,0.92,55.27,17.01,True,136.47,64,C+,MARGINAL,🟠
