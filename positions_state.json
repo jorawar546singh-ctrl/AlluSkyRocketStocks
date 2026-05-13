@@ -6,16 +6,16 @@
       "entry_date": "2026-04-27",
       "shares": 9.0,
       "initial_stop": 27.54,
-      "last_price": 31.155,
+      "last_price": 31.16,
       "running_high": 31.29,
       "current_stop": 27.54,
       "stop_rule": "initial",
-      "gain_pct": 6.62,
+      "gain_pct": 6.64,
       "high_gain_pct": 7.08,
-      "pl_dollars": 17.42,
+      "pl_dollars": 17.46,
       "last_milestone": 0,
       "status": "open",
-      "last_checked": "2026-05-13T15:26:24",
+      "last_checked": "2026-05-13T19:42:12",
       "notes": "First real trade. TFSA. Stop-limit sell already placed at broker."
     },
     {
@@ -24,18 +24,18 @@
       "entry_date": "2026-05-08",
       "shares": 25.0,
       "initial_stop": 26.84,
-      "last_price": 31.45,
-      "running_high": 31.565,
+      "last_price": 31.35,
+      "running_high": 31.58,
       "current_stop": 26.84,
       "stop_rule": "initial",
-      "gain_pct": 9.2,
-      "high_gain_pct": 9.6,
-      "pl_dollars": 66.25,
+      "gain_pct": 8.85,
+      "high_gain_pct": 9.65,
+      "pl_dollars": 63.75,
       "last_milestone": 0,
       "status": "open",
-      "last_checked": "2026-05-13T15:26:24",
+      "last_checked": "2026-05-13T19:42:12",
       "notes": "Late entry on day-6 of streak. Box top was $27.39. Larger than rules allow."
     }
   ],
-  "updated": "2026-05-13T15:26:24"
+  "updated": "2026-05-13T19:42:12"
 }
