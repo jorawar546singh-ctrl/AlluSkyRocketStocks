@@ -1,5 +1,25 @@
 [
   {
+    "timestamp": "2026-05-14T19:15:05",
+    "count": 12,
+    "tickers": [
+      "STUB",
+      "KLAR",
+      "F",
+      "SAIL",
+      "KNX",
+      "VSNT",
+      "LUMN",
+      "ONDS",
+      "FPS",
+      "PCT",
+      "FRMI",
+      "RDW"
+    ],
+    "clean_count": 1,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-14T15:24:19",
     "count": 8,
     "tickers": [
