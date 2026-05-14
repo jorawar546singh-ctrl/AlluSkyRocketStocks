@@ -1362,5 +1362,82 @@
     "original_score": 73,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "KLAR",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 16.14,
+    "breakout_box_top": 15.1,
+    "original_grade": "A",
+    "original_tier": "CLEAN",
+    "original_score": 88,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "STUB",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 8.56,
+    "breakout_box_top": 7.88,
+    "original_grade": "A",
+    "original_tier": "CLEAN",
+    "original_score": 86,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "ONDS",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 11.55,
+    "breakout_box_top": 11.07,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 74,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "KNX",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 68.01,
+    "breakout_box_top": 66.58,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 73,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "FRMI",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 7.03,
+    "breakout_box_top": 6.22,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 67,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "FPS",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 50.14,
+    "breakout_box_top": 46.1,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 65,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "PCT",
+    "first_alerted": "2026-05-14T15:24:19",
+    "breakout_price": 12.14,
+    "breakout_box_top": 10.39,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 64,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
