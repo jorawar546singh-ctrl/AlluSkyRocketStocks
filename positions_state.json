@@ -1,41 +1,41 @@
 {
   "positions": [
     {
-      "ticker": "CPRX",
-      "entry_price": 29.22,
-      "entry_date": "2026-04-27",
-      "shares": 9.0,
-      "initial_stop": 27.54,
-      "last_price": 31.155,
-      "running_high": 31.29,
-      "current_stop": 27.54,
-      "stop_rule": "initial",
-      "gain_pct": 6.62,
-      "high_gain_pct": 7.08,
-      "pl_dollars": 17.42,
-      "last_milestone": 0,
-      "status": "open",
-      "last_checked": "2026-05-15T14:16:26",
-      "notes": "First real trade. TFSA. Stop-limit sell already placed at broker."
-    },
-    {
       "ticker": "GTX",
       "entry_price": 28.8,
       "entry_date": "2026-05-08",
       "shares": 25.0,
-      "initial_stop": 26.84,
-      "last_price": 31.23,
+      "initial_stop": 28.8,
+      "last_price": 31.22,
       "running_high": 32.44,
       "current_stop": 28.8,
       "stop_rule": "breakeven",
-      "gain_pct": 8.44,
+      "gain_pct": 8.4,
       "high_gain_pct": 12.64,
-      "pl_dollars": 60.75,
+      "pl_dollars": 60.5,
       "last_milestone": 10,
       "status": "open",
-      "last_checked": "2026-05-15T14:16:26",
-      "notes": "Late entry on day-6 of streak. Box top was $27.39. Larger than rules allow."
+      "last_checked": "2026-05-15T14:28:01",
+      "notes": "Late entry on day-6 of streak. Hit +10% on 2026-05-14, stop raised to breakeven ($28.80) at broker. Original stop was $26.84."
+    },
+    {
+      "ticker": "STUB",
+      "entry_price": 8.7,
+      "entry_date": "2026-05-15",
+      "shares": 35.0,
+      "initial_stop": 7.72,
+      "last_price": 8.9,
+      "running_high": 8.935,
+      "current_stop": 7.72,
+      "stop_rule": "initial",
+      "gain_pct": 2.3,
+      "high_gain_pct": 2.7,
+      "pl_dollars": 7.0,
+      "last_milestone": 0,
+      "status": "open",
+      "last_checked": "2026-05-15T14:28:01",
+      "notes": "Oversized entry by mistake (intended 7, bought 35). Risk to stop ~11% of account. Decision pending on whether to trim."
     }
   ],
-  "updated": "2026-05-15T14:16:26"
+  "updated": "2026-05-15T14:28:01"
 }

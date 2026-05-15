@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+MICC,16.55,15.5,12.94,6.77,6337995,1511915,4.19,15.19,21.51,8.22,3.65,16.52,14.36,True,15.21,82,B+,SOLID,🟡
+FIG,23.15,21.5,16.6,7.67,64513250,17924365,3.6,21.07,30.09,8.98,3.34,22.79,19.05,True,21.5,74,B,SOLID,🟡
+PIII,11.01,4.44,2.54,147.97,55239134,126000,438.41,4.35,14.31,60.48,0.5,42.91,3.49,True,215.84,64,C+,MARGINAL,🟠
+SEDG,61.41,50.46,37.55,21.7,9619547,3794445,2.54,49.45,79.83,19.48,1.54,25.58,43.93,True,39.81,61,C+,MARGINAL,🟠
