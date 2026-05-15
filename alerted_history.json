@@ -1483,5 +1483,38 @@
     "original_score": 62,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "FIG",
+    "first_alerted": "2026-05-15T14:07:27",
+    "breakout_price": 23.33,
+    "breakout_box_top": 21.5,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 74,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "PIII",
+    "first_alerted": "2026-05-15T14:07:27",
+    "breakout_price": 11.7,
+    "breakout_box_top": 4.44,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 64,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "SEDG",
+    "first_alerted": "2026-05-15T14:07:27",
+    "breakout_price": 61.73,
+    "breakout_box_top": 50.46,
+    "original_grade": "C",
+    "original_tier": "MARGINAL",
+    "original_score": 58,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
