@@ -7,20 +7,20 @@
   ],
   "positions": [
     {
-      "ticker": "CPRX",
-      "shares": 9,
-      "entry_price": 29.22,
-      "entry_date": "2026-04-27",
-      "initial_stop": 27.54,
-      "notes": "First real trade. TFSA. Stop-limit sell already placed at broker."
-    },
-    {
       "ticker": "GTX",
       "shares": 25,
       "entry_price": 28.80,
       "entry_date": "2026-05-08",
-      "initial_stop": 26.84,
-      "notes": "Late entry on day-6 of streak. Box top was $27.39. Larger than rules allow."
+      "initial_stop": 28.80,
+      "notes": "Late entry on day-6 of streak. Hit +10% on 2026-05-14, stop raised to breakeven ($28.80) at broker. Original stop was $26.84."
+    },
+    {
+      "ticker": "STUB",
+      "shares": 35,
+      "entry_price": 8.70,
+      "entry_date": "2026-05-15",
+      "initial_stop": 7.72,
+      "notes": "Oversized entry by mistake (intended 7, bought 35). Risk to stop ~11% of account. Decision pending on whether to trim."
     }
   ]
 }
