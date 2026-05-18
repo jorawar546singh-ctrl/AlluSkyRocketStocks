@@ -1,5 +1,19 @@
 [
   {
+    "timestamp": "2026-05-18T14:40:47",
+    "count": 6,
+    "tickers": [
+      "D",
+      "RAMP",
+      "YPF",
+      "HIVE",
+      "GCTS",
+      "BRC"
+    ],
+    "clean_count": 1,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-15T18:15:05",
     "count": 5,
     "tickers": [
