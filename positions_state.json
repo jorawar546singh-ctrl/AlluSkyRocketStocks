@@ -1,29 +1,11 @@
 {
   "positions": [
     {
-      "ticker": "GTX",
-      "entry_price": 28.8,
-      "entry_date": "2026-05-08",
-      "shares": 25.0,
-      "initial_stop": 28.8,
-      "last_price": 30.38,
-      "running_high": 32.44,
-      "current_stop": 28.8,
-      "stop_rule": "breakeven",
-      "gain_pct": 5.49,
-      "high_gain_pct": 12.64,
-      "pl_dollars": 39.5,
-      "last_milestone": 10,
-      "status": "open",
-      "last_checked": "2026-05-19T03:47:02",
-      "notes": "Late entry on day-6 of streak. Hit +10% on 2026-05-14, stop raised to breakeven ($28.80) at broker. Original stop was $26.84."
-    },
-    {
       "ticker": "STUB",
       "entry_price": 8.7,
-      "entry_date": "2026-05-15",
+      "entry_date": "2026-05-19",
       "shares": 35.0,
-      "initial_stop": 7.72,
+      "initial_stop": 8.45,
       "last_price": 9.33,
       "running_high": 9.59,
       "current_stop": 8.7,
@@ -33,9 +15,27 @@
       "pl_dollars": 22.05,
       "last_milestone": 0,
       "status": "open",
-      "last_checked": "2026-05-19T03:47:02",
-      "notes": "Oversized entry by mistake (intended 7, bought 35). Risk to stop ~11% of account. Decision pending on whether to trim."
+      "last_checked": "2026-05-19T04:04:08",
+      "notes": "StubHub. TFSA. Stop-limit $8.45/$8.40 at broker, 35 shares. Bought post-earnings."
+    },
+    {
+      "ticker": "SAIL",
+      "entry_price": 14.32,
+      "entry_date": "2026-05-19",
+      "shares": 53.0,
+      "initial_stop": 13.17,
+      "last_price": 14.59,
+      "running_high": 14.61,
+      "current_stop": 13.17,
+      "stop_rule": "initial",
+      "gain_pct": 1.89,
+      "high_gain_pct": 2.03,
+      "pl_dollars": 14.31,
+      "last_milestone": 0,
+      "status": "open",
+      "last_checked": "2026-05-19T04:04:08",
+      "notes": "SailPoint. TFSA. Stop-limit $13.17 at broker, 53 shares. Bought after ~24% weekly run."
     }
   ],
-  "updated": "2026-05-19T03:47:02"
+  "updated": "2026-05-19T04:04:08"
 }
