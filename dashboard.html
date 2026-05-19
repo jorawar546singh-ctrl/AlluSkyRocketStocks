@@ -157,6 +157,42 @@
     font-weight: 500;
   }
 
+  /* Stop-limit order display box */
+  .stoplimit {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 51, 85, 0.08);
+    border: 1px solid rgba(255, 51, 85, 0.3);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+  }
+  .stoplimit .sl-label {
+    font-size: 8.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    font-weight: 700;
+  }
+  .stoplimit .sl-pair {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+  }
+  .stoplimit .sl-num {
+    color: var(--red);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stoplimit .sl-num .sl-k {
+    color: var(--fg-faint);
+    font-weight: 500;
+    font-size: 9px;
+    margin-right: 3px;
+  }
+
   .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .stat { background: var(--bg-card); border: 1px solid var(--line); padding: 16px 18px; position: relative; overflow: hidden; }
   .stat::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--green); }
@@ -395,6 +431,27 @@ function barRow(label,val,max=20,cls=null){
   return `<div class="bd-row"><div class="bd-label">${label}</div><div class="bd-bar ${cls||autoCls}"><div class="fill" style="width:${pct}%"></div></div><div class="bd-val">${val}/20</div></div>`;
 }
 
+// Stop-limit pair calculator.
+// stopPrice = the trigger. limitPrice = slightly below so the order fills.
+// Limit offset scales with price (~0.4%) so it works on $5 and $90 stocks alike.
+function stopLimitPair(stopPrice) {
+  if (!stopPrice || stopPrice <= 0) return null;
+  const offset = Math.max(0.05, stopPrice * 0.004);  // min 5 cents
+  const limit = stopPrice - offset;
+  return {
+    stop: stopPrice.toFixed(2),
+    limit: limit.toFixed(2),
+  };
+}
+
+// Renders the red stop-limit box. `label` describes the basis.
+function slBlock(stopPrice, label) {
+  const sl = stopLimitPair(Number(stopPrice));
+  if (!sl) return '';
+  const lab = label || 'STOP-LIMIT ORDER';
+  return `<div class="stoplimit"><span class="sl-label">${lab}</span><span class="sl-pair"><span class="sl-num"><span class="sl-k">STOP</span>$${sl.stop}</span><span class="sl-num"><span class="sl-k">LIMIT</span>$${sl.limit}</span></span></div>`;
+}
+
 function renderCard(h){
   const isElite=h.fund_tag==='ELITE';
   const tierClass=(isElite?'elite ':'')+h.tier.toLowerCase();
@@ -402,7 +459,7 @@ function renderCard(h){
   const riskClass=h.risk_pct<=7?'pos':(h.risk_pct<=10?'warn':'neg');
   const gradeLabel=isElite?`🌟 ELITE · ${h.fund_score}`:`${h.grade} · ${h.tier}`;
   const fundSection=fb?`<div class="breakdown"><div class="bd-title">Fundamentals · ${h.fund_score}/100 ${h.fund_tag?'· '+h.fund_tag:''}</div>${barRow('Earnings',fb.earnings,20,isElite?'gold':null)}${barRow('Value',fb.value,20,isElite?'gold':null)}${barRow('Leader',fb.leader,20,isElite?'gold':null)}${barRow('Balance',fb.balance,20,isElite?'gold':null)}${barRow('Smart $',fb.smart_money,20,isElite?'gold':null)}</div>`:'';
-  return `<div class="card ${tierClass}"><div class="grade-badge">${gradeLabel}</div><div class="ticker-row"><div class="ticker">${h.ticker}</div><div class="price">$${h.price}</div></div><div class="score-row"><span>Technical</span><span class="score-num">${h.score}</span><span>/100</span></div>${sparkline(h.spark)}<div class="breakdown"><div class="bd-title">Technical breakdown</div>${barRow('Volume',sb.volume||0)}${barRow('Clarity',sb.clarity||0)}${barRow('Box Quality',sb.box_quality||0)}${barRow('Risk/Reward',sb.risk_reward||0)}${barRow('Trend',sb.trend||0)}</div>${fundSection}<div class="metrics"><div><div class="k">Entry</div><div class="v">$${h.price}</div></div><div><div class="k">Vol Ratio</div><div class="v pos">${h.vol_ratio}×</div></div><div><div class="k">Stop</div><div class="v neg">$${h.suggested_stop}</div></div><div><div class="k">Target</div><div class="v pos">$${h.target_30pct}</div></div><div><div class="k">Risk</div><div class="v ${riskClass}">${h.risk_pct}%</div></div><div><div class="k">R/R</div><div class="v">${h.rr_ratio}:1</div></div></div><div class="links"><a href="https://finance.yahoo.com/quote/${h.ticker}" target="_blank" rel="noopener">Yahoo</a><a href="https://finviz.com/quote.ashx?t=${h.ticker}" target="_blank" rel="noopener">Finviz</a><a href="https://www.tradingview.com/symbols/${h.ticker}/" target="_blank" rel="noopener">TV</a></div></div>`;
+  return `<div class="card ${tierClass}"><div class="grade-badge">${gradeLabel}</div><div class="ticker-row"><div class="ticker">${h.ticker}</div><div class="price">$${h.price}</div></div><div class="score-row"><span>Technical</span><span class="score-num">${h.score}</span><span>/100</span></div>${sparkline(h.spark)}<div class="breakdown"><div class="bd-title">Technical breakdown</div>${barRow('Volume',sb.volume||0)}${barRow('Clarity',sb.clarity||0)}${barRow('Box Quality',sb.box_quality||0)}${barRow('Risk/Reward',sb.risk_reward||0)}${barRow('Trend',sb.trend||0)}</div>${fundSection}<div class="metrics"><div><div class="k">Entry</div><div class="v">$${h.price}</div></div><div><div class="k">Vol Ratio</div><div class="v pos">${h.vol_ratio}×</div></div><div><div class="k">Stop</div><div class="v neg">$${h.suggested_stop}</div></div><div><div class="k">Target</div><div class="v pos">$${h.target_30pct}</div></div><div><div class="k">Risk</div><div class="v ${riskClass}">${h.risk_pct}%</div></div><div><div class="k">R/R</div><div class="v">${h.rr_ratio}:1</div></div></div>${slBlock(h.suggested_stop)}<div class="links"><a href="https://finance.yahoo.com/quote/${h.ticker}" target="_blank" rel="noopener">Yahoo</a><a href="https://finviz.com/quote.ashx?t=${h.ticker}" target="_blank" rel="noopener">Finviz</a><a href="https://www.tradingview.com/symbols/${h.ticker}/" target="_blank" rel="noopener">TV</a></div></div>`;
 }
 
 function renderTiers(hits){
@@ -516,9 +573,12 @@ function renderStreakList() {
     const statusLabel = s.status === 'trending' ? 'TRENDING' : (s.status === 'fading' ? 'FADING' : 'WATCHING');
     const volOk = s.volume_ok_today ? '<span class="signal-on">✓</span>' : '<span class="signal-off">—</span>';
     const boxOk = s.new_box_break_today ? '<span class="signal-on">✓</span>' : '<span class="signal-off">—</span>';
-    return `<tr><td><span class="t-ticker">${s.ticker}</span><span class="pos-tag ${statusTag}">${statusLabel}</span></td><td>${s.original_grade||'?'}</td><td>$${s.breakout_price.toFixed(2)} <span style="color:var(--fg-faint)">· ${(s.first_alerted||'').slice(5,10)}</span></td><td>$${s.today_close.toFixed(2)}</td><td class="${gainCls}">${s.pct_from_breakout>=0?'+':''}${s.pct_from_breakout.toFixed(1)}%</td><td>${s.days_since_breakout}d</td><td><strong>${s.current_streak}</strong> <span style="color:var(--fg-faint)">(peak ${s.peak_streak})</span></td><td style="color:var(--fg-dim)">Vol ${volOk} · Box ${boxOk}</td></tr>`;
+    const lateStop = s.today_close * 0.93;  // 7% below current = Darvas late-entry stop
+    const slLate = stopLimitPair(lateStop);
+    const slCell = slLate ? `<span style="color:var(--red);font-weight:600">$${slLate.stop}</span> <span style="color:var(--fg-faint)">/ $${slLate.limit}</span>` : '—';
+    return `<tr><td><span class="t-ticker">${s.ticker}</span><span class="pos-tag ${statusTag}">${statusLabel}</span></td><td>${s.original_grade||'?'}</td><td>$${s.breakout_price.toFixed(2)} <span style="color:var(--fg-faint)">· ${(s.first_alerted||'').slice(5,10)}</span></td><td>$${s.today_close.toFixed(2)}</td><td class="${gainCls}">${s.pct_from_breakout>=0?'+':''}${s.pct_from_breakout.toFixed(1)}%</td><td>${s.days_since_breakout}d</td><td><strong>${s.current_streak}</strong> <span style="color:var(--fg-faint)">(peak ${s.peak_streak})</span></td><td style="font-size:11px">${slCell}</td><td style="color:var(--fg-dim)">Vol ${volOk} · Box ${boxOk}</td></tr>`;
   }).join('');
-  tableWrap.innerHTML = `<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Ticker</th><th>Grade</th><th>Breakout</th><th>Now</th><th>Gain</th><th>Age</th><th>Streak</th><th>Today</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  tableWrap.innerHTML = `<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Ticker</th><th>Grade</th><th>Breakout</th><th>Now</th><th>Gain</th><th>Age</th><th>Streak</th><th>Stop / Limit*</th><th>Today</th></tr></thead><tbody>${rows}</tbody></table><div style="font-size:9.5px;color:var(--fg-faint);margin-top:8px;letter-spacing:0.05em">* Late-entry stop-limit = 7% below current price (Darvas late-entry rule). For entering a stock already running. Paste straight into Wealthsimple.</div></div>`;
 
   stackWrap.innerHTML = sorted.map(s => {
     const gainCls = s.pct_from_breakout >= 0 ? 'pl-pos' : 'pl-neg';
@@ -528,7 +588,8 @@ function renderStreakList() {
     const boxOk = s.new_box_break_today ? `<span class="signal-on">Box ✓</span>` : `<span class="signal-off">Box —</span>`;
     const cardCls = s.status === 'trending' ? 'trending' : (s.status === 'fading' ? 'fading' : '');
     const sign = s.pct_from_breakout >= 0 ? '+' : '';
-    return `<div class="stack-card ${cardCls}"><div class="stack-head"><div class="ticker">${s.ticker}</div><div class="gain ${gainCls}">${sign}${s.pct_from_breakout.toFixed(1)}%</div></div><div class="stack-grid"><div class="stack-item"><div class="k">Grade</div><div class="v">${s.original_grade||'?'}</div></div><div class="stack-item"><div class="k">Age</div><div class="v">${s.days_since_breakout} days</div></div><div class="stack-item"><div class="k">Breakout</div><div class="v">$${s.breakout_price.toFixed(2)}</div></div><div class="stack-item"><div class="k">Now</div><div class="v">$${s.today_close.toFixed(2)}</div></div><div class="stack-item"><div class="k">Streak</div><div class="v"><strong>${s.current_streak}</strong> (peak ${s.peak_streak})</div></div><div class="stack-item"><div class="k">Today</div><div class="v">${volOk} · ${boxOk}</div></div></div><div class="stack-tags"><span class="pos-tag ${statusTag}">${statusLabel}</span></div></div>`;
+    const lateStop = s.today_close * 0.93;
+    return `<div class="stack-card ${cardCls}"><div class="stack-head"><div class="ticker">${s.ticker}</div><div class="gain ${gainCls}">${sign}${s.pct_from_breakout.toFixed(1)}%</div></div><div class="stack-grid"><div class="stack-item"><div class="k">Grade</div><div class="v">${s.original_grade||'?'}</div></div><div class="stack-item"><div class="k">Age</div><div class="v">${s.days_since_breakout} days</div></div><div class="stack-item"><div class="k">Breakout</div><div class="v">$${s.breakout_price.toFixed(2)}</div></div><div class="stack-item"><div class="k">Now</div><div class="v">$${s.today_close.toFixed(2)}</div></div><div class="stack-item"><div class="k">Streak</div><div class="v"><strong>${s.current_streak}</strong> (peak ${s.peak_streak})</div></div><div class="stack-item"><div class="k">Today</div><div class="v">${volOk} · ${boxOk}</div></div></div>${slBlock(lateStop, 'IF ENTERING NOW · 7% STOP')}<div class="stack-tags"><span class="pos-tag ${statusTag}">${statusLabel}</span></div></div>`;
   }).join('');
 }
 
