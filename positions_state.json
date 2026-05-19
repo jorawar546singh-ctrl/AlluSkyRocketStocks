@@ -15,7 +15,7 @@
       "pl_dollars": 39.5,
       "last_milestone": 10,
       "status": "open",
-      "last_checked": "2026-05-18T19:49:11",
+      "last_checked": "2026-05-19T03:47:02",
       "notes": "Late entry on day-6 of streak. Hit +10% on 2026-05-14, stop raised to breakeven ($28.80) at broker. Original stop was $26.84."
     },
     {
@@ -25,17 +25,17 @@
       "shares": 35.0,
       "initial_stop": 7.72,
       "last_price": 9.33,
-      "running_high": 9.585,
+      "running_high": 9.59,
       "current_stop": 8.7,
       "stop_rule": "breakeven",
       "gain_pct": 7.24,
-      "high_gain_pct": 10.17,
+      "high_gain_pct": 10.23,
       "pl_dollars": 22.05,
       "last_milestone": 0,
       "status": "open",
-      "last_checked": "2026-05-18T19:49:11",
+      "last_checked": "2026-05-19T03:47:02",
       "notes": "Oversized entry by mistake (intended 7, bought 35). Risk to stop ~11% of account. Decision pending on whether to trim."
     }
   ],
-  "updated": "2026-05-18T19:49:11"
+  "updated": "2026-05-19T03:47:02"
 }
