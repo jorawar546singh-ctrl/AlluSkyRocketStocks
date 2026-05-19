@@ -1615,5 +1615,27 @@
     "original_score": 65,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "CMBT",
+    "first_alerted": "2026-05-19T15:30:28",
+    "breakout_price": 16.46,
+    "breakout_box_top": 15.57,
+    "original_grade": "A",
+    "original_tier": "CLEAN",
+    "original_score": 86,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "AGYS",
+    "first_alerted": "2026-05-19T15:30:28",
+    "breakout_price": 78.19,
+    "breakout_box_top": 73.59,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 84,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
