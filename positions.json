@@ -1,26 +1,26 @@
 {
   "_instructions": [
     "Add your open trades to the 'positions' list below.",
-    "The tracker runs every 15 min and will manage trailing stops automatically.",
+    "The tracker runs hourly and will manage trailing stops automatically.",
     "When a stop hits, Telegram pings you, you sell in your broker, then delete that entry.",
     "Fields: ticker, shares, entry_price, entry_date (YYYY-MM-DD), initial_stop, notes (optional)."
   ],
   "positions": [
     {
-      "ticker": "GTX",
-      "shares": 25,
-      "entry_price": 28.80,
-      "entry_date": "2026-05-08",
-      "initial_stop": 28.80,
-      "notes": "Late entry on day-6 of streak. Hit +10% on 2026-05-14, stop raised to breakeven ($28.80) at broker. Original stop was $26.84."
-    },
-    {
       "ticker": "STUB",
       "shares": 35,
       "entry_price": 8.70,
-      "entry_date": "2026-05-15",
-      "initial_stop": 7.72,
-      "notes": "Oversized entry by mistake (intended 7, bought 35). Risk to stop ~11% of account. Decision pending on whether to trim."
+      "entry_date": "2026-05-19",
+      "initial_stop": 8.45,
+      "notes": "StubHub. TFSA. Stop-limit $8.45/$8.40 at broker, 35 shares. Bought post-earnings."
+    },
+    {
+      "ticker": "SAIL",
+      "shares": 53,
+      "entry_price": 14.32,
+      "entry_date": "2026-05-19",
+      "initial_stop": 13.17,
+      "notes": "SailPoint. TFSA. Stop-limit $13.17 at broker, 53 shares. Bought after ~24% weekly run."
     }
   ]
 }
