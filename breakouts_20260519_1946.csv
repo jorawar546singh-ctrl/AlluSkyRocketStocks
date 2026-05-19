@@ -1,0 +1,3 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+CMBT,16.61,15.57,13.26,6.68,7520178,1436610,5.23,15.26,21.59,8.14,3.69,14.87,14.31,True,16.07,88,A,CLEAN,🟢
+AGYS,78.94,73.59,62.31,7.27,2719162,282440,9.63,72.12,102.62,8.64,3.47,15.33,68.34,True,15.51,84,B+,SOLID,🟡

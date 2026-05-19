@@ -1,5 +1,15 @@
 [
   {
+    "timestamp": "2026-05-19T19:46:42",
+    "count": 2,
+    "tickers": [
+      "CMBT",
+      "AGYS"
+    ],
+    "clean_count": 1,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-19T15:30:28",
     "count": 2,
     "tickers": [
@@ -727,14 +737,6 @@
       "OBE",
       "INV",
       "KEEL"
-    ],
-    "clean_count": 0
-  },
-  {
-    "timestamp": "2026-04-23T13:56:45",
-    "count": 1,
-    "tickers": [
-      "NKLR"
     ],
     "clean_count": 0
   }
