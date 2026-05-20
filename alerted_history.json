@@ -1637,5 +1637,49 @@
     "original_score": 84,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "ROIV",
+    "first_alerted": "2026-05-20T16:38:31",
+    "breakout_price": 32.41,
+    "breakout_box_top": 29.8,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 83,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "IMVT",
+    "first_alerted": "2026-05-20T16:38:31",
+    "breakout_price": 35.56,
+    "breakout_box_top": 30.16,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 81,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "LPG",
+    "first_alerted": "2026-05-20T16:38:31",
+    "breakout_price": 47.72,
+    "breakout_box_top": 43.09,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 78,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "HCWB",
+    "first_alerted": "2026-05-20T16:38:31",
+    "breakout_price": 2.43,
+    "breakout_box_top": 1.6,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 64,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
