@@ -6,16 +6,16 @@
       "entry_date": "2026-05-19",
       "shares": 35.0,
       "initial_stop": 8.45,
-      "last_price": 10.1,
-      "running_high": 10.2,
+      "last_price": 10.025,
+      "running_high": 10.31,
       "current_stop": 8.7,
       "stop_rule": "breakeven",
-      "gain_pct": 16.09,
-      "high_gain_pct": 17.24,
-      "pl_dollars": 49.0,
+      "gain_pct": 15.23,
+      "high_gain_pct": 18.51,
+      "pl_dollars": 46.37,
       "last_milestone": 10,
       "status": "open",
-      "last_checked": "2026-05-21T10:27:27",
+      "last_checked": "2026-05-21T14:48:10",
       "notes": "StubHub. TFSA. Stop-limit $8.45/$8.40 at broker, 35 shares. Bought post-earnings."
     },
     {
@@ -24,18 +24,18 @@
       "entry_date": "2026-05-19",
       "shares": 53.0,
       "initial_stop": 13.17,
-      "last_price": 14.86,
+      "last_price": 14.92,
       "running_high": 15.09,
       "current_stop": 13.17,
       "stop_rule": "initial",
-      "gain_pct": 3.77,
+      "gain_pct": 4.19,
       "high_gain_pct": 5.38,
-      "pl_dollars": 28.62,
+      "pl_dollars": 31.8,
       "last_milestone": 0,
       "status": "open",
-      "last_checked": "2026-05-21T10:27:27",
+      "last_checked": "2026-05-21T14:48:10",
       "notes": "SailPoint. TFSA. Stop-limit $13.17 at broker, 53 shares. Bought after ~24% weekly run."
     }
   ],
-  "updated": "2026-05-21T10:27:27"
+  "updated": "2026-05-21T14:48:10"
 }
