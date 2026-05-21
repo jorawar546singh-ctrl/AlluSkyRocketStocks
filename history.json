@@ -1,5 +1,18 @@
 [
   {
+    "timestamp": "2026-05-21T17:41:39",
+    "count": 5,
+    "tickers": [
+      "INFQ",
+      "RGTI",
+      "QBTS",
+      "GFS",
+      "AAL"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-21T15:31:16",
     "count": 4,
     "tickers": [
@@ -686,23 +699,6 @@
   },
   {
     "timestamp": "2026-04-24T19:03:31",
-    "count": 9,
-    "tickers": [
-      "CEVA",
-      "SYNA",
-      "AIP",
-      "ATOM",
-      "COHU",
-      "MXL",
-      "OGN",
-      "POET",
-      "INTC"
-    ],
-    "clean_count": 0,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-24T16:33:26",
     "count": 9,
     "tickers": [
       "CEVA",
