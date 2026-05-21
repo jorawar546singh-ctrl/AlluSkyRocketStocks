@@ -1,5 +1,18 @@
 [
   {
+    "timestamp": "2026-05-20T22:20:50",
+    "count": 5,
+    "tickers": [
+      "ROIV",
+      "IMVT",
+      "LPG",
+      "TE",
+      "RXO"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-20T16:38:31",
     "count": 6,
     "tickers": [
@@ -719,24 +732,5 @@
     ],
     "clean_count": 0,
     "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-23T18:40:42",
-    "count": 12,
-    "tickers": [
-      "MBLY",
-      "PENN",
-      "CHDN",
-      "EQPT",
-      "GSHD",
-      "HXL",
-      "NNBR",
-      "HELE",
-      "NKLR",
-      "SIGI",
-      "APLD",
-      "SKLZ"
-    ],
-    "clean_count": 0
   }
 ]
