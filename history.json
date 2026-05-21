@@ -1,5 +1,17 @@
 [
   {
+    "timestamp": "2026-05-21T15:31:16",
+    "count": 4,
+    "tickers": [
+      "INFQ",
+      "RGTI",
+      "GFS",
+      "QBTS"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-21T14:47:22",
     "count": 2,
     "tickers": [
@@ -701,20 +713,6 @@
       "MXL",
       "OGN",
       "POET",
-      "INTC"
-    ],
-    "clean_count": 0,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-24T14:10:42",
-    "count": 6,
-    "tickers": [
-      "ATOM",
-      "CEVA",
-      "MXL",
-      "POET",
-      "OGN",
       "INTC"
     ],
     "clean_count": 0,

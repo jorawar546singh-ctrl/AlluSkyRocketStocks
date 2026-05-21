@@ -1703,5 +1703,27 @@
     "original_score": 56,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "GFS",
+    "first_alerted": "2026-05-21T15:31:16",
+    "breakout_price": 80.51,
+    "breakout_box_top": 76.98,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 72,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "QBTS",
+    "first_alerted": "2026-05-21T15:31:16",
+    "breakout_price": 25.23,
+    "breakout_box_top": 24.78,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 69,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
