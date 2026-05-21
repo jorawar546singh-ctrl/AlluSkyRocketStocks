@@ -1681,5 +1681,27 @@
     "original_score": 64,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "INFQ",
+    "first_alerted": "2026-05-21T10:26:27",
+    "breakout_price": 14.94,
+    "breakout_box_top": 14.33,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 75,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "RGTI",
+    "first_alerted": "2026-05-21T10:26:27",
+    "breakout_price": 21.02,
+    "breakout_box_top": 21.02,
+    "original_grade": "C",
+    "original_tier": "MARGINAL",
+    "original_score": 56,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
