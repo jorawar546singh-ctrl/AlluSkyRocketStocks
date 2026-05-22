@@ -1747,5 +1747,16 @@
     "original_score": 64,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "HPQ",
+    "first_alerted": "2026-05-22T13:58:20",
+    "breakout_price": 25.06,
+    "breakout_box_top": 22.78,
+    "original_grade": "B",
+    "original_tier": "SOLID",
+    "original_score": 72,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
