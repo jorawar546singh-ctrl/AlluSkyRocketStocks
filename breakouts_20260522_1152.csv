@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+INFQ,17.43,16.09,10.32,8.32,41096147,11980070,3.43,15.77,22.66,9.52,3.15,35.86,12.77,True,36.48,68,C+,MARGINAL,🟠
+AKTX,9.52,6.59,3.02,44.41,13287133,134170,99.03,6.46,12.37,32.14,0.93,54.25,5.08,True,87.4,64,C+,MARGINAL,🟠
+RGTI,26.71,22.1,15.46,20.86,97505517,32807865,2.97,21.66,34.72,18.91,1.59,30.05,18.55,True,43.99,61,C+,MARGINAL,🟠
+QBTS,30.5,25.83,17.74,18.06,70847710,30169150,2.35,25.31,39.64,16.99,1.77,31.34,21.49,True,41.88,58,C,MARGINAL,🟠

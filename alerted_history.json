@@ -1736,5 +1736,16 @@
     "original_score": 70,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "AKTX",
+    "first_alerted": "2026-05-22T11:52:27",
+    "breakout_price": 9.52,
+    "breakout_box_top": 6.59,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 64,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
