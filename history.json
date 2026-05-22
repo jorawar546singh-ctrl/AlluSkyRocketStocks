@@ -1,5 +1,21 @@
 [
   {
+    "timestamp": "2026-05-22T16:02:37",
+    "count": 8,
+    "tickers": [
+      "LION",
+      "HPQ",
+      "INFQ",
+      "QBTS",
+      "RGTI",
+      "EL",
+      "AKTX",
+      "BB"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-22T13:58:20",
     "count": 5,
     "tickers": [
@@ -689,18 +705,6 @@
       "OGN",
       "LAC",
       "CRML"
-    ],
-    "clean_count": 1,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-27T13:52:09",
-    "count": 4,
-    "tickers": [
-      "CPRX",
-      "ORKA",
-      "MANE",
-      "OGN"
     ],
     "clean_count": 1,
     "elite_count": 0
