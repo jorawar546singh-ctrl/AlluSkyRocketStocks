@@ -16,7 +16,7 @@ SEND_TELEGRAM = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DASHBOARD_URL = "https://jorawar546singh-ctrl.github.io/ttm-scanner/"
+DASHBOARD_URL = "https://jorawar546singh-ctrl.github.io/AlluSkyRocketStocks/"
 
 
 def script_path(name):
