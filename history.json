@@ -1,5 +1,15 @@
 [
   {
+    "timestamp": "2026-06-06T17:40:49",
+    "count": 2,
+    "tickers": [
+      "COO",
+      "ABM"
+    ],
+    "clean_count": 1,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-05-22T16:02:37",
     "count": 8,
     "tickers": [
@@ -690,21 +700,6 @@
       "KNSA",
       "LFST",
       "CNC"
-    ],
-    "clean_count": 1,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-27T17:38:07",
-    "count": 7,
-    "tickers": [
-      "CPRX",
-      "ORKA",
-      "CLF",
-      "NE",
-      "OGN",
-      "LAC",
-      "CRML"
     ],
     "clean_count": 1,
     "elite_count": 0

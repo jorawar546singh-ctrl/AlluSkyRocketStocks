@@ -1791,5 +1791,27 @@
     "original_score": 61,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "COO",
+    "first_alerted": "2026-06-06T17:40:49",
+    "breakout_price": 67.34,
+    "breakout_box_top": 63.32,
+    "original_grade": "A",
+    "original_tier": "CLEAN",
+    "original_score": 86,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "ABM",
+    "first_alerted": "2026-06-06T17:40:49",
+    "breakout_price": 42.54,
+    "breakout_box_top": 40.74,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 79,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]

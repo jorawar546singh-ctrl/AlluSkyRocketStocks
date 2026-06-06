@@ -1,0 +1,3 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+COO,67.34,63.32,59.14,6.35,9087400,2781650,3.27,62.05,87.54,7.85,3.82,6.6,61.12,True,10.18,86,A,CLEAN,🟢
+ABM,42.54,40.74,38.4,4.42,1387800,466240,2.98,39.93,55.3,6.15,4.88,5.74,39.73,True,7.08,79,B+,SOLID,🟡
