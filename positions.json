@@ -5,22 +5,5 @@
     "When a stop hits, Telegram pings you, you sell in your broker, then delete that entry.",
     "Fields: ticker, shares, entry_price, entry_date (YYYY-MM-DD), initial_stop, notes (optional)."
   ],
-  "positions": [
-    {
-      "ticker": "STUB",
-      "shares": 35,
-      "entry_price": 8.70,
-      "entry_date": "2026-05-19",
-      "initial_stop": 8.45,
-      "notes": "StubHub. TFSA. Stop-limit $8.45/$8.40 at broker, 35 shares. Bought post-earnings."
-    },
-    {
-      "ticker": "SAIL",
-      "shares": 53,
-      "entry_price": 14.32,
-      "entry_date": "2026-05-19",
-      "initial_stop": 13.17,
-      "notes": "SailPoint. TFSA. Stop-limit $13.17 at broker, 53 shares. Bought after ~24% weekly run."
-    }
-  ]
+  "positions": []
 }
