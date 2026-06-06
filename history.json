@@ -1,5 +1,15 @@
 [
   {
+    "timestamp": "2026-06-06T18:24:20",
+    "count": 2,
+    "tickers": [
+      "COO",
+      "ABM"
+    ],
+    "clean_count": 1,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-06-06T17:40:49",
     "count": 2,
     "tickers": [
@@ -687,19 +697,6 @@
       "PII",
       "SEI",
       "OGN"
-    ],
-    "clean_count": 1,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-28T14:11:17",
-    "count": 5,
-    "tickers": [
-      "CECO",
-      "OMCL",
-      "KNSA",
-      "LFST",
-      "CNC"
     ],
     "clean_count": 1,
     "elite_count": 0
