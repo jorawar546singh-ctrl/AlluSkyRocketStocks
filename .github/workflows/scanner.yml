@@ -51,6 +51,13 @@ jobs:
           TZ: America/New_York
         run: python streak_tracker.py
 
+      - name: Run digest
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: America/New_York
+        run: python telegram_digest.py
+
       - name: Run position tracker
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
