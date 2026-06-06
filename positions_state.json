@@ -1,41 +1,4 @@
 {
-  "positions": [
-    {
-      "ticker": "STUB",
-      "entry_price": 8.7,
-      "entry_date": "2026-05-19",
-      "shares": 35.0,
-      "initial_stop": 8.45,
-      "last_price": 9.29,
-      "running_high": 10.31,
-      "current_stop": 8.7,
-      "stop_rule": "breakeven",
-      "gain_pct": 6.78,
-      "high_gain_pct": 18.51,
-      "pl_dollars": 20.65,
-      "last_milestone": 10,
-      "status": "open",
-      "last_checked": "2026-06-06T18:24:46",
-      "notes": "StubHub. TFSA. Stop-limit $8.45/$8.40 at broker, 35 shares. Bought post-earnings."
-    },
-    {
-      "ticker": "SAIL",
-      "entry_price": 14.32,
-      "entry_date": "2026-05-19",
-      "shares": 53.0,
-      "initial_stop": 13.17,
-      "last_price": 18.24,
-      "running_high": 19.125,
-      "current_stop": 17.7862,
-      "stop_rule": "trail_7",
-      "gain_pct": 27.37,
-      "high_gain_pct": 33.55,
-      "pl_dollars": 207.76,
-      "last_milestone": 20,
-      "status": "open",
-      "last_checked": "2026-06-06T18:24:46",
-      "notes": "SailPoint. TFSA. Stop-limit $13.17 at broker, 53 shares. Bought after ~24% weekly run."
-    }
-  ],
-  "updated": "2026-06-06T18:24:46"
+  "positions": [],
+  "updated": "2026-06-06T16:45:57"
 }
