@@ -193,7 +193,7 @@
     margin-right: 3px;
   }
 
-  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
   .stat { background: var(--bg-card); border: 1px solid var(--line); padding: 16px 18px; position: relative; overflow: hidden; }
   .stat::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--green); }
   .stat.red::before { background: var(--red); }
@@ -323,6 +323,309 @@
     .stack-item .k { font-size: 9px; letter-spacing: 0.15em; }
     .stack-item .v { font-size: 12px; }
   }
+
+  /* === JOURNAL LINK === */
+  .journal-link {
+    background: transparent;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 7px 12px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.15s;
+    display: inline-block;
+  }
+  .journal-link:hover, .journal-link:active {
+    background: var(--amber);
+    color: var(--bg);
+    box-shadow: 0 0 24px rgba(255, 181, 69, 0.4);
+  }
+
+  /* === ACCOUNT SIZE INPUT === */
+  .account-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--line-hot);
+    padding: 5px 10px;
+  }
+  .account-input-wrap .lab {
+    font-size: 9.5px;
+    letter-spacing: 0.15em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .account-input-wrap .sym {
+    color: var(--green);
+    font-weight: 700;
+  }
+  #accountSize {
+    background: transparent;
+    color: var(--green);
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    width: 72px;
+    text-align: right;
+    padding: 0;
+    outline: none;
+  }
+  #accountSize::-webkit-inner-spin-button,
+  #accountSize::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* === SIZING PILL (on cards) === */
+  .sizing {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 255, 157, 0.06);
+    border: 1px solid rgba(0, 255, 157, 0.3);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+  .sizing.warn {
+    background: rgba(255, 181, 69, 0.06);
+    border-color: rgba(255, 181, 69, 0.3);
+  }
+  .sizing.bad {
+    background: rgba(255, 51, 85, 0.06);
+    border-color: rgba(255, 51, 85, 0.3);
+  }
+  .sizing .sz-label {
+    font-size: 8.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    font-weight: 700;
+  }
+  .sizing .sz-main {
+    color: var(--green);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .sizing.warn .sz-main { color: var(--amber); }
+  .sizing.bad  .sz-main { color: var(--red); }
+  .sizing .sz-sub {
+    color: var(--fg-dim);
+    font-size: 10px;
+    margin-left: auto;
+  }
+
+  /* === THRESHOLD FILTERS === */
+  .threshold-controls {
+    border-top: 1px dashed var(--line-hot);
+    padding-top: 10px;
+    margin-top: -4px;
+  }
+  .num-input {
+    background: var(--bg-elev);
+    color: var(--fg);
+    border: 1px solid var(--line-hot);
+    padding: 5px 8px;
+    font-family: inherit;
+    font-size: 11px;
+    width: 56px;
+    text-align: center;
+  }
+  .num-input:focus { outline: 1px solid var(--green-dim); }
+  .num-input::-webkit-inner-spin-button,
+  .num-input::-webkit-outer-spin-button { opacity: 0.4; }
+  .range-sep { color: var(--fg-faint); font-size: 11px; padding: 0 2px; }
+  #clearThresholds {
+    width: auto;
+    padding: 0 12px;
+    font-size: 9.5px;
+    letter-spacing: 0.15em;
+    color: var(--fg-dim);
+  }
+  #clearThresholds:hover { color: var(--amber); border-color: var(--amber); }
+
+
+  /* === FRESH badge for stocks alerted today === */
+  .fresh-badge {
+    display: inline-block;
+    background: rgba(80, 230, 130, 0.18);
+    color: var(--green);
+    border: 1px solid rgba(80, 230, 130, 0.55);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    margin-left: 6px;
+    text-transform: uppercase;
+    animation: freshPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes freshPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(80, 230, 130, 0); }
+    50% { box-shadow: 0 0 8px 2px rgba(80, 230, 130, 0.35); }
+  }
+  .stack-card.is-fresh { border-color: rgba(80, 230, 130, 0.45); box-shadow: 0 0 14px rgba(80, 230, 130, 0.12); }
+  tr.is-fresh td { background: rgba(80, 230, 130, 0.04); }
+
+  /* === COLLAPSIBLE SECTIONS === */
+  .collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .collapsible-header:hover .collapse-btn { color: var(--green); }
+  .collapse-btn {
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: transform 0.2s, color 0.15s;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+  .section-collapsed .collapse-btn {
+    transform: rotate(-90deg);
+  }
+  .section-collapsed .collapsible-body {
+    display: none;
+  }
+  .section-collapsed .panel-header-row,
+  .section-collapsed .panel-head {
+    border-bottom-color: transparent;
+    margin-bottom: 0;
+    padding-bottom: 4px;
+  }
+
+  /* === BIGGEST GAINERS RANKING === */
+  .gainer-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 110px 160px 70px 80px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+    transition: background 0.15s;
+  }
+  .gainer-row:hover { background: #181f24; }
+  .gainer-row.top-3 { background: rgba(255, 210, 74, 0.04); }
+  .gainer-row .rank {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--fg-faint);
+    text-align: right;
+  }
+  .gainer-row.top-3 .rank { color: var(--gold); }
+  .gainer-row .gn-ticker {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--fg);
+  }
+  .gainer-row .gn-grade {
+    font-size: 10px;
+    color: var(--fg-dim);
+    margin-left: 6px;
+    letter-spacing: 0.1em;
+  }
+  .gainer-row .gn-gain {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--green);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .gainer-row .gn-prices {
+    font-size: 10.5px;
+    color: var(--fg-dim);
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .gainer-row .gn-age {
+    font-size: 11px;
+    color: var(--fg-dim);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .gainer-row .gn-status {
+    text-align: right;
+  }
+  .gainer-row .gn-status .pos-tag {
+    margin-left: 0;
+    font-size: 8.5px;
+    padding: 2px 6px;
+  }
+  .gainer-header {
+    display: grid;
+    grid-template-columns: 36px 1fr 110px 160px 70px 80px;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line-hot);
+    font-size: 9.5px;
+    letter-spacing: 0.15em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .gainer-header > div:nth-child(3),
+  .gainer-header > div:nth-child(4),
+  .gainer-header > div:nth-child(5),
+  .gainer-header > div:nth-child(6) { text-align: right; }
+
+  @media (max-width: 760px) {
+    /* Mobile: stack each gainer card */
+    .gainer-header { display: none; }
+    .gainer-row {
+      grid-template-columns: 1fr auto;
+      gap: 4px 12px;
+      padding: 10px;
+    }
+    .gainer-row .rank {
+      grid-row: 1;
+      grid-column: 1;
+      text-align: left;
+      font-size: 11px;
+      color: var(--fg-faint);
+      width: auto;
+    }
+    .gainer-row .rank::before { content: '#'; }
+    .gainer-row .gn-ticker {
+      grid-row: 1;
+      grid-column: 1;
+      padding-left: 32px;
+      font-size: 17px;
+    }
+    .gainer-row .gn-gain {
+      grid-row: 1;
+      grid-column: 2;
+      font-size: 18px;
+    }
+    .gainer-row .gn-prices {
+      grid-row: 2;
+      grid-column: 1;
+      padding-left: 32px;
+      text-align: left;
+      font-size: 10.5px;
+    }
+    .gainer-row .gn-age {
+      grid-row: 2;
+      grid-column: 2;
+      text-align: right;
+      font-size: 10px;
+    }
+    .gainer-row .gn-status { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -336,26 +639,35 @@
     <div><span class="dot"></span><span class="lab">Live</span></div>
     <div><span class="lab">Last</span> <span class="val" id="lastScan">—</span></div>
     <div><span class="lab">Next</span> <span class="val" id="nextScan">—</span></div>
+    <div class="account-input-wrap" title="Risk math is based on this. Default $1800. Saved locally.">
+      <span class="lab">Acct</span>
+      <span class="sym">$</span>
+      <input type="number" id="accountSize" min="100" step="50" value="1800">
+    </div>
+    <a class="journal-link" href="https://github.com/jorawar546singh-ctrl/ttm-scanner/blob/main/trades.md" target="_blank" rel="noopener">📓 Journal</a>
     <button id="refreshBtn">↻</button>
   </div>
 </header>
 
 <main>
-  <div class="panel">
-    <div class="panel-header-row">
+  <div class="panel" data-section="positions">
+    <div class="panel-header-row collapsible-header">
       <h2 class="pos-title">Open Positions</h2>
       <span class="note" id="posCount">—</span>
       <span class="right total-pl" id="totalPl">—</span>
     </div>
-    <div id="posWrap"></div>
-    <div class="stack-list" id="posStack"></div>
+    <div class="collapsible-body">
+      <div id="posWrap"></div>
+      <div class="stack-list" id="posStack"></div>
+    </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-header-row">
+  <div class="panel" data-section="watchlist">
+    <div class="panel-header-row collapsible-header">
       <h2 style="color: var(--fire)">🔥 Trending Watchlist</h2>
       <span class="note" id="streakCount">—</span>
     </div>
+    <div class="collapsible-body">
 
     <!-- SORT + FILTER CONTROLS -->
     <div class="controls">
@@ -365,7 +677,6 @@
           <option value="current_streak">Streak</option>
           <option value="pct_from_breakout">Gain %</option>
           <option value="days_since_breakout">Age</option>
-          <option value="original_grade">Grade</option>
           <option value="ticker">Ticker</option>
         </select>
         <button class="dir-btn" id="sortDir" title="Toggle sort direction">↓</button>
@@ -375,31 +686,81 @@
         <span class="chip" data-filter="trending">🔥 Trending</span>
         <span class="chip" data-filter="fading">⚠ Fading</span>
         <span class="chip" data-filter="watching">Watching</span>
-        <span class="chip" data-filter="cleangrade">A-grade</span>
         <span class="chip" data-filter="todaysignal">Today: Vol+Box</span>
       </div>
       <span class="results-meta" id="resultsMeta"></span>
     </div>
 
+    <!-- THRESHOLD FILTERS (combine with chips above) -->
+    <div class="controls threshold-controls">
+      <div class="control-group">
+        <span class="control-label">Streak ≥</span>
+        <input type="number" class="num-input" id="minStreak" min="0" max="99" value="0">
+      </div>
+      <div class="control-group">
+        <span class="control-label">Age</span>
+        <input type="number" class="num-input" id="minAge" min="0" max="999" placeholder="min">
+        <span class="range-sep">–</span>
+        <input type="number" class="num-input" id="maxAge" min="0" max="999" placeholder="max">
+        <span class="control-label">d</span>
+      </div>
+      <div class="filter-chips">
+        <span class="chip threshold-chip" data-thresh="vol">Vol ✓ today</span>
+        <span class="chip threshold-chip" data-thresh="box">Box ✓ today</span>
+      </div>
+      <button class="dir-btn" id="clearThresholds" title="Reset threshold filters">CLEAR</button>
+    </div>
+
     <div id="streakWrap"></div>
     <div class="stack-list" id="streakStack"></div>
+    </div>
   </div>
 
-  <div class="stat-row">
-    <div class="stat gold"><div class="label">🌟 ELITE</div><div class="value" id="statElite">—</div><div class="meta">Tech + fundamentals</div></div>
-    <div class="stat"><div class="label">A-grade</div><div class="value" id="statClean">—</div><div class="meta">CLEAN setups</div></div>
-    <div class="stat amber"><div class="label">Total</div><div class="value" id="statCount">—</div><div class="meta" id="statCountMeta">All tiers</div></div>
-    <div class="stat red"><div class="label">Avg Risk</div><div class="value" id="statRisk">—</div><div class="meta">Entry → stop</div></div>
+  <div class="panel" data-section="gainers">
+    <div class="panel-header-row collapsible-header">
+      <h2 style="color: var(--gold)">📈 Biggest Gainers Since Alert</h2>
+      <span class="note" id="gainersCount">—</span>
+      <span class="right" style="font-size:10px;letter-spacing:.15em;color:var(--fg-dim);text-transform:uppercase">Study these. Did I take them?</span>
+    </div>
+    <div class="collapsible-body">
+
+    <!-- GAINERS CONTROLS -->
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">Window</span>
+        <select class="sort-select" id="gainerWindow">
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="0">All time</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <span class="control-label">Top</span>
+        <select class="sort-select" id="gainerLimit">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <span class="results-meta" id="gainersMeta"></span>
+    </div>
+
+    <div id="gainersWrap"></div>
+    </div>
   </div>
 
-  <div id="tiersWrap"></div>
 
-  <div class="history">
-    <div class="panel-head">
+
+
+  <div class="history" data-section="history">
+    <div class="panel-head collapsible-header">
       <h2>Scan History</h2>
       <span class="muted">Gold=ELITE · Green=CLEAN</span>
     </div>
-    <div class="hist-row" id="histRow"></div>
+    <div class="collapsible-body">
+      <div class="hist-row" id="histRow"></div>
+    </div>
   </div>
 </main>
 
@@ -411,10 +772,151 @@ const LATEST='latest.json', HIST='history.json',
 const $ = s => document.querySelector(s);
 const fmtTime = iso => { if(!iso) return '—'; const d=new Date(iso); return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})+' · '+d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); };
 
-// === Sort/filter state (resets on page load per user's choice) ===
-let streakSort = { by: 'current_streak', desc: true };
-let streakFilter = 'all';
+// === Persistent state: sort, filter, thresholds, collapsibility ===
+const WATCHLIST_STORAGE_KEY = 'ttm_watchlist_state';
+const GAINERS_STORAGE_KEY = 'ttm_gainers_state';
+const COLLAPSE_STORAGE_KEY = 'ttm_collapsed_sections';
+
+function loadState(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key));
+    return (v && typeof v === 'object') ? { ...fallback, ...v } : fallback;
+  } catch { return fallback; }
+}
+function saveState(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
+const watchlistDefaults = {
+  sortBy: 'current_streak',
+  sortDesc: true,
+  filter: 'all',
+  minStreak: 0,
+  minAge: null,
+  maxAge: null,
+  reqVol: false,
+  reqBox: false,
+};
+const _wl = loadState(WATCHLIST_STORAGE_KEY, watchlistDefaults);
+let streakSort = { by: _wl.sortBy, desc: _wl.sortDesc };
+let streakFilter = _wl.filter;
+let thresholds = {
+  minStreak: _wl.minStreak,
+  minAge: _wl.minAge,
+  maxAge: _wl.maxAge,
+  reqVol: _wl.reqVol,
+  reqBox: _wl.reqBox,
+};
 let cachedStreaks = [];
+
+function persistWatchlistState() {
+  saveState(WATCHLIST_STORAGE_KEY, {
+    sortBy: streakSort.by,
+    sortDesc: streakSort.desc,
+    filter: streakFilter,
+    ...thresholds,
+  });
+}
+
+const gainersDefaults = { window: 7, limit: 20 };
+const _gn = loadState(GAINERS_STORAGE_KEY, gainersDefaults);
+let gainerWindow = _gn.window;
+let gainerLimit = _gn.limit;
+function persistGainersState() {
+  saveState(GAINERS_STORAGE_KEY, { window: gainerWindow, limit: gainerLimit });
+}
+
+// Collapsible sections state (which sections are collapsed)
+function loadCollapsedState() {
+  try { return JSON.parse(localStorage.getItem(COLLAPSE_STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveCollapsedState(state) {
+  try { localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+// Initialize collapsibility on all [data-section] panels currently in the DOM.
+// Safe to call multiple times -- guards against double-binding.
+function initCollapsibles() {
+  const state = loadCollapsedState();
+  document.querySelectorAll('[data-section]').forEach(panel => {
+    if (panel.dataset.collapseInit === '1') return;  // already wired
+    panel.dataset.collapseInit = '1';
+    const id = panel.dataset.section;
+    if (state[id]) panel.classList.add('section-collapsed');
+
+    const header = panel.querySelector('.collapsible-header');
+    if (!header) return;
+    if (!header.querySelector('.collapse-btn')) {
+      const btn = document.createElement('button');
+      btn.className = 'collapse-btn';
+      btn.innerHTML = '▼';
+      btn.title = 'Collapse / expand';
+      header.appendChild(btn);
+    }
+    header.addEventListener('click', (e) => {
+      // Ignore clicks on actual interactive children (links, buttons, inputs)
+      if (e.target.closest('a, input, select') ||
+          (e.target.tagName === 'BUTTON' && !e.target.classList.contains('collapse-btn'))) return;
+      panel.classList.toggle('section-collapsed');
+      const cur = loadCollapsedState();
+      cur[id] = panel.classList.contains('section-collapsed');
+      saveCollapsedState(cur);
+    });
+  });
+}
+
+// === Account size (persists in localStorage) ===
+const ACCOUNT_STORAGE_KEY = 'ttm_account_size';
+const RISK_PCT = 0.02;  // 2% hard-coded. The whole point is that this doesn't move.
+
+function getAccountSize() {
+  const stored = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+  const v = parseFloat(stored);
+  return (v && v > 0) ? v : 1800;
+}
+
+function setAccountSize(v) {
+  if (v > 0) localStorage.setItem(ACCOUNT_STORAGE_KEY, String(v));
+}
+
+// Position-sizing math. Returns null if entry/stop are invalid.
+// Returns { shares, cost, pctOfAccount, tooExpensive } where tooExpensive
+// means even one share would exceed the 2% risk budget (very rare).
+function sizingFor(entryPrice, stopPrice) {
+  const entry = Number(entryPrice);
+  const stop = Number(stopPrice);
+  if (!(entry > 0) || !(stop > 0) || stop >= entry) return null;
+  const account = getAccountSize();
+  const budget = account * RISK_PCT;
+  const riskPerShare = entry - stop;
+  const maxShares = Math.floor(budget / riskPerShare);
+  const cost = maxShares * entry;
+  const pctOfAccount = (cost / account) * 100;
+  return {
+    shares: maxShares,
+    cost: cost,
+    pctOfAccount: pctOfAccount,
+    riskPerShare: riskPerShare,
+    budget: budget,
+    tooExpensive: maxShares < 1,
+  };
+}
+
+// Renders the green sizing pill. `label` describes basis.
+function sizingPill(entryPrice, stopPrice, label) {
+  const sz = sizingFor(entryPrice, stopPrice);
+  if (!sz) return '';
+  const lab = label || 'SIZE @ 2% RISK';
+  if (sz.tooExpensive) {
+    return `<div class="sizing bad"><span class="sz-label">${lab}</span>` +
+           `<span class="sz-main">0 shares</span>` +
+           `<span class="sz-sub">Too expensive for $${getAccountSize().toFixed(0)} acct</span></div>`;
+  }
+  const cls = sz.pctOfAccount > 50 ? 'warn' : '';
+  return `<div class="sizing ${cls}"><span class="sz-label">${lab}</span>` +
+         `<span class="sz-main">${sz.shares} shares · $${sz.cost.toFixed(2)}</span>` +
+         `<span class="sz-sub">${sz.pctOfAccount.toFixed(0)}% of acct</span></div>`;
+}
 
 function sparkline(values, w=340, h=40){
   if(!values||values.length<2) return '';
@@ -457,22 +959,11 @@ function renderCard(h){
   const tierClass=(isElite?'elite ':'')+h.tier.toLowerCase();
   const sb=h.score_breakdown||{}, fb=h.fund_breakdown;
   const riskClass=h.risk_pct<=7?'pos':(h.risk_pct<=10?'warn':'neg');
-  const gradeLabel=isElite?`🌟 ELITE · ${h.fund_score}`:`${h.grade} · ${h.tier}`;
+  const gradeLabel=isElite?`🌟 ELITE · ${h.fund_score}`:`${h.tier}`;
   const fundSection=fb?`<div class="breakdown"><div class="bd-title">Fundamentals · ${h.fund_score}/100 ${h.fund_tag?'· '+h.fund_tag:''}</div>${barRow('Earnings',fb.earnings,20,isElite?'gold':null)}${barRow('Value',fb.value,20,isElite?'gold':null)}${barRow('Leader',fb.leader,20,isElite?'gold':null)}${barRow('Balance',fb.balance,20,isElite?'gold':null)}${barRow('Smart $',fb.smart_money,20,isElite?'gold':null)}</div>`:'';
-  return `<div class="card ${tierClass}"><div class="grade-badge">${gradeLabel}</div><div class="ticker-row"><div class="ticker">${h.ticker}</div><div class="price">$${h.price}</div></div><div class="score-row"><span>Technical</span><span class="score-num">${h.score}</span><span>/100</span></div>${sparkline(h.spark)}<div class="breakdown"><div class="bd-title">Technical breakdown</div>${barRow('Volume',sb.volume||0)}${barRow('Clarity',sb.clarity||0)}${barRow('Box Quality',sb.box_quality||0)}${barRow('Risk/Reward',sb.risk_reward||0)}${barRow('Trend',sb.trend||0)}</div>${fundSection}<div class="metrics"><div><div class="k">Entry</div><div class="v">$${h.price}</div></div><div><div class="k">Vol Ratio</div><div class="v pos">${h.vol_ratio}×</div></div><div><div class="k">Stop</div><div class="v neg">$${h.suggested_stop}</div></div><div><div class="k">Target</div><div class="v pos">$${h.target_30pct}</div></div><div><div class="k">Risk</div><div class="v ${riskClass}">${h.risk_pct}%</div></div><div><div class="k">R/R</div><div class="v">${h.rr_ratio}:1</div></div></div>${slBlock(h.suggested_stop)}<div class="links"><a href="https://finance.yahoo.com/quote/${h.ticker}" target="_blank" rel="noopener">Yahoo</a><a href="https://finviz.com/quote.ashx?t=${h.ticker}" target="_blank" rel="noopener">Finviz</a><a href="https://www.tradingview.com/symbols/${h.ticker}/" target="_blank" rel="noopener">TV</a></div></div>`;
+  return `<div class="card ${tierClass}"><div class="grade-badge">${gradeLabel}</div><div class="ticker-row"><div class="ticker">${h.ticker}</div><div class="price">$${h.price}</div></div><div class="score-row"><span>Technical</span><span class="score-num">${h.score}</span><span>/100</span></div>${sparkline(h.spark)}<div class="breakdown"><div class="bd-title">Technical breakdown</div>${barRow('Volume',sb.volume||0)}${barRow('Clarity',sb.clarity||0)}${barRow('Box Quality',sb.box_quality||0)}${barRow('Risk/Reward',sb.risk_reward||0)}${barRow('Trend',sb.trend||0)}</div>${fundSection}<div class="metrics"><div><div class="k">Entry</div><div class="v">$${h.price}</div></div><div><div class="k">Vol Ratio</div><div class="v pos">${h.vol_ratio}×</div></div><div><div class="k">Stop</div><div class="v neg">$${h.suggested_stop}</div></div><div><div class="k">Target</div><div class="v pos">$${h.target_30pct}</div></div><div><div class="k">Risk</div><div class="v ${riskClass}">${h.risk_pct}%</div></div><div><div class="k">R/R</div><div class="v">${h.rr_ratio}:1</div></div></div>${slBlock(h.suggested_stop)}${sizingPill(h.price, h.suggested_stop)}<div class="links"><a href="https://finance.yahoo.com/quote/${h.ticker}" target="_blank" rel="noopener">Yahoo</a><a href="https://finviz.com/quote.ashx?t=${h.ticker}" target="_blank" rel="noopener">Finviz</a><a href="https://www.tradingview.com/symbols/${h.ticker}/" target="_blank" rel="noopener">TV</a></div></div>`;
 }
 
-function renderTiers(hits){
-  const elite=hits.filter(h=>h.fund_tag==='ELITE');
-  const buckets={CLEAN:[],SOLID:[],MARGINAL:[],WEAK:[]};
-  hits.forEach(h=>{if(h.fund_tag==='ELITE')return;(buckets[h.tier]||buckets.WEAK).push(h);});
-  let html=''; let any=false;
-  if(elite.length){any=true;html+=`<div class="tier-section"><div class="panel-head"><h2 style="color:var(--gold)">🌟 ELITE Signals</h2><span class="count">${elite.length}</span><span class="muted">Tech + fundamentals aligned</span></div><div class="grid">${elite.map(renderCard).join('')}</div></div>`;}
-  const sections=[{key:'CLEAN',label:'🟢 Primary (A-grade Darvas)',cls:'clean'},{key:'SOLID',label:'🟡 Solid Setups',cls:'solid'},{key:'MARGINAL',label:'🟠 Marginal Setups',cls:'marginal'},{key:'WEAK',label:'🔴 Weak Setups',cls:'weak'}];
-  for(const s of sections){const items=buckets[s.key];if(!items.length)continue;any=true;html+=`<div class="tier-section"><div class="panel-head"><h2 class="${s.cls}">${s.label}</h2><span class="count">${items.length}</span></div><div class="grid">${items.map(renderCard).join('')}</div></div>`;}
-  if(!any) html=`<div class="empty"><div class="big">No breakouts right now</div><div class="sub">Patience is the edge.</div></div>`;
-  $('#tiersWrap').innerHTML=html;
-}
 
 function renderPositions(data){
   const positions=data.positions||[];
@@ -525,9 +1016,27 @@ function applyFilter(streaks, filter) {
   return streaks;
 }
 
+function applyThresholds(streaks, t) {
+  return streaks.filter(s => {
+    const streak = s.current_streak ?? 0;
+    const age = s.days_since_breakout ?? 0;
+    if (streak < t.minStreak) return false;
+    if (t.minAge !== null && age < t.minAge) return false;
+    if (t.maxAge !== null && age > t.maxAge) return false;
+    if (t.reqVol && !s.volume_ok_today) return false;
+    if (t.reqBox && !s.new_box_break_today) return false;
+    return true;
+  });
+}
+
 function applySort(streaks, by, desc) {
   const sorted = [...streaks];
   sorted.sort((a, b) => {
+    // Always pin today's breakouts to the top, regardless of selected sort
+    const af = a.today_alerted ? 1 : 0;
+    const bf = b.today_alerted ? 1 : 0;
+    if (af !== bf) return bf - af;
+
     let av, bv;
     if (by === 'ticker') { av = a.ticker || ''; bv = b.ticker || ''; }
     else if (by === 'original_grade') {
@@ -557,7 +1066,8 @@ function renderStreakList() {
   }
 
   const filtered = applyFilter(cachedStreaks, streakFilter);
-  const sorted = applySort(filtered, streakSort.by, streakSort.desc);
+  const thresholded = applyThresholds(filtered, thresholds);
+  const sorted = applySort(thresholded, streakSort.by, streakSort.desc);
   meta.textContent = `Showing ${sorted.length} of ${cachedStreaks.length}`;
 
   if (!sorted.length) {
@@ -576,9 +1086,11 @@ function renderStreakList() {
     const lateStop = s.today_close * 0.93;  // 7% below current = Darvas late-entry stop
     const slLate = stopLimitPair(lateStop);
     const slCell = slLate ? `<span style="color:var(--red);font-weight:600">$${slLate.stop}</span> <span style="color:var(--fg-faint)">/ $${slLate.limit}</span>` : '—';
-    return `<tr><td><span class="t-ticker">${s.ticker}</span><span class="pos-tag ${statusTag}">${statusLabel}</span></td><td>${s.original_grade||'?'}</td><td>$${s.breakout_price.toFixed(2)} <span style="color:var(--fg-faint)">· ${(s.first_alerted||'').slice(5,10)}</span></td><td>$${s.today_close.toFixed(2)}</td><td class="${gainCls}">${s.pct_from_breakout>=0?'+':''}${s.pct_from_breakout.toFixed(1)}%</td><td>${s.days_since_breakout}d</td><td><strong>${s.current_streak}</strong> <span style="color:var(--fg-faint)">(peak ${s.peak_streak})</span></td><td style="font-size:11px">${slCell}</td><td style="color:var(--fg-dim)">Vol ${volOk} · Box ${boxOk}</td></tr>`;
+    const freshBadge = s.today_alerted ? '<span class="fresh-badge">NEW</span>' : '';
+    const trCls = s.today_alerted ? ' class="is-fresh"' : '';
+    return `<tr${trCls}><td><span class="t-ticker">${s.ticker}</span>${freshBadge}<span class="pos-tag ${statusTag}">${statusLabel}</span></td><td>$${s.breakout_price.toFixed(2)} <span style="color:var(--fg-faint)">· ${(s.first_alerted||'').slice(5,10)}</span></td><td>$${s.today_close.toFixed(2)}</td><td class="${gainCls}">${s.pct_from_breakout>=0?'+':''}${s.pct_from_breakout.toFixed(1)}%</td><td>${s.days_since_breakout}d</td><td><strong>${s.current_streak}</strong> <span style="color:var(--fg-faint)">(peak ${s.peak_streak})</span></td><td style="font-size:11px">${slCell}</td><td style="color:var(--fg-dim)">Vol ${volOk} · Box ${boxOk}</td></tr>`;
   }).join('');
-  tableWrap.innerHTML = `<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Ticker</th><th>Grade</th><th>Breakout</th><th>Now</th><th>Gain</th><th>Age</th><th>Streak</th><th>Stop / Limit*</th><th>Today</th></tr></thead><tbody>${rows}</tbody></table><div style="font-size:9.5px;color:var(--fg-faint);margin-top:8px;letter-spacing:0.05em">* Late-entry stop-limit = 7% below current price (Darvas late-entry rule). For entering a stock already running. Paste straight into Wealthsimple.</div></div>`;
+  tableWrap.innerHTML = `<div class="data-table-wrap"><table class="data-table"><thead><tr><th>Ticker</th><th>Breakout</th><th>Now</th><th>Gain</th><th>Age</th><th>Streak</th><th>Stop / Limit*</th><th>Today</th></tr></thead><tbody>${rows}</tbody></table><div style="font-size:9.5px;color:var(--fg-faint);margin-top:8px;letter-spacing:0.05em">* Late-entry stop-limit = 7% below current price (Darvas late-entry rule). For entering a stock already running. Paste straight into Wealthsimple.</div></div>`;
 
   stackWrap.innerHTML = sorted.map(s => {
     const gainCls = s.pct_from_breakout >= 0 ? 'pl-pos' : 'pl-neg';
@@ -589,8 +1101,77 @@ function renderStreakList() {
     const cardCls = s.status === 'trending' ? 'trending' : (s.status === 'fading' ? 'fading' : '');
     const sign = s.pct_from_breakout >= 0 ? '+' : '';
     const lateStop = s.today_close * 0.93;
-    return `<div class="stack-card ${cardCls}"><div class="stack-head"><div class="ticker">${s.ticker}</div><div class="gain ${gainCls}">${sign}${s.pct_from_breakout.toFixed(1)}%</div></div><div class="stack-grid"><div class="stack-item"><div class="k">Grade</div><div class="v">${s.original_grade||'?'}</div></div><div class="stack-item"><div class="k">Age</div><div class="v">${s.days_since_breakout} days</div></div><div class="stack-item"><div class="k">Breakout</div><div class="v">$${s.breakout_price.toFixed(2)}</div></div><div class="stack-item"><div class="k">Now</div><div class="v">$${s.today_close.toFixed(2)}</div></div><div class="stack-item"><div class="k">Streak</div><div class="v"><strong>${s.current_streak}</strong> (peak ${s.peak_streak})</div></div><div class="stack-item"><div class="k">Today</div><div class="v">${volOk} · ${boxOk}</div></div></div>${slBlock(lateStop, 'IF ENTERING NOW · 7% STOP')}<div class="stack-tags"><span class="pos-tag ${statusTag}">${statusLabel}</span></div></div>`;
+    const freshCls = s.today_alerted ? ' is-fresh' : '';
+    const freshBadge = s.today_alerted ? '<span class="fresh-badge">NEW</span>' : '';
+    return `<div class="stack-card ${cardCls}${freshCls}"><div class="stack-head"><div class="ticker">${s.ticker}${freshBadge}</div><div class="gain ${gainCls}">${sign}${s.pct_from_breakout.toFixed(1)}%</div></div><div class="stack-grid"><div class="stack-item"><div class="k">Age</div><div class="v">${s.days_since_breakout} days</div></div><div class="stack-item"><div class="k">Breakout</div><div class="v">$${s.breakout_price.toFixed(2)}</div></div><div class="stack-item"><div class="k">Now</div><div class="v">$${s.today_close.toFixed(2)}</div></div><div class="stack-item"><div class="k">Streak</div><div class="v"><strong>${s.current_streak}</strong> (peak ${s.peak_streak})</div></div><div class="stack-item"><div class="k">Today</div><div class="v">${volOk} · ${boxOk}</div></div></div>${slBlock(lateStop, 'IF ENTERING NOW · 7% STOP')}${sizingPill(s.today_close, lateStop, 'SIZE @ 2% RISK · LATE ENTRY')}<div class="stack-tags"><span class="pos-tag ${statusTag}">${statusLabel}</span></div></div>`;
   }).join('');
+}
+
+// === BIGGEST GAINERS RANKING ===
+function renderGainers() {
+  const wrap = $('#gainersWrap');
+  const cnt = $('#gainersCount');
+  const meta = $('#gainersMeta');
+
+  if (!cachedStreaks.length) {
+    wrap.innerHTML = '<div class="empty-row"><div class="big">No data yet</div>Alerts will appear here once the scanner has run for a few days.</div>';
+    cnt.textContent = '';
+    meta.textContent = '';
+    return;
+  }
+
+  // Filter by window (days since first alert)
+  let eligible = cachedStreaks.filter(s => s.pct_from_breakout != null);
+  if (gainerWindow > 0) {
+    eligible = eligible.filter(s => (s.days_since_breakout || 0) <= gainerWindow);
+  }
+
+  // Sort by post-breakout peak gain so we capture the *full move*, not just current.
+  // pct_from_breakout uses current price; for "biggest gainers" we want what the
+  // stock did at its best, since that's what a Darvas trailing stop would have caught.
+  const ranked = [...eligible].sort((a, b) => {
+    const aPeak = a.post_breakout_high && a.breakout_price
+      ? ((a.post_breakout_high - a.breakout_price) / a.breakout_price * 100)
+      : (a.pct_from_breakout || 0);
+    const bPeak = b.post_breakout_high && b.breakout_price
+      ? ((b.post_breakout_high - b.breakout_price) / b.breakout_price * 100)
+      : (b.pct_from_breakout || 0);
+    return bPeak - aPeak;
+  });
+
+  const shown = ranked.slice(0, gainerLimit);
+  cnt.textContent = `${eligible.length} eligible`;
+  meta.textContent = `Top ${shown.length} of ${eligible.length}`;
+
+  if (!shown.length) {
+    wrap.innerHTML = '<div class="empty-row">No tickers in this window.</div>';
+    return;
+  }
+
+  const header = `<div class="gainer-header"><div>#</div><div>Ticker</div><div>Peak Gain</div><div>Entry → Peak</div><div>Age</div><div>Status</div></div>`;
+  const rows = shown.map((s, idx) => {
+    const rank = idx + 1;
+    const topCls = rank <= 3 ? 'top-3' : '';
+    const peakGain = s.post_breakout_high && s.breakout_price
+      ? ((s.post_breakout_high - s.breakout_price) / s.breakout_price * 100)
+      : (s.pct_from_breakout || 0);
+    const statusTag = s.status === 'trending' ? 'trending'
+                    : s.status === 'fading' ? 'fading' : 'fresh';
+    const statusLabel = (s.status || 'fresh').toUpperCase();
+    const peakPrice = s.post_breakout_high
+      ? `$${s.post_breakout_high.toFixed(2)}`
+      : `$${(s.today_close || s.breakout_price).toFixed(2)}`;
+    return `<div class="gainer-row ${topCls}">` +
+      `<div class="rank">${rank}</div>` +
+      `<div class="gn-ticker">${s.ticker}</div>` +
+      `<div class="gn-gain">+${peakGain.toFixed(1)}%</div>` +
+      `<div class="gn-prices">$${s.breakout_price.toFixed(2)} → ${peakPrice}</div>` +
+      `<div class="gn-age">${s.days_since_breakout}d ago</div>` +
+      `<div class="gn-status"><span class="pos-tag ${statusTag}">${statusLabel}</span></div>` +
+      `</div>`;
+  }).join('');
+
+  wrap.innerHTML = header + rows;
 }
 
 function setStreaks(data) {
@@ -604,17 +1185,20 @@ function setStreaks(data) {
     cnt.textContent = `${cachedStreaks.length} tracked · ${trending} trending · ${fading} fading`;
   }
   renderStreakList();
+  renderGainers();
 }
 
 // === Sort/filter event handlers ===
 $('#sortBy').addEventListener('change', e => {
   streakSort.by = e.target.value;
   renderStreakList();
+  persistWatchlistState();
 });
 $('#sortDir').addEventListener('click', () => {
   streakSort.desc = !streakSort.desc;
   $('#sortDir').textContent = streakSort.desc ? '↓' : '↑';
   renderStreakList();
+  persistWatchlistState();
 });
 document.querySelectorAll('#filterChips .chip').forEach(chip => {
   chip.addEventListener('click', () => {
@@ -622,33 +1206,102 @@ document.querySelectorAll('#filterChips .chip').forEach(chip => {
     chip.classList.add('active');
     streakFilter = chip.dataset.filter;
     renderStreakList();
+    persistWatchlistState();
   });
 });
+
+// === Gainers controls ===
+$('#gainerWindow').addEventListener('change', e => {
+  gainerWindow = parseInt(e.target.value) || 0;
+  renderGainers();
+  persistGainersState();
+});
+$('#gainerLimit').addEventListener('change', e => {
+  gainerLimit = parseInt(e.target.value) || 20;
+  renderGainers();
+  persistGainersState();
+});
+
+// === Threshold filter handlers ===
+$('#minStreak').addEventListener('input', e => {
+  thresholds.minStreak = parseInt(e.target.value) || 0;
+  renderStreakList();
+  persistWatchlistState();
+});
+$('#minAge').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  thresholds.minAge = isNaN(v) ? null : v;
+  renderStreakList();
+  persistWatchlistState();
+});
+$('#maxAge').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  thresholds.maxAge = isNaN(v) ? null : v;
+  renderStreakList();
+  persistWatchlistState();
+});
+document.querySelectorAll('.threshold-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('active');
+    const which = chip.dataset.thresh;
+    if (which === 'vol') thresholds.reqVol = chip.classList.contains('active');
+    if (which === 'box') thresholds.reqBox = chip.classList.contains('active');
+    renderStreakList();
+    persistWatchlistState();
+  });
+});
+$('#clearThresholds').addEventListener('click', () => {
+  thresholds = { minStreak: 0, minAge: null, maxAge: null, reqVol: false, reqBox: false };
+  $('#minStreak').value = 0;
+  $('#minAge').value = '';
+  $('#maxAge').value = '';
+  document.querySelectorAll('.threshold-chip').forEach(c => c.classList.remove('active'));
+  renderStreakList();
+  persistWatchlistState();
+});
+
+// === Restore saved control values on page load (sort/filter/threshold/gainers) ===
+(function restoreUIFromState() {
+  // Sort dropdown
+  const sortSel = $('#sortBy');
+  if (sortSel) sortSel.value = streakSort.by;
+  const sortDir = $('#sortDir');
+  if (sortDir) sortDir.textContent = streakSort.desc ? '↓' : '↑';
+
+  // Filter chip
+  document.querySelectorAll('#filterChips .chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filter === streakFilter);
+  });
+
+  // Threshold inputs
+  if ($('#minStreak')) $('#minStreak').value = thresholds.minStreak || 0;
+  if ($('#minAge'))    $('#minAge').value    = thresholds.minAge != null ? thresholds.minAge : '';
+  if ($('#maxAge'))    $('#maxAge').value    = thresholds.maxAge != null ? thresholds.maxAge : '';
+
+  // Threshold chips
+  document.querySelectorAll('.threshold-chip').forEach(c => {
+    if (c.dataset.thresh === 'vol') c.classList.toggle('active', thresholds.reqVol);
+    if (c.dataset.thresh === 'box') c.classList.toggle('active', thresholds.reqBox);
+  });
+
+  // Gainers controls
+  if ($('#gainerWindow')) $('#gainerWindow').value = String(gainerWindow);
+  if ($('#gainerLimit'))  $('#gainerLimit').value  = String(gainerLimit);
+})();
+
+// === Init collapsibility for static panels (tier sections init after render) ===
+initCollapsibles();
 
 async function loadAll(){
   document.body.classList.add('scanning');
   try{
     const res=await fetch(LATEST+'?_='+Date.now());
-    if(!res.ok) throw new Error('no latest');
-    const data=await res.json();
-    $('#lastScan').textContent=fmtTime(data.timestamp);
-    $('#statCount').textContent=data.count;
-    const hits=data.hits||[];
-    const clean=hits.filter(h=>h.tier==='CLEAN');
-    const elite=hits.filter(h=>h.fund_tag==='ELITE');
-    $('#statClean').textContent=clean.length;
-    $('#statElite').textContent=elite.length;
-    if(hits.length){
-      const avgRisk=(hits.reduce((a,h)=>a+h.risk_pct,0)/hits.length).toFixed(1);
-      $('#statRisk').textContent=avgRisk+'%';
-      $('#statCountMeta').textContent=`${elite.length} elite · ${clean.length-elite.length} clean · ${hits.length-clean.length} other`;
-    } else {
-      $('#statRisk').textContent='—';
-      $('#statCountMeta').textContent='Across all tiers';
+    if(res.ok){
+      const data=await res.json();
+      $('#lastScan').textContent=fmtTime(data.timestamp);
     }
-    renderTiers(hits);
   }catch(e){
-    $('#tiersWrap').innerHTML=`<div class="empty"><div class="big">No scan data yet</div></div>`;
+    // latest.json may not exist yet; streak/positions still load below
   }
   try{ const r=await fetch(POS_STATE+'?_='+Date.now()); renderPositions(r.ok?(await r.json()):{positions:[]}); }catch{renderPositions({positions:[]});}
   try{ const r=await fetch(STREAKS_STATE+'?_='+Date.now()); setStreaks(r.ok?(await r.json()):{streaks:[]}); }catch{setStreaks({streaks:[]});}
@@ -671,6 +1324,22 @@ async function loadAll(){
 }
 
 $('#refreshBtn').addEventListener('click',loadAll);
+
+// === Account size input: load from storage, persist + re-render on change ===
+(function initAccountInput() {
+  const input = $('#accountSize');
+  if (!input) return;
+  input.value = String(getAccountSize());
+  input.addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    if (v > 0) {
+      setAccountSize(v);
+      // Re-render breakout cards and watchlist so sizing updates live
+      if (cachedStreaks.length) renderStreakList();
+    }
+  });
+})();
+
 loadAll();
 setInterval(loadAll,60000);
 
