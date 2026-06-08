@@ -1857,5 +1857,16 @@
     "original_score": 67,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "SRAD",
+    "first_alerted": "2026-06-08T17:49:56",
+    "breakout_price": 15.26,
+    "breakout_box_top": 14.58,
+    "original_grade": "B+",
+    "original_tier": "SOLID",
+    "original_score": 76,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]

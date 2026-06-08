@@ -1,5 +1,18 @@
 [
   {
+    "timestamp": "2026-06-08T17:49:56",
+    "count": 5,
+    "tickers": [
+      "IDYA",
+      "SRAD",
+      "TNGX",
+      "INHD",
+      "SUNE"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-06-08T15:55:57",
     "count": 4,
     "tickers": [
@@ -675,21 +688,6 @@
       "DK",
       "CNC",
       "MXL"
-    ],
-    "clean_count": 1,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-29T14:05:13",
-    "count": 7,
-    "tickers": [
-      "TEVA",
-      "COCO",
-      "RSI",
-      "EXTR",
-      "ETSY",
-      "MXL",
-      "CNC"
     ],
     "clean_count": 1,
     "elite_count": 0
