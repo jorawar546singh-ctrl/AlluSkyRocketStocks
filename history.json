@@ -1,5 +1,17 @@
 [
   {
+    "timestamp": "2026-06-08T15:55:57",
+    "count": 4,
+    "tickers": [
+      "IDYA",
+      "TNGX",
+      "INHD",
+      "SUNE"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-06-06T18:24:20",
     "count": 2,
     "tickers": [
@@ -678,25 +690,6 @@
       "ETSY",
       "MXL",
       "CNC"
-    ],
-    "clean_count": 1,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-28T17:44:52",
-    "count": 11,
-    "tickers": [
-      "CECO",
-      "OMCL",
-      "KNSA",
-      "LFST",
-      "BEN",
-      "NWBI",
-      "CNC",
-      "AXGN",
-      "PII",
-      "SEI",
-      "OGN"
     ],
     "clean_count": 1,
     "elite_count": 0

@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+IDYA,31.51,29.97,27.66,5.14,2149498,781170,2.75,29.37,40.96,6.79,4.42,7.71,28.94,True,8.88,79,B+,SOLID,🟡
+TNGX,31.06,23.49,19.43,32.23,20727345,2807120,7.38,23.02,40.38,25.88,1.16,17.29,22.15,True,40.24,74,B,SOLID,🟡
+INHD,41.14,1.41,1.01,2817.74,268901410,143535,1873.42,1.38,53.48,96.64,0.31,28.37,3.3,True,1147.99,67,C+,MARGINAL,🟠
+SUNE,6.09,1.53,1.09,297.71,304626601,184300,1652.88,1.5,7.91,75.36,0.4,28.76,1.58,True,285.07,67,C+,MARGINAL,🟠
