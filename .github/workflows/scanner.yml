@@ -1,78 +1,70 @@
-name: TTM Scanner
+name: AlluSkyRocketStocks v2
 
-# Hourly cadence for reliability on GitHub Actions free tier.
-# Runs at the top of every hour, 13:00-20:00 UTC, Mon-Fri.
-# That's 9:30am-4:00pm Eastern (roughly), 7-8 runs per trading day.
+# One clean EOD run per market. The old "hourly" comment was wrong —
+# the cron only ever fired once a day anyway. EOD is the design now.
 on:
   schedule:
-    - cron: "0 20 * * 1-5"
+    - cron: "15 21 * * 1-5"   # 21:15 UTC = ~4:15pm ET, just after US close
+    - cron: "30 10 * * 1-5"   # 10:30 UTC = 4:00pm IST, after NSE close
   workflow_dispatch:
 
 concurrency:
   group: scanner
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
-    permissions:
-      contents: write
-
+    timeout-minutes: 25
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
 
       - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Decide market from trigger time
+        id: mkt
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          HOUR=$(date -u +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "markets=US IN" >> "$GITHUB_OUTPUT"   # manual run does both
+          elif [ "$HOUR" -ge 15 ]; then
+            echo "markets=US" >> "$GITHUB_OUTPUT"
+          else
+            echo "markets=IN" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Run breakout scanner
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-          FMP_API_KEY:        ${{ secrets.FMP_API_KEY }}
-          TZ: America/New_York
-        run: python ttm_scanner.py
-
-      - name: Run streak tracker
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-          TZ: America/New_York
-        run: python streak_tracker.py
-
-      - name: Run digest
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-          TZ: America/New_York
-        run: python telegram_digest.py
-
-      - name: Run position tracker
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-          TZ: America/New_York
-        run: python position_tracker.py
-
-      - name: Commit results back to repo
+      - name: Scan
         run: |
-          git config user.name  "ttm-scanner-bot"
+          for m in ${{ steps.mkt.outputs.markets }}; do
+            python scanner.py "$m"
+            python analyzer.py "$m"
+          done
+
+      - name: Export dashboard payload
+        run: python export_dashboard.py
+
+      - name: Telegram digest
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python telegram_digest.py || echo "digest failed (non-fatal)"
+
+      - name: Commit results
+        run: |
+          git config user.name  "asr-bot"
           git config user.email "actions@github.com"
-          git add latest.json history.json alerted.log alerted_history.json streaks_state.json positions_state.json breakouts_*.csv 2>/dev/null || true
+          git add data/asr.db data.json
           if ! git diff --cached --quiet; then
             git commit -m "scan $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push
           else
-            echo "No data changes to commit."
+            echo "No changes."
           fi
