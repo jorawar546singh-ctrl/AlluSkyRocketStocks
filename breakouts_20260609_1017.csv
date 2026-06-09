@@ -1,0 +1,5 @@
+ticker,price,box_top,box_bottom,pct_above_box,vol_today,vol_avg_20d,vol_ratio,suggested_stop,target_30pct,risk_pct,rr_ratio,box_range_pct,ma20,ma_rising,price_vs_ma20_pct,score,grade,tier,emoji
+AZI,4.11,1.45,1.01,183.45,88991916,42455,2096.15,1.42,5.34,65.43,0.46,30.34,1.35,True,205.12,67,C+,MARGINAL,🟠
+INHD,39.49,1.41,1.01,2700.71,278900100,143570,1942.61,1.38,51.34,96.5,0.31,28.37,3.21,True,1128.69,67,C+,MARGINAL,🟠
+CHAI,3.45,1.2,0.8,187.4,99586873,2700465,36.88,1.18,4.48,65.9,0.46,33.33,1.18,True,191.2,67,C+,MARGINAL,🟠
+CCTG,5.34,0.8,0.37,567.5,96283946,2098800,45.88,0.78,6.94,85.32,0.35,53.75,0.75,True,611.62,64,C+,MARGINAL,🟠

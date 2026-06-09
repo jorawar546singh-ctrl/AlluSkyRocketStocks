@@ -1,5 +1,17 @@
 [
   {
+    "timestamp": "2026-06-09T10:17:08",
+    "count": 4,
+    "tickers": [
+      "AZI",
+      "INHD",
+      "CHAI",
+      "CCTG"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-06-08T17:49:56",
     "count": 5,
     "tickers": [
@@ -672,24 +684,6 @@
       "AUR"
     ],
     "clean_count": 0,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-29T17:46:48",
-    "count": 10,
-    "tickers": [
-      "TEVA",
-      "ESI",
-      "CHEF",
-      "COCO",
-      "RSI",
-      "EXTR",
-      "ETSY",
-      "DK",
-      "CNC",
-      "MXL"
-    ],
-    "clean_count": 1,
     "elite_count": 0
   }
 ]

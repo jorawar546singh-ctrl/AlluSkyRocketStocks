@@ -1868,5 +1868,38 @@
     "original_score": 76,
     "original_fund_score": null,
     "original_fund_tag": null
+  },
+  {
+    "ticker": "AZI",
+    "first_alerted": "2026-06-09T10:17:08",
+    "breakout_price": 4.11,
+    "breakout_box_top": 1.45,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 67,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "CHAI",
+    "first_alerted": "2026-06-09T10:17:08",
+    "breakout_price": 3.45,
+    "breakout_box_top": 1.2,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 67,
+    "original_fund_score": null,
+    "original_fund_tag": null
+  },
+  {
+    "ticker": "CCTG",
+    "first_alerted": "2026-06-09T10:17:08",
+    "breakout_price": 5.34,
+    "breakout_box_top": 0.8,
+    "original_grade": "C+",
+    "original_tier": "MARGINAL",
+    "original_score": 64,
+    "original_fund_score": null,
+    "original_fund_tag": null
   }
 ]
