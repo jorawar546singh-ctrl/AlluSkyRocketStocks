@@ -1,5 +1,17 @@
 [
   {
+    "timestamp": "2026-06-09T17:47:13",
+    "count": 4,
+    "tickers": [
+      "ASH",
+      "VECO",
+      "GLXY",
+      "ALHC"
+    ],
+    "clean_count": 0,
+    "elite_count": 0
+  },
+  {
     "timestamp": "2026-06-09T10:17:08",
     "count": 4,
     "tickers": [
@@ -670,18 +682,6 @@
       "VIAV",
       "AUR",
       "BHE"
-    ],
-    "clean_count": 0,
-    "elite_count": 0
-  },
-  {
-    "timestamp": "2026-04-30T13:53:32",
-    "count": 4,
-    "tickers": [
-      "INDV",
-      "VIAV",
-      "GTX",
-      "AUR"
     ],
     "clean_count": 0,
     "elite_count": 0
