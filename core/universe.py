@@ -72,7 +72,7 @@ def in_universe() -> list[str]:
         r = requests.get(NIFTY_500_URL, headers=HEADERS, timeout=20)
         r.raise_for_status()
         df = pd.read_csv(io.StringIO(r.text))
-        syms = [s.strip() for s in df["Symbol"].dropna().tolist()]
+        syms = [s.strip() for s in df["Symbol"].dropna().tolist() if not s.strip().upper().startswith("DUMMY")]
         if len(syms) > 400:
             print(f"  universe: live NSE archives ({len(syms)})")
             return syms
@@ -82,7 +82,7 @@ def in_universe() -> list[str]:
 
     if os.path.exists(NIFTY_STATIC):
         df = pd.read_csv(NIFTY_STATIC)
-        syms = [s.strip() for s in df["Symbol"].dropna().tolist()]
+        syms = [s.strip() for s in df["Symbol"].dropna().tolist() if not s.strip().upper().startswith("DUMMY")]
         print(f"  universe: bundled CSV fallback ({len(syms)})")
         return syms
 
