@@ -423,13 +423,19 @@ function renderPositions(){
   const el=document.getElementById('positions');
   const pos=mkt().positions;
   if(!pos.length){el.innerHTML='<div class="empty">No open positions. Cash is a position too.</div>';return;}
-  el.innerHTML=pos.map(p=>`<div class="pos">
-      <div class="t">${p.ticker}</div>
+  el.innerHTML=pos.map(p=>{
+    const pl=p.pl_amount, plp=p.pl_pct, cls=pl>0?'up':pl<0?'down':'';
+    return `<div class="pos">
+      <div class="t" style="display:flex;justify-content:space-between;align-items:baseline">
+        <span>${p.ticker}</span>
+        <span class="num ${cls}" style="font-size:15px">${pl!=null?(pl<0?'-':'+')+cur()+Math.abs(pl).toFixed(2):'—'}</span></div>
+      ${plp!=null?`<div class="row"><span>return</span><b class="num ${cls}">${(plp>0?'+':'')+fmt(plp,1)}%</b></div>`:''}
+      <div class="row"><span>now</span><b class="num">${p.now_price!=null?cur()+fmt(p.now_price):'—'}</b></div>
       <div class="row"><span>shares</span><b class="num">${p.shares}</b></div>
       <div class="row"><span>entry</span><b class="num">${cur()}${fmt(p.entry_price)} · ${p.entry_date}</b></div>
-      <div class="row"><span>initial stop</span><b class="num">${cur()}${fmt(p.initial_stop)}</b></div>
       <div class="row"><span>current stop</span><b class="num acc">${cur()}${fmt(p.current_stop??p.initial_stop)}</b></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderEdge(){

@@ -84,6 +84,27 @@ def enrich(signals: list[dict], cfg) -> None:
             s["status"] = "WATCHING"
 
 
+def enrich_positions(positions: list[dict], cfg) -> None:
+    """Attach now_price / pl_amount / pl_pct to open positions. Fail-soft."""
+    if not positions:
+        return
+    tickers = sorted({p["ticker"] + cfg.ticker_suffix for p in positions})
+    try:
+        hist = fetch_history(tickers, period="1mo")
+    except Exception as e:                                   # noqa: BLE001
+        print(f"  enrich_positions: fetch failed ({e}) — shipping nulls")
+        hist = {}
+    for p in positions:
+        p.update({"now_price": None, "pl_amount": None, "pl_pct": None})
+        df = hist.get(p["ticker"] + cfg.ticker_suffix)
+        if df is None or not p.get("entry_price"):
+            continue
+        now = float(df["Close"].dropna().iloc[-1])
+        p["now_price"] = round(now, 2)
+        p["pl_amount"] = round((now - p["entry_price"]) * p["shares"], 2)
+        p["pl_pct"] = round((now - p["entry_price"]) / p["entry_price"] * 100, 2)
+
+
 def export():
     payload = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                "markets": {}}
@@ -99,11 +120,13 @@ def export():
                 "SELECT * FROM positions WHERE market=? AND status='open'", con, params=(key,))
             signals = json.loads(sig.to_json(orient="records"))
             enrich(signals, cfg)
+            positions = json.loads(pos.to_json(orient="records"))
+            enrich_positions(positions, cfg)
             payload["markets"][key] = {
                 "label": cfg.label,
                 "currency": cfg.currency,
                 "signals": signals,
-                "positions": json.loads(pos.to_json(orient="records")),
+                "positions": positions,
                 "edge": report(key),
             }
     with open(DASHBOARD_JSON, "w") as f:
