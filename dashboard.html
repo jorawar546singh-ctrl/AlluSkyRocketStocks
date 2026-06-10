@@ -65,7 +65,8 @@
        font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:8px 14px;text-transform:uppercase}
   .btn:hover{color:var(--ink);border-color:var(--sec)}
   .btn.on{color:#0B0B0D;font-weight:600}
-  .btn.on.f-all{background:var(--green);border-color:var(--green)}
+  .btn.on.f-all{background:var(--ink);border-color:var(--ink)}
+  .btn.on.f-win{background:var(--green);border-color:var(--green)}
   .btn.on.f-TRENDING{background:var(--amber);border-color:var(--amber)}
   .btn.on.f-FADING{background:var(--red);border-color:var(--red)}
   .btn.on.f-WATCHING{background:var(--sec);border-color:var(--sec)}
@@ -130,12 +131,24 @@
          font-family:var(--mono);font-size:11px;color:var(--sec);
          display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 
+  /* ---------- mobile cards ---------- */
+  .cards{display:none;flex-direction:column;gap:10px}
+  .card{border:1px solid var(--hair);background:var(--panel);padding:14px 16px;cursor:pointer}
+  .card.sel{background:var(--amber-dim)}
+  .card .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .card .tk{font-family:var(--mono);font-size:17px;font-weight:600}
+  .card .g{font-family:var(--mono);font-size:17px;font-weight:600}
+  .card .rows{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;
+              font-family:var(--mono);font-size:12px;color:var(--sec)}
+  .card .rows b{color:var(--ink);font-weight:400}
+
   @media(max-width:780px){
     .wrap{padding:0 14px 64px}
     .primary{grid-template-columns:1fr;gap:18px}
     .ptrigger{text-align:left}
     .primary .tick{font-size:30px}
-    table{display:block;overflow-x:auto}
+    table{display:none}
+    .cards{display:flex}
     .showing{margin-left:0;width:100%}
     .hdr-right{width:100%;justify-content:space-between}
   }
@@ -179,6 +192,7 @@
       <button class="btn f-TRENDING" data-st="TRENDING">Trending</button>
       <button class="btn f-FADING" data-st="FADING">Fading</button>
       <button class="btn f-WATCHING" data-st="WATCHING">Watching</button>
+      <button class="btn f-win" data-st="WINNERS">Winners ★</button>
     </div>
   </div>
   <div class="fbar">
@@ -198,6 +212,7 @@
     <thead><tr id="thead"></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
+  <div class="cards" id="cards"></div>
   <div class="detail" id="detail"></div>
 
   <div class="lbl">Open positions</div>
@@ -265,7 +280,9 @@ function syncStatusBtns(){
 }
 document.getElementById('statusBtns').addEventListener('click',e=>{
   const b=e.target.closest('.btn'); if(!b)return;
-  STATUS=b.dataset.st; syncStatusBtns(); renderTable();
+  STATUS=b.dataset.st;
+  if(STATUS==='WINNERS'){document.getElementById('fSort').value='gain_pct';DIR=-1;document.getElementById('fDir').textContent='↓';}
+  syncStatusBtns(); renderTable();
 });
 
 function filtered(){
@@ -276,7 +293,8 @@ function filtered(){
   const boxT=document.getElementById('fBoxT').classList.contains('on');
   const key=document.getElementById('fSort').value;
   let rows=mkt().signals.slice();
-  if(STATUS!=='ALL') rows=rows.filter(s=>s.status===STATUS);
+  if(STATUS==='WINNERS') rows=rows.filter(s=>(s.gain_pct??0)>0&&(s.age_days??0)>=7&&s.box_today!==false);
+  else if(STATUS!=='ALL') rows=rows.filter(s=>s.status===STATUS);
   if(!isNaN(st)) rows=rows.filter(s=>(s.streak??0)>=st);
   if(!isNaN(a0)) rows=rows.filter(s=>(s.age_days??0)>=a0);
   if(!isNaN(a1)) rows=rows.filter(s=>(s.age_days??1e9)<=a1);
@@ -343,6 +361,21 @@ function renderTable(){
       <td>${s.vol_today==null?'<span class="sub">—</span>':
            `Vol <span class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</span> · Box <span class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</span>`}</td>
     </tr>`;
+  }).join('');
+  document.getElementById('cards').innerHTML=rows.map(s=>{
+    const fresh=s.scan_date===today();
+    const g=s.gain_pct;
+    return `<div class="card ${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
+      <div class="top"><span class="tk">${s.ticker}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
+        <span class="g ${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'—'}</span></div>
+      <div class="rows">
+        <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
+        <span>age <b>${s.age_days!=null?s.age_days+'d':'—'}</b> · streak <b>${s.streak??'—'}</b></span>
+        <span>RS <b class="acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b> · vol <b>${fmt(s.vol_ratio,1)}×</b></span>
+        <span>stop <b class="down">${cur()}${fmt(s.suggested_stop)}</b></span>
+        <span>${s.vol_today==null?'—':`Vol <b class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</b> · Box <b class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</b>`}</span>
+      </div>
+    </div>`;
   }).join('');
 }
 function sortBy(k){
