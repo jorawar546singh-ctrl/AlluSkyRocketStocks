@@ -9,7 +9,6 @@ venv/
 
 # Your secrets (just in case)
 .env
-config.py
 
 # Local-only operational files
 scanner.log
