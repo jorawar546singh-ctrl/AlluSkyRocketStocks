@@ -54,10 +54,19 @@ def run(market_key: str) -> list[dict]:
     rows = []
     with connect() as con:
         for t, d in hits.items():
+            bare_t = t.removesuffix(cfg.ticker_suffix)
+            # Cooldown: a new 14-session box cannot form in under ~21
+            # calendar days, so any repeat within 21 days is the same breakout.
+            dup = con.execute(
+                "SELECT 1 FROM signals WHERE market=? AND ticker=? "
+                "AND julianday(?) - julianday(scan_date) <= 21",
+                (cfg.key, bare_t, now.strftime("%Y-%m-%d"))).fetchone()
+            if dup:
+                continue
             tf, r = eligible[t], rs.get(t, {})
             row = {
                 "market": cfg.key,
-                "ticker": t.removesuffix(cfg.ticker_suffix),
+                "ticker": bare_t,
                 "scan_ts": now.isoformat(timespec="seconds"),
                 "scan_date": now.strftime("%Y-%m-%d"),
                 **d,
