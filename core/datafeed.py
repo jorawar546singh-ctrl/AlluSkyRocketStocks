@@ -42,7 +42,16 @@ def fetch_history(tickers: list[str], period: str = "1y") -> dict[str, pd.DataFr
         if data is None:
             continue
         if len(batch) == 1:
-            df = data.dropna(how="all")
+            df = data
+            # yfinance may return MultiIndex (ticker, field) columns even
+            # for a single ticker when group_by="ticker" — unwrap it.
+            if isinstance(df.columns, pd.MultiIndex):
+                t = batch[0]
+                if t in df.columns.get_level_values(0):
+                    df = df[t]
+                else:
+                    df = df.droplevel(0, axis=1)
+            df = df.dropna(how="all")
             if len(df):
                 out[batch[0]] = df
         else:
