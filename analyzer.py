@@ -115,11 +115,15 @@ def report(market_key: str) -> dict:
                 out["by_grade"][g] = {"n": int(len(gdf)),
                                       "avg_d30": round(gdf["ret_d30"].mean(), 2),
                                       "hit_rate": round((gdf["ret_d30"] > 0).mean() * 100, 1)}
-    if df["rs_pct"].notna().any():
-        q = pd.qcut(df["rs_pct"].dropna(), 4, labels=["Q1", "Q2", "Q3", "Q4"], duplicates="drop")
-        for label, gdf in df.dropna(subset=["rs_pct", "ret_d30"]).groupby(q, observed=True):
-            out["by_rs_quartile"][str(label)] = {"n": int(len(gdf)),
-                                                 "avg_d30": round(gdf["ret_d30"].mean(), 2)}
+    if df["rs_pct"].notna().sum() >= 8:
+        rs = df.dropna(subset=["rs_pct", "ret_d30"])
+        try:
+            q = pd.qcut(rs["rs_pct"], 4, labels=False, duplicates="drop")
+            for label, gdf in rs.groupby(q, observed=True):
+                out["by_rs_quartile"][f"Q{int(label) + 1}"] = {
+                    "n": int(len(gdf)), "avg_d30": round(gdf["ret_d30"].mean(), 2)}
+        except (ValueError, IndexError):
+            pass   # not enough spread to bucket yet — leave empty
     print(f"{market_key} edge report: {out}")
     return out
 
