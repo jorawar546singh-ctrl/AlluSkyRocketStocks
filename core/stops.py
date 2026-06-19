@@ -36,10 +36,17 @@ def position_trailing_stop(entry: float, current_stop: float, running_high: floa
     return round(new_stop, 2), round(high, 2)
 
 
-def watchlist_entry_stop(df: pd.DataFrame, box_days: int = 14) -> float | None:
-    """Stop just under the CURRENT 14-day Darvas box bottom (for entering today)."""
-    box = df.dropna(subset=["Low"]).iloc[-(box_days + 1):-1]
+def watchlist_entry_stop(df: pd.DataFrame, box_days: int = 14) -> dict | None:
+    """
+    Current Darvas box as of today, for entering at today's price.
+    Returns {box_bottom, box_top, stop} where stop sits just under the box
+    bottom. None if there isn't enough data to form a box.
+    """
+    box = df.dropna(subset=["Low", "High"]).iloc[-(box_days + 1):-1]
     if len(box) < box_days // 2:
         return None
     box_bottom = float(box["Low"].min())
-    return round(box_bottom * 0.98, 2)
+    box_top = float(box["High"].max())
+    return {"box_bottom": round(box_bottom, 2),
+            "box_top": round(box_top, 2),
+            "stop": round(box_bottom * 0.98, 2)}

@@ -241,7 +241,7 @@ const COLS=[
   {k:'age_days',label:'Age'},
   {k:'streak',label:'Streak'},
   {k:'rs_pct',label:'RS %'},
-  {k:'suggested_stop',label:'Stop @ now'},
+  {k:'box_bottom_now',label:'Box @ now → Stop'},
   {k:'box_today',label:'Today'},
 ];
 
@@ -357,7 +357,11 @@ function renderTable(){
       <td>${s.age_days!=null?s.age_days+'d':'—'}</td>
       <td>${s.streak!=null?`<b>${s.streak}</b> <span class="sub">(peak ${s.peak_streak})</span>`:'<span class="sub">—</span>'}</td>
       <td>${s.rs_pct!=null?fmt(s.rs_pct,0):'<span class="sub">—</span>'}</td>
-      <td><span class="down">${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</span> <span class="sub">${s.entry_risk_now!=null?'/ '+fmt(s.entry_risk_now,1)+'%':(limit?'/ '+cur()+fmt(limit):'')}</span></td>
+      <td>${s.box_bottom_now!=null?
+          `<span class="sub">${cur()}${fmt(s.box_bottom_now)}–${fmt(s.box_top_now)}</span> <span class="${s.box_pos==='inside'?'chk':s.box_pos==='above'?'acc':'x'}" style="font-size:10px">${(s.box_pos||'').toUpperCase()}</span><br>`+
+          (s.clean_entry?`<span class="down">→ ${cur()}${fmt(s.entry_stop_now)}</span> <span class="sub">${fmt(s.entry_risk_now,1)}%</span>`
+                        :`<span class="sub" style="font-size:11px">box too wide — no clean entry</span>`)
+          :`<span class="down">${cur()}${fmt(s.suggested_stop)}</span>`}</td>
       <td>${s.vol_today==null?'<span class="sub">—</span>':
            `Vol <span class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</span> · Box <span class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</span>`}</td>
     </tr>`;
@@ -372,7 +376,7 @@ function renderTable(){
         <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
         <span>age <b>${s.age_days!=null?s.age_days+'d':'—'}</b> · streak <b>${s.streak??'—'}</b></span>
         <span>RS <b class="acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b> · vol <b>${fmt(s.vol_ratio,1)}×</b></span>
-        <span>stop <b class="down">${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</b>${s.entry_risk_now!=null?` <span class="sub">(${fmt(s.entry_risk_now,1)}%)</span>`:''}</span>
+        <span>${s.box_bottom_now!=null?`box ${cur()}${fmt(s.box_bottom_now)}–${fmt(s.box_top_now)} <span class="${s.box_pos==='inside'?'chk':s.box_pos==='above'?'acc':'x'}">${(s.box_pos||'').toUpperCase()}</span>`:'stop'} ${s.box_bottom_now!=null&&!s.clean_entry?'<span class="sub">→ too wide</span>':`<b class="down">→ ${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</b>${s.entry_risk_now!=null?` <span class="sub">(${fmt(s.entry_risk_now,1)}%)</span>`:''}`}</span>
         <span>${s.vol_today==null?'—':`Vol <b class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</b> · Box <b class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</b>`}</span>
       </div>
     </div>`;

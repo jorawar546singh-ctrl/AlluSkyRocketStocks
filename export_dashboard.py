@@ -56,7 +56,9 @@ def enrich(signals: list[dict], cfg) -> None:
     for s in signals:
         s.update({"now_price": None, "gain_pct": None, "age_days": None,
                   "streak": None, "peak_streak": None,
-                  "vol_today": None, "box_today": None, "status": None})
+                  "vol_today": None, "box_today": None, "status": None,
+                  "box_bottom_now": None, "box_top_now": None, "box_pos": None,
+                  "clean_entry": None})
         s["age_days"] = (today - datetime.strptime(s["scan_date"], "%Y-%m-%d").date()).days
         df = hist.get(s["ticker"] + cfg.ticker_suffix)
         if df is None or not s.get("price") or not s.get("box_top"):
@@ -77,13 +79,29 @@ def enrich(signals: list[dict], cfg) -> None:
             s["vol_today"] = bool(float(vols.iloc[-1]) >= 2.0 * float(vols.iloc[-21:-1].mean()))
         s["box_today"] = bool(now > s["box_top"])
 
-        # Live-entry stop: where the stop would sit if you bought TODAY,
-        # recomputed from the current box bottom (not the flag-time stop).
-        s["entry_stop_now"] = watchlist_entry_stop(df, cfg.darvas_box_days)
-        if s["entry_stop_now"] and now > s["entry_stop_now"]:
-            s["entry_risk_now"] = round((now - s["entry_stop_now"]) / now * 100, 2)
+        # Live-entry stop + current box, for buying TODAY (not flag-time).
+        box = watchlist_entry_stop(df, cfg.darvas_box_days)
+        if box:
+            s["box_bottom_now"] = box["box_bottom"]
+            s["box_top_now"] = box["box_top"]
+            s["entry_stop_now"] = box["stop"]
+            if now > box["box_top"]:
+                s["box_pos"] = "above"
+            elif now < box["box_bottom"]:
+                s["box_pos"] = "below"
+            else:
+                s["box_pos"] = "inside"
+            s["entry_risk_now"] = (round((now - box["stop"]) / now * 100, 2)
+                                   if now > box["stop"] else None)
+            # A box-based stop is only actionable if it implies a sane risk.
+            # Beyond ~12% the box is too tall (extended runner) — flag it
+            # rather than show a number that looks like a real stop.
+            s["clean_entry"] = bool(s["entry_risk_now"] is not None
+                                    and s["entry_risk_now"] <= 12)
         else:
-            s["entry_risk_now"] = None
+            s["box_bottom_now"] = s["box_top_now"] = s["entry_stop_now"] = None
+            s["box_pos"] = s["entry_risk_now"] = None
+            s["clean_entry"] = None
 
         if (not s["box_today"]) or s["gain_pct"] <= -5:
             s["status"] = "FADING"
