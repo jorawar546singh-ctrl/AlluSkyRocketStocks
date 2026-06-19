@@ -241,7 +241,7 @@ const COLS=[
   {k:'age_days',label:'Age'},
   {k:'streak',label:'Streak'},
   {k:'rs_pct',label:'RS %'},
-  {k:'suggested_stop',label:'Stop / Limit'},
+  {k:'suggested_stop',label:'Stop @ now'},
   {k:'box_today',label:'Today'},
 ];
 
@@ -357,7 +357,7 @@ function renderTable(){
       <td>${s.age_days!=null?s.age_days+'d':'—'}</td>
       <td>${s.streak!=null?`<b>${s.streak}</b> <span class="sub">(peak ${s.peak_streak})</span>`:'<span class="sub">—</span>'}</td>
       <td>${s.rs_pct!=null?fmt(s.rs_pct,0):'<span class="sub">—</span>'}</td>
-      <td><span class="down">${cur()}${fmt(s.suggested_stop)}</span> <span class="sub">/ ${limit?cur()+fmt(limit):'—'}</span></td>
+      <td><span class="down">${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</span> <span class="sub">${s.entry_risk_now!=null?'/ '+fmt(s.entry_risk_now,1)+'%':(limit?'/ '+cur()+fmt(limit):'')}</span></td>
       <td>${s.vol_today==null?'<span class="sub">—</span>':
            `Vol <span class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</span> · Box <span class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</span>`}</td>
     </tr>`;
@@ -372,7 +372,7 @@ function renderTable(){
         <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
         <span>age <b>${s.age_days!=null?s.age_days+'d':'—'}</b> · streak <b>${s.streak??'—'}</b></span>
         <span>RS <b class="acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b> · vol <b>${fmt(s.vol_ratio,1)}×</b></span>
-        <span>stop <b class="down">${cur()}${fmt(s.suggested_stop)}</b></span>
+        <span>stop <b class="down">${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</b>${s.entry_risk_now!=null?` <span class="sub">(${fmt(s.entry_risk_now,1)}%)</span>`:''}</span>
         <span>${s.vol_today==null?'—':`Vol <b class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</b> · Box <b class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</b>`}</span>
       </div>
     </div>`;
@@ -433,7 +433,7 @@ function renderPositions(){
       <div class="row"><span>now</span><b class="num">${p.now_price!=null?cur()+fmt(p.now_price):'—'}</b></div>
       <div class="row"><span>shares</span><b class="num">${p.shares}</b></div>
       <div class="row"><span>entry</span><b class="num">${cur()}${fmt(p.entry_price)} · ${p.entry_date}</b></div>
-      <div class="row"><span>current stop</span><b class="num acc">${cur()}${fmt(p.current_stop??p.initial_stop)}</b></div>
+      <div class="row"><span>${p.stop_moved?'trailing stop':'initial stop'}</span><b class="num acc">${cur()}${fmt(p.current_stop??p.initial_stop)}${p.stop_moved?' \u2191':''}</b></div>
     </div>`;
   }).join('');
 }

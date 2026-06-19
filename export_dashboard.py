@@ -27,6 +27,7 @@ from analyzer import report
 from core.config import DASHBOARD_JSON, MARKETS
 from core.datafeed import fetch_history
 from core.db import connect
+from core.stops import position_trailing_stop, watchlist_entry_stop
 
 RECENT_DAYS = 30
 
@@ -76,6 +77,14 @@ def enrich(signals: list[dict], cfg) -> None:
             s["vol_today"] = bool(float(vols.iloc[-1]) >= 2.0 * float(vols.iloc[-21:-1].mean()))
         s["box_today"] = bool(now > s["box_top"])
 
+        # Live-entry stop: where the stop would sit if you bought TODAY,
+        # recomputed from the current box bottom (not the flag-time stop).
+        s["entry_stop_now"] = watchlist_entry_stop(df, cfg.darvas_box_days)
+        if s["entry_stop_now"] and now > s["entry_stop_now"]:
+            s["entry_risk_now"] = round((now - s["entry_stop_now"]) / now * 100, 2)
+        else:
+            s["entry_risk_now"] = None
+
         if (not s["box_today"]) or s["gain_pct"] <= -5:
             s["status"] = "FADING"
         elif cur >= 2 or s["gain_pct"] >= 5:
@@ -104,6 +113,14 @@ def enrich_positions(positions: list[dict], cfg) -> None:
         p["pl_amount"] = round((now - p["entry_price"]) * p["shares"], 2)
         p["pl_pct"] = round((now - p["entry_price"]) / p["entry_price"] * 100, 2)
 
+        # Trailing stop: ratchet up from entry as the trade gains.
+        new_stop, new_high = position_trailing_stop(
+            p["entry_price"], p.get("current_stop") or p["initial_stop"],
+            p.get("running_high") or p["entry_price"], now)
+        p["current_stop"] = new_stop
+        p["running_high"] = new_high
+        p["stop_moved"] = bool(new_stop > (p.get("initial_stop") or 0))
+
 
 def export():
     payload = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -122,6 +139,11 @@ def export():
             enrich(signals, cfg)
             positions = json.loads(pos.to_json(orient="records"))
             enrich_positions(positions, cfg)
+            # Persist any ratcheted stops back to the db
+            for p in positions:
+                if p.get("current_stop") is not None:
+                    con.execute("UPDATE positions SET current_stop=?, running_high=? WHERE id=?",
+                                (p["current_stop"], p.get("running_high"), p["id"]))
             payload["markets"][key] = {
                 "label": cfg.label,
                 "currency": cfg.currency,
