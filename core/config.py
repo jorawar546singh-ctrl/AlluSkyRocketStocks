@@ -23,7 +23,7 @@ class MarketConfig:
 
 US = MarketConfig(
     key="US", label="United States", currency="$", ticker_suffix="",
-    benchmark="SPY", min_price=2.0, max_price=100.0,
+    benchmark="SPY", min_price=2.0, max_price=1000.0,
 )
 
 IN = MarketConfig(
