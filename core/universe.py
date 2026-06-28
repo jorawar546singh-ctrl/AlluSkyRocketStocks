@@ -30,8 +30,12 @@ def _warn(msg: str):
 
 
 # Finviz screener filter (shared by both CSV and HTML layers):
-# small-cap+, avg vol >300k, price $1-100, rel-vol >1.5, gap up, 1w perf >5%
-FINVIZ_FILTER = "cap_smallover,sh_avgvol_o300,sh_price_1to100,sh_relvol_o1.5,ta_gap_u,ta_perf_1w5o"
+# small-cap+, avg vol >300k, rel-vol >1.5, gap up, 1w perf >5%.
+# Price lower-bound is appended dynamically from cfg.min_price in us_universe() —
+# do NOT hardcode a price bucket here, or it'll silently drift from core/config.py
+# (this happened once already: a stale "sh_price_1to100" kept the universe capped
+# at $100 even after max_price was raised to $1000).
+FINVIZ_FILTER_BASE = "cap_smallover,sh_avgvol_o300,sh_relvol_o1.5,ta_gap_u,ta_perf_1w5o"
 FINVIZ_HEADERS = {
     "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36"),
@@ -41,9 +45,9 @@ FINVIZ_HEADERS = {
 }
 
 
-def _finviz_csv() -> list[str]:
+def _finviz_csv(filt: str) -> list[str]:
     """Primary: Finviz CSV export endpoint. Clean columns, no HTML parsing."""
-    url = f"https://finviz.com/export.ashx?v=111&f={FINVIZ_FILTER}&ft=4"
+    url = f"https://finviz.com/export.ashx?v=111&f={filt}&ft=4"
     r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
     if r.status_code != 200 or "," not in r.text[:200]:
         raise RuntimeError(f"CSV endpoint HTTP {r.status_code} / non-CSV body")
@@ -57,10 +61,10 @@ def _finviz_csv() -> list[str]:
     return syms
 
 
-def _finviz_html() -> list[str]:
+def _finviz_html(filt: str) -> list[str]:
     """Fallback: scrape the screener HTML. Tries current + legacy selectors."""
     from bs4 import BeautifulSoup
-    url = f"https://finviz.com/screener.ashx?v=111&f={FINVIZ_FILTER}&ft=4"
+    url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4"
     r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
@@ -76,13 +80,36 @@ def _finviz_html() -> list[str]:
     return syms
 
 
-def us_universe() -> list[str]:
+# Finviz's price filter only ships fixed presets, not arbitrary numbers.
+_VALID_PRICE_PRESETS = (1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+
+
+def _price_filter(cfg) -> str:
+    """Build the Finviz price clause FROM cfg.min_price/max_price, so the
+    universe-source filter can never silently drift from core/config.py
+    again. Lower bound snaps to the nearest valid preset at/below min_price.
+    Upper bound is only added if max_price <= 100 (Finviz's highest preset);
+    above that there's no matching preset, so we skip it here and let
+    scanner.py's `cfg.min_price <= price <= cfg.max_price` check be the
+    real enforcement for the upper end — Finviz is just a coarse pre-filter."""
+    lo = max((p for p in _VALID_PRICE_PRESETS if p <= cfg.min_price), default=1)
+    parts = [f"sh_price_o{lo}"]
+    if cfg.max_price <= 100:
+        hi = min((p for p in _VALID_PRICE_PRESETS if p >= cfg.max_price), default=100)
+        parts.append(f"sh_price_u{hi}")
+    return ",".join(parts)
+
+
+def us_universe(cfg) -> list[str]:
     tickers: list[str] = []
+    pf = _price_filter(cfg)
+    filt = f"{FINVIZ_FILTER_BASE},{pf}"
+    print(f"  universe: price filter -> {pf}  (from cfg: ${cfg.min_price}-${cfg.max_price})")
 
     # Finviz: try CSV export, then HTML scrape. Either fills `tickers`.
     for layer, fn in (("CSV export", _finviz_csv), ("HTML scrape", _finviz_html)):
         try:
-            tickers = fn()
+            tickers = fn(filt)
             print(f"  universe: Finviz {layer} -> {len(tickers)} tickers")
             break
         except Exception as e:                              # noqa: BLE001

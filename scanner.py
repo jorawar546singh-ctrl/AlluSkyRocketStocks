@@ -21,7 +21,7 @@ def run(market_key: str) -> list[dict]:
     cfg = MARKETS[market_key]
     print(f"=== AlluSkyRocketStocks scan: {cfg.label} ===")
 
-    bare = uni.us_universe() if cfg.key == "US" else uni.in_universe()
+    bare = uni.us_universe(cfg) if cfg.key == "US" else uni.in_universe()
     if not bare:
         return []
     tickers = [b + cfg.ticker_suffix for b in bare]
@@ -41,11 +41,17 @@ def run(market_key: str) -> list[dict]:
 
     # 2) Darvas trigger on eligible names only
     hits: dict[str, dict] = {}
+    dropped_by_price = 0
     for t in eligible:
         d = darvas.evaluate(histories[t], cfg.darvas_box_days, cfg.volume_multiplier)
-        if d and cfg.min_price <= d["price"] <= cfg.max_price:
+        if not d:
+            continue
+        if cfg.min_price <= d["price"] <= cfg.max_price:
             hits[t] = d
-    print(f"  darvas trigger: {len(hits)} breakouts")
+        else:
+            dropped_by_price += 1
+    print(f"  darvas trigger: {len(hits)} breakouts"
+          f"{f'  ({dropped_by_price} dropped outside ${cfg.min_price}-${cfg.max_price})' if dropped_by_price else ''}")
 
     # 3) RS percentile across everything scanned today (broad base = honest rank)
     rs = relative_strength.rank(histories, bench_df, cfg.rs_lookback_days)
