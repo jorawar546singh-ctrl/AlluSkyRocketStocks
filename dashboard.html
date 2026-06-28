@@ -293,7 +293,7 @@ function filtered(){
   const boxT=document.getElementById('fBoxT').classList.contains('on');
   const key=document.getElementById('fSort').value;
   let rows=mkt().signals.slice();
-  if(STATUS==='WINNERS') rows=rows.filter(s=>(s.gain_pct??0)>0&&(s.age_days??0)>=7&&s.box_today!==false);
+  if(STATUS==='WINNERS') rows=rows.filter(s=>(s.gain_pct??0)>0&&(s.age_days??0)>=2&&s.box_today!==false);
   else if(STATUS!=='ALL') rows=rows.filter(s=>s.status===STATUS);
   if(!isNaN(st)) rows=rows.filter(s=>(s.streak??0)>=st);
   if(!isNaN(a0)) rows=rows.filter(s=>(s.age_days??0)>=a0);

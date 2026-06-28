@@ -6,7 +6,8 @@ dashboard can show the v1 watchlist columns:
 
   now_price, gain_pct      current close, % since breakout print
   age_days                 calendar days since signal
-  streak / peak_streak     consecutive closes above box top (current / best)
+  streak / peak_streak     consecutive day-over-day HIGHER closes (current / best),
+                           v1 logic — resets on any non-higher close
   vol_today / box_today    today's checks: volume >= 2x 20d avg, close > box top
   status                   TRENDING | WATCHING | FADING (mechanical, defined below)
 
@@ -32,13 +33,19 @@ from core.stops import position_trailing_stop, watchlist_entry_stop
 RECENT_DAYS = 30
 
 
-def _streaks(closes: pd.Series, box_top: float) -> tuple[int, int]:
-    """(current, peak) runs of consecutive closes above box_top."""
+def _streaks(closes: pd.Series, breakout_price: float) -> tuple[int, int]:
+    """(current, peak) runs of consecutive day-over-day HIGHER closes (v1 logic).
+    Resets to 0 on any close that isn't strictly higher than the prior close.
+    Fallback: if the current run is 0 but price is still above the breakout
+    price, current shows 1 (still "up" overall even without a fresh up-day)."""
+    vals = closes.tolist()
     cur = peak = run = 0
-    for c in closes:
-        run = run + 1 if c > box_top else 0
+    for i in range(1, len(vals)):
+        run = run + 1 if vals[i] > vals[i - 1] else 0
         peak = max(peak, run)
     cur = run
+    if cur == 0 and vals and vals[-1] > breakout_price:
+        cur = 1
     return cur, peak
 
 
@@ -71,7 +78,7 @@ def enrich(signals: list[dict], cfg) -> None:
         s["gain_pct"] = round((now - s["price"]) / s["price"] * 100, 2)
 
         since = df[df.index >= pd.Timestamp(s["scan_date"])]["Close"].dropna()
-        cur, peak = _streaks(since, s["box_top"])
+        cur, peak = _streaks(since, s["price"])
         s["streak"], s["peak_streak"] = cur, peak
 
         vols = df["Volume"].dropna()
