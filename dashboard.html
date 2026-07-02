@@ -410,18 +410,28 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&SELECTED!=null)sele
 function spark(s){
   const v=s.spark;
   if(!v||v.length<2) return '<div class="sub" style="padding:8px 0">not enough history for chart</div>';
-  const W=560,H=120,P=6;
-  const refs=[s.box_top,s.box_bottom,(s.entry_stop_now??s.suggested_stop)].filter(x=>x!=null);
+  const W=560,H=130,P=8,LH=11;
+  const stop=s.entry_stop_now??s.suggested_stop;
+  const refs=[s.box_top,s.box_bottom,stop].filter(x=>x!=null);
   const lo=Math.min(...v,...refs),hi=Math.max(...v,...refs),rng=(hi-lo)||1;
   const X=i=>P+i*(W-2*P)/(v.length-1);
   const Y=p=>H-P-(p-lo)*(H-2*P)/rng;
   const path=v.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p).toFixed(1)}`).join('');
-  const line=(p,cls,lbl)=>p==null?'':`<line x1="${P}" x2="${W-P}" y1="${Y(p).toFixed(1)}" y2="${Y(p).toFixed(1)}" class="sl ${cls}"/><text x="${W-P}" y="${(Y(p)-3).toFixed(1)}" text-anchor="end" class="slt ${cls}">${lbl} ${cur()}${fmt(p)}</text>`;
+  const items=[[s.box_top,'sbox','box top'],[s.box_bottom,'sbox','box low'],[stop,'sstop','stop']]
+    .filter(x=>x[0]!=null).map(([p,cls,lbl])=>({p,cls,lbl,ly:Y(p)-3}))
+    .sort((a,b)=>a.ly-b.ly);
+  for(let i=1;i<items.length;i++)
+    if(items[i].ly-items[i-1].ly<LH) items[i].ly=items[i-1].ly+LH;
+  for(let i=items.length-1;i>=0;i--){
+    if(items[i].ly>H-3) items[i].ly=H-3;
+    if(i<items.length-1&&items[i+1].ly-items[i].ly<LH) items[i].ly=items[i+1].ly-LH;
+  }
+  const linesSvg=items.map(o=>
+    `<line x1="${P}" x2="${W-P}" y1="${Y(o.p).toFixed(1)}" y2="${Y(o.p).toFixed(1)}" class="sl ${o.cls}"/>`+
+    `<text x="${W-P}" y="${o.ly.toFixed(1)}" text-anchor="end" class="slt ${o.cls}">${o.lbl} ${cur()}${fmt(o.p)}</text>`).join('');
   const up=v[v.length-1]>=v[0];
   return `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none">
-    ${line(s.box_top,'sbox','box top')}
-    ${line(s.box_bottom,'sbox','box low')}
-    ${line(s.entry_stop_now??s.suggested_stop,'sstop','stop')}
+    ${linesSvg}
     <path d="${path}" class="sline ${up?'up':'down'}"/>
     <circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(v[v.length-1]).toFixed(1)}" r="3" class="sdot ${up?'up':'down'}"/>
   </svg>`;
