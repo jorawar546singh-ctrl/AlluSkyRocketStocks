@@ -98,13 +98,24 @@
   .sub{color:var(--sec);font-size:11.5px}
   .chk{color:var(--green)} .x{color:var(--red)}
 
-  /* ---------- detail ---------- */
-  .detail{border:1px solid var(--hair);background:var(--panel);padding:24px 28px;
-          margin-top:16px;display:none}
+  /* ---------- detail (modal) ---------- */
+  .dback{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(2px);
+         z-index:90;display:none}
+  .dback.on{display:block}
+  .detail{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+          width:min(680px,calc(100vw - 24px));max-height:min(86vh,860px);overflow-y:auto;
+          border:1px solid var(--hair);background:var(--panel);padding:24px 28px;
+          z-index:100;display:none;border-radius:10px;box-shadow:0 24px 64px rgba(0,0,0,.6)}
   .detail.on{display:block}
-  .detail h3{font-family:var(--mono);font-size:20px;font-weight:600;margin-bottom:18px}
+  .detail h3{font-family:var(--mono);font-size:20px;font-weight:600;margin-bottom:18px;padding-right:40px}
   .detail h3 em{font-style:normal;color:var(--sec);font-size:12px;margin-left:14px;font-weight:400}
+  .dclose{position:absolute;top:14px;right:16px;background:none;border:1px solid var(--hair);
+          color:var(--sec);font-size:16px;line-height:1;padding:6px 10px;border-radius:6px;cursor:pointer}
+  .dclose:hover{color:var(--ink);border-color:var(--sec)}
   .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:18px 24px}
+  .stat .num{overflow-wrap:anywhere;word-break:break-word}
+  .stat.wide{grid-column:1/-1}
+  .stat.wide .num{font-size:12px;line-height:1.6}
   .spark{width:100%;height:120px;display:block;margin:10px 0 16px;background:#0d0d0d;border:1px solid #222;border-radius:6px}
   .sline{fill:none;stroke-width:2}.sline.up{stroke:#2ecc71}.sline.down{stroke:#e74c3c}
   .sdot.up{fill:#2ecc71}.sdot.down{fill:#e74c3c}
@@ -218,6 +229,7 @@
     <tbody id="tbody"></tbody>
   </table>
   <div class="cards" id="cards"></div>
+  <div class="dback" id="dback" onclick="select(SELECTED)"></div>
   <div class="detail" id="detail"></div>
 
   <div class="lbl">Open positions</div>
@@ -393,6 +405,7 @@ function sortBy(k){
   sel.value=k; DIR=-1; document.getElementById('fDir').textContent='↓'; renderTable();
 }
 function select(id){SELECTED=SELECTED===id?null:id;renderTable();renderDetail();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&SELECTED!=null)select(SELECTED);});
 
 function spark(s){
   const v=s.spark;
@@ -416,8 +429,9 @@ function spark(s){
 
 function renderDetail(){
   const el=document.getElementById('detail');
+  const bk=document.getElementById('dback');
   const s=mkt().signals.find(x=>x.id===SELECTED);
-  if(!s){el.classList.remove('on');return;}
+  if(!s){el.classList.remove('on');bk.classList.remove('on');return;}
   const acct=ACCOUNT[MARKET], riskAmt=acct*0.02;
   const perShare=s.price-(s.suggested_stop||s.price);
   const maxShares=perShare>0?Math.floor(riskAmt/perShare):0;
@@ -425,8 +439,9 @@ function renderDetail(){
   const ref=MARKET==='IN'
     ?`<a href="https://www.screener.in/company/${s.ticker}/" target="_blank">Screener.in</a>`
     :`<a href="https://finviz.com/quote.ashx?t=${s.ticker}" target="_blank">Finviz</a>`;
-  el.classList.add('on');
-  el.innerHTML=`<h3>${s.ticker}<em>${s.scan_date} · ${(s.source||'').replace('migration_','legacy ')}</em></h3>
+  el.classList.add('on');bk.classList.add('on');
+  el.innerHTML=`<button class="dclose" onclick="select(SELECTED)">✕</button>
+    <h3>${s.ticker}<em>${s.scan_date} · ${(s.source||'').replace('migration_','legacy ')}</em></h3>
     ${spark(s)}
     <div class="dgrid">
       <div class="stat"><b class="num">${cur()}${fmt(s.price)} → ${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b><span>breakout → now</span></div>
@@ -439,8 +454,8 @@ function renderDetail(){
       <div class="stat"><b class="num">${s.rs_excess!=null?fmt(s.rs_excess,1)+'pp':'—'}</b><span>vs benchmark 63d</span></div>
       <div class="stat"><b class="num down">${cur()}${fmt(s.suggested_stop)}</b><span>stop · risk ${fmt(s.risk_pct,1)}%</span></div>
       <div class="stat"><b class="num">${s.streak!=null?s.streak+' (peak '+s.peak_streak+')':'—'}</b><span>up-day streak</span></div>
-      <div class="stat"><b class="num">${s.trend_detail||'legacy — not gated'}</b><span>trend gate</span></div>
       <div class="stat"><b class="num">${s.ret_d30!=null?fmt(s.ret_d30,1)+'%':'pending'}</b><span>outcome 30d</span></div>
+      <div class="stat wide"><b class="num">${s.trend_detail||'legacy — not gated'}</b><span>trend gate</span></div>
     </div>
     <div class="sizing">2% rule @ ${cur()}${acct.toLocaleString()} → max loss ${cur()}${riskAmt.toFixed(0)}
       → <b>max ${maxShares} shares</b> at this stop. These numbers must match the journal.</div>
