@@ -105,6 +105,11 @@
   .detail h3{font-family:var(--mono);font-size:20px;font-weight:600;margin-bottom:18px}
   .detail h3 em{font-style:normal;color:var(--sec);font-size:12px;margin-left:14px;font-weight:400}
   .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:18px 24px}
+  .spark{width:100%;height:120px;display:block;margin:10px 0 16px;background:#0d0d0d;border:1px solid #222;border-radius:6px}
+  .sline{fill:none;stroke-width:2}.sline.up{stroke:#2ecc71}.sline.down{stroke:#e74c3c}
+  .sdot.up{fill:#2ecc71}.sdot.down{fill:#e74c3c}
+  .sl{stroke-width:1;stroke-dasharray:4 4}.sl.sbox{stroke:#f0a500;opacity:.55}.sl.sstop{stroke:#e74c3c;opacity:.7}
+  .slt{font-size:9px;font-family:inherit}.slt.sbox{fill:#f0a500}.slt.sstop{fill:#e74c3c}
   .links{margin-top:20px;display:flex;gap:24px}
   .links a{color:var(--sec);font-family:var(--mono);font-size:12px;text-decoration:none;
            border-bottom:1px solid var(--hair);padding-bottom:2px}
@@ -389,6 +394,26 @@ function sortBy(k){
 }
 function select(id){SELECTED=SELECTED===id?null:id;renderTable();renderDetail();}
 
+function spark(s){
+  const v=s.spark;
+  if(!v||v.length<2) return '<div class="sub" style="padding:8px 0">not enough history for chart</div>';
+  const W=560,H=120,P=6;
+  const refs=[s.box_top,s.box_bottom,(s.entry_stop_now??s.suggested_stop)].filter(x=>x!=null);
+  const lo=Math.min(...v,...refs),hi=Math.max(...v,...refs),rng=(hi-lo)||1;
+  const X=i=>P+i*(W-2*P)/(v.length-1);
+  const Y=p=>H-P-(p-lo)*(H-2*P)/rng;
+  const path=v.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p).toFixed(1)}`).join('');
+  const line=(p,cls,lbl)=>p==null?'':`<line x1="${P}" x2="${W-P}" y1="${Y(p).toFixed(1)}" y2="${Y(p).toFixed(1)}" class="sl ${cls}"/><text x="${W-P}" y="${(Y(p)-3).toFixed(1)}" text-anchor="end" class="slt ${cls}">${lbl} ${cur()}${fmt(p)}</text>`;
+  const up=v[v.length-1]>=v[0];
+  return `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none">
+    ${line(s.box_top,'sbox','box top')}
+    ${line(s.box_bottom,'sbox','box low')}
+    ${line(s.entry_stop_now??s.suggested_stop,'sstop','stop')}
+    <path d="${path}" class="sline ${up?'up':'down'}"/>
+    <circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(v[v.length-1]).toFixed(1)}" r="3" class="sdot ${up?'up':'down'}"/>
+  </svg>`;
+}
+
 function renderDetail(){
   const el=document.getElementById('detail');
   const s=mkt().signals.find(x=>x.id===SELECTED);
@@ -402,15 +427,18 @@ function renderDetail(){
     :`<a href="https://finviz.com/quote.ashx?t=${s.ticker}" target="_blank">Finviz</a>`;
   el.classList.add('on');
   el.innerHTML=`<h3>${s.ticker}<em>${s.scan_date} · ${(s.source||'').replace('migration_','legacy ')}</em></h3>
+    ${spark(s)}
     <div class="dgrid">
       <div class="stat"><b class="num">${cur()}${fmt(s.price)} → ${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b><span>breakout → now</span></div>
       <div class="stat"><b class="num ${s.gain_pct>0?'up':s.gain_pct<0?'down':''}">${s.gain_pct!=null?(s.gain_pct>0?'+':'')+fmt(s.gain_pct,1)+'%':'—'}</b><span>gain since alert</span></div>
+      <div class="stat"><b class="num ${s.max_gain_pct>0?'up':''}">${s.max_gain_pct!=null?(s.max_gain_pct>0?'+':'')+fmt(s.max_gain_pct,1)+'%':'—'}</b><span>max gain reached</span></div>
+      <div class="stat"><b class="num ${s.max_dd_pct<0?'down':''}">${s.max_dd_pct!=null?fmt(s.max_dd_pct,1)+'%':'—'}</b><span>worst point</span></div>
       <div class="stat"><b class="num">${cur()}${fmt(s.box_bottom)}–${fmt(s.box_top)}</b><span>darvas box</span></div>
       <div class="stat"><b class="num">${fmt(s.vol_ratio,1)}×</b><span>vol at breakout</span></div>
       <div class="stat"><b class="num acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b><span>rs percentile</span></div>
       <div class="stat"><b class="num">${s.rs_excess!=null?fmt(s.rs_excess,1)+'pp':'—'}</b><span>vs benchmark 63d</span></div>
       <div class="stat"><b class="num down">${cur()}${fmt(s.suggested_stop)}</b><span>stop · risk ${fmt(s.risk_pct,1)}%</span></div>
-      <div class="stat"><b class="num">${s.streak!=null?s.streak+' (peak '+s.peak_streak+')':'—'}</b><span>streak above box</span></div>
+      <div class="stat"><b class="num">${s.streak!=null?s.streak+' (peak '+s.peak_streak+')':'—'}</b><span>up-day streak</span></div>
       <div class="stat"><b class="num">${s.trend_detail||'legacy — not gated'}</b><span>trend gate</span></div>
       <div class="stat"><b class="num">${s.ret_d30!=null?fmt(s.ret_d30,1)+'%':'pending'}</b><span>outcome 30d</span></div>
     </div>

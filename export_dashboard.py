@@ -81,6 +81,16 @@ def enrich(signals: list[dict], cfg) -> None:
         cur, peak = _streaks(since, s["price"])
         s["streak"], s["peak_streak"] = cur, peak
 
+        # Detail-panel fields: sparkline closes since signal + best/worst path.
+        vals = [round(float(v), 2) for v in since.tolist()][-60:]
+        s["spark"] = vals
+        if vals:
+            hi = max(vals)
+            s["max_gain_pct"] = round((hi - s["price"]) / s["price"] * 100, 2)
+            s["max_dd_pct"] = round((min(vals) - s["price"]) / s["price"] * 100, 2)
+        else:
+            s["max_gain_pct"] = s["max_dd_pct"] = None
+
         vols = df["Volume"].dropna()
         if len(vols) >= 21:
             s["vol_today"] = bool(float(vols.iloc[-1]) >= 2.0 * float(vols.iloc[-21:-1].mean()))
