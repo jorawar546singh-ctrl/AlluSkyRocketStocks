@@ -200,10 +200,12 @@
         <option value="scan_date">Date</option>
         <option value="vol_ratio">Vol ×</option>
         <option value="risk_pct">Risk %</option>
+        <option value="entry_risk_now">Risk now</option>
       </select>
       <button class="btn" id="fDir" onclick="flipDir()">↓</button>
     </div>
     <div class="grp" id="statusBtns">
+      <button class="btn f-today" data-st="TODAY">Today 🎯</button>
       <button class="btn f-all on" data-st="ALL">All</button>
       <button class="btn f-TRENDING" data-st="TRENDING">Trending</button>
       <button class="btn f-FADING" data-st="FADING">Fading</button>
@@ -299,6 +301,7 @@ document.getElementById('statusBtns').addEventListener('click',e=>{
   const b=e.target.closest('.btn'); if(!b)return;
   STATUS=b.dataset.st;
   if(STATUS==='WINNERS'){document.getElementById('fSort').value='gain_pct';DIR=-1;document.getElementById('fDir').textContent='↓';}
+  if(STATUS==='TODAY'){document.getElementById('fSort').value='entry_risk_now';DIR=1;document.getElementById('fDir').textContent='↑';}
   syncStatusBtns(); renderTable();
 });
 
@@ -311,6 +314,7 @@ function filtered(){
   const key=document.getElementById('fSort').value;
   let rows=mkt().signals.slice();
   if(STATUS==='WINNERS') rows=rows.filter(s=>(s.gain_pct??0)>0&&(s.age_days??0)>=2&&s.box_today!==false);
+  else if(STATUS==='TODAY') rows=rows.filter(s=>s.status==='TRENDING'&&(s.streak??0)>=2&&s.clean_entry===true);
   else if(STATUS!=='ALL') rows=rows.filter(s=>s.status===STATUS);
   if(!isNaN(st)) rows=rows.filter(s=>(s.streak??0)>=st);
   if(!isNaN(a0)) rows=rows.filter(s=>(s.age_days??0)>=a0);
