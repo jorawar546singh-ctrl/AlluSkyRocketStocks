@@ -27,9 +27,26 @@ Entry $15.98 × 22 · Stop $14.76 · Exit $14.77
 P&L: −$26.62. Held ~9 days, stopped near the planned level (essentially no slippage).
 Smallest loss of the week — the tight stop did its job.
 
-## MRNA (US) — OPEN — entered 2026-06-18
-Entry $63.13 × 18 · Initial stop $58.71 (set in Wealthsimple)
-Trailing plan: breakeven at +10%, 10%-below-high at +20%, 7%-below-high at +30%.
+## MRNA (US) — STOPPED OUT — entered 2026-06-18, exited 2026-06-22
+Entry $63.13 × 18 · Stop $58.71 (set in Wealthsimple at entry) · Exit $58.71
+P&L: -$79.56.
+Lesson (important): the stop-limit order placed at entry was never moved as
+price ran. The system kept tracking this position as "open" in the DB and
+recalculated a trailing stop against live price every day (it briefly showed
+current_stop $73.62 / running_high $81.80) - but that was fiction, since the
+real position closed at the broker on 6/22 at the original, un-trailed stop.
+The dashboard/digest reported this as a healthy open holding for ~2 weeks
+after it had actually already been stopped out for a loss.
+Fix going forward: when a stop-limit sell fills in Wealthsimple, mark the
+position closed in the system the same day - don't let it keep "trailing"
+a position that's already flat. There's no broker sync; this step is manual
+and was missed here.
+
+## BLZE (US) — OPEN — entered 2026-06-29
+Entry $15.1299 × 71 · Stop $13.60 (stop-limit sell placed in Wealthsimple,
+submitted 6/29, expires 9/25) · Risk ~10.1%
+This is a manual hard stop, not the Darvas box-derived level - the box low
+predated a gap move and was flagged "too wide, no clean entry" earlier.
 Currently the only open position.
 
 ### Week summary
