@@ -42,12 +42,14 @@ position closed in the system the same day - don't let it keep "trailing"
 a position that's already flat. There's no broker sync; this step is manual
 and was missed here.
 
-## BLZE (US) — OPEN — entered 2026-06-29
-Entry $15.1299 × 71 · Stop $13.60 (stop-limit sell placed in Wealthsimple,
-submitted 6/29, expires 9/25) · Risk ~10.1%
-This is a manual hard stop, not the Darvas box-derived level - the box low
-predated a gap move and was flagged "too wide, no clean entry" earlier.
-Currently the only open position.
+## BLZE (US) — STOPPED OUT — entered 2026-06-29, exited 2026-07-09
+Entry $15.1299 × 71 · Exit $17.39 (stop-limit sell - stop moved up manually
+from the original $13.60 as price ran)
+P&L: +$160.47 (+14.9%).
+Winner. This was the position flagged as a system exception - Darvas box low
+predated a gap move, box-derived stop was structurally stale/too wide. The
+manual hard stop ($13.60 at entry, moved up as price ran) was the right call
+here instead of trusting the broken box level.
 
 ### Week summary
 Closed 5 trades: 4 losses + 1 breakeven. US realized ≈ −$109; IN realized ≈ −₹764.
