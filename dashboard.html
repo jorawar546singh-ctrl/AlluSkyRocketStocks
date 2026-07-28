@@ -462,7 +462,8 @@ function renderDetail(){
   const s=mkt().signals.find(x=>x.id===SELECTED);
   if(!s){el.classList.remove('on');bk.classList.remove('on');return;}
   const acct=ACCOUNT[MARKET], riskAmt=acct*0.02;
-  const perShare=s.price-(s.suggested_stop||s.price);
+  const liveStop=s.clean_entry?s.entry_stop_now:s.suggested_stop;
+  const perShare=s.price-(liveStop||s.price);
   const maxShares=perShare>0?Math.floor(riskAmt/perShare):0;
   const yq=MARKET==='IN'?s.ticker+'.NS':s.ticker;
   const ref=MARKET==='IN'
@@ -487,7 +488,8 @@ function renderDetail(){
       <div class="stat"><b class="num">${fmt(s.vol_ratio,1)}×</b><span>vol at breakout</span></div>
       <div class="stat"><b class="num acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b><span>rs percentile</span></div>
       <div class="stat"><b class="num">${s.rs_excess!=null?fmt(s.rs_excess,1)+'pp':'—'}</b><span>vs benchmark 63d</span></div>
-      <div class="stat"><b class="num down">${cur()}${fmt(s.suggested_stop)}</b><span>stop · risk ${fmt(s.risk_pct,1)}%</span></div>
+      <div class="stat"><b class="num down">${s.clean_entry?cur()+fmt(s.entry_stop_now):cur()+fmt(s.suggested_stop)}</b><span>stop today${s.clean_entry?' · risk '+fmt(s.entry_risk_now,1)+'%':' (box too wide)'}</span></div>
+      <div class="stat"><b class="num">${cur()}${fmt(s.suggested_stop)}</b><span>stop @ signal · risk ${fmt(s.risk_pct,1)}%</span></div>
       <div class="stat"><b class="num">${s.streak!=null?s.streak+' (peak '+s.peak_streak+')':'—'}</b><span>up-day streak</span></div>
       <div class="stat"><b class="num">${s.ret_d30!=null?fmt(s.ret_d30,1)+'%':'pending'}</b><span>outcome 30d</span></div>
       <div class="stat wide"><b class="num">${s.trend_detail||'legacy — not gated'}</b><span>trend gate</span></div>
