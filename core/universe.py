@@ -18,7 +18,11 @@ HEADERS = {
                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
-MAX_CANDIDATES = 80
+MAX_CANDIDATES = 150  # raised from 80 (2026-07-28): Finviz alone was already
+# hitting 120 after the pagination fix, meaning the old 80 cap was actively
+# discarding real candidates every day. Now paired with the relative-volume
+# sort fix, so if this cap still binds, it drops the weakest movers, not an
+# alphabetical or arbitrary slice.
 NIFTY_500_URL = "https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv"
 NIFTY_STATIC = os.path.join("data", "nifty500.csv")
 
@@ -50,7 +54,7 @@ FINVIZ_HEADERS = {
 
 def _finviz_csv(filt: str) -> list[str]:
     """Primary: Finviz CSV export endpoint. Clean columns, no HTML parsing."""
-    url = f"https://finviz.com/export.ashx?v=111&f={filt}&ft=4"
+    url = f"https://finviz.com/export.ashx?v=111&f={filt}&ft=4&o=-relativevolume"
     r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
     if r.status_code != 200 or "," not in r.text[:200]:
         raise RuntimeError(f"CSV endpoint HTTP {r.status_code} / non-CSV body")
@@ -79,7 +83,7 @@ def _finviz_html(filt: str, max_pages: int = 6) -> list[str]:
     syms: list[str] = []
     for page in range(max_pages):
         offset = page * 20 + 1
-        url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4&r={offset}"
+        url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4&o=-relativevolume&r={offset}"
         r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
