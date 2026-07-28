@@ -1,18 +1,23 @@
 """
-Telegram EOD digest, v4 — decisions, not data.
+Telegram EOD digest, v6 — decisions, not data, readable on a phone.
 
 Format goal: tell me what to DO, then let me close the app.
   1. HOLDING — position(s) first, with a verdict: distance to stop + tier.
-  2. TODAY'S SHORTLIST — signals that are actionable *right now*, mechanically:
-       status TRENDING + streak >= 2 + clean entry (risk-to-stop <= 12%).
-     Same rule as the dashboard's "Today" tab. Cleanest (lowest risk) first.
-  3. STREAK WATCH — every signal on a 3+ day up-streak, risk or not. This is
-     visibility, not a buy signal: it INCLUDES extended/risky entries the
-     shortlist deliberately excludes, so a real momentum run doesn't stay
-     invisible just because it's already extended. Risk-to-stop is shown so
-     you can judge the extension yourself - tap the ticker on the dashboard
-     for the chart before acting.
-  4. Everything else collapsed to one line. "Nothing needs you" is a feature.
+  2. NEW TODAY — shortlist signals that fired TODAY (age_days==0). Always
+     shown in full, no cap — these are the actual new opportunities.
+  3. STILL QUALIFYING — older shortlist signals still meeting the bar
+     (kept visible past 30d by the winners-persistence fix). Capped at
+     CARRY_CAP so the message stays readable; the rest are one tap away
+     on the dashboard's Today tab.
+  4. STREAK WATCH — signals on a 3+ day up-streak, risky or not, capped at
+     WATCH_CAP. Visibility, not a buy signal — includes extended entries
+     the shortlist deliberately excludes. Judge the extension yourself.
+  5. Everything else collapsed to one line. "Nothing needs you" is a feature.
+
+Mobile formatting: each stock is two SHORT lines (ticker+gain, then the
+details), never one long line. No backticks around tickers — backticks
+force an inline monospace font that mixes badly with the surrounding
+proportional text and causes unpredictable mid-word wraps on a phone.
 
 Reads data.json (written by export_dashboard.py earlier in the same workflow)
 so it sees the same enriched fields the dashboard does.
@@ -50,16 +55,25 @@ def _tier(gain_pct: float) -> str:
     return "initial stop"
 
 
+def _pick_lines(key, cur, s, tag=""):
+    """Two short lines per stock — never one long line that can wrap badly."""
+    gain = s.get("gain_pct", 0)
+    line1 = f"{FLAG[key]} *{s['ticker']}*  {gain:+.1f}%{tag}"
+    line2 = (f"   streak {s.get('streak')} \u00b7 risk {s.get('entry_risk_now'):.1f}%"
+              f" \u00b7 stop {cur}{s.get('entry_stop_now')}")
+    return [line1, line2]
+
+
 def build() -> str:
     now = datetime.now(timezone.utc)
-    lines = [f"*ASR — {now.strftime('%a %b %d')}*"]
+    lines = [f"*ASR \u2014 {now.strftime('%a %b %d')}*"]
 
     data_path = Path(__file__).parent / "data.json"
     if not data_path.exists():
-        return "\n".join(lines + ["\ndata.json missing — run export_dashboard.py first."])
+        return "\n".join(lines + ["\ndata.json missing \u2014 run export_dashboard.py first."])
     data = json.loads(data_path.read_text())
 
-    # ---- 1) HOLDING: verdict line per open position -------------------
+    # ---- 1) HOLDING: verdict, two short lines per position ------------
     hold_lines = []
     for key, m in data["markets"].items():
         cur = m["currency"]
@@ -71,18 +85,20 @@ def build() -> str:
             if now_p and stop:
                 dist = (now_p - stop) / now_p * 100
                 verdict = ("\u26a0\ufe0f near stop" if dist <= 2 else "HOLD")
+                hold_lines.append(f"\U0001F7E2 *{p['ticker']}*  {pl:+.1f}%")
                 hold_lines.append(
-                    f"\U0001F7E2 `{p['ticker']}` {pl:+.1f}% | stop {cur}{stop}"
-                    f" ({_tier(pl or 0)}) | {dist:.1f}% above stop \u2192 {verdict}")
+                    f"   stop {cur}{stop} ({_tier(pl or 0)}) \u00b7 "
+                    f"{dist:.1f}% clear \u2192 {verdict}")
             else:
-                hold_lines.append(f"\U0001F7E2 `{p['ticker']}` — stop {cur}{stop}")
+                hold_lines.append(f"\U0001F7E2 *{p['ticker']}*  \u2014 stop {cur}{stop}")
     if hold_lines:
         lines.append("\n*HOLDING*")
         lines.extend(hold_lines)
 
-    # ---- 2) TODAY'S SHORTLIST (same rule as dashboard Today tab) ------
+    # ---- 2) TODAY'S SHORTLIST, split NEW vs carried-over --------------
+    CARRY_CAP = 6
     total_signals = 0
-    short = []
+    all_short = []
     for key, m in data["markets"].items():
         cur = m["currency"]
         sigs = m.get("signals", [])
@@ -91,47 +107,62 @@ def build() -> str:
                  if s.get("status") == "TRENDING"
                  and (s.get("streak") or 0) >= 2
                  and s.get("clean_entry") is True]
-        picks.sort(key=lambda s: s.get("entry_risk_now") or 99)
-        for i, s in enumerate(picks):
-            tag = " \u2190 cleanest" if i == 0 and len(picks) > 1 else ""
-            short.append(
-                f"{FLAG[key]} `{s['ticker']}` {s.get('gain_pct', 0):+.1f}%"
-                f"  streak {s.get('streak')}  risk {s.get('entry_risk_now'):.1f}%"
-                f"  stop {cur}{s.get('entry_stop_now')}{tag}")
+        for s in picks:
+            all_short.append((key, cur, s))
 
-    if short:
-        lines.append(f"\n\U0001F3AF *TODAY'S SHORTLIST* ({len(short)})")
-        lines.extend(short)
-    else:
-        lines.append("\n\U0001F3AF *TODAY'S SHORTLIST* — none")
+    new_short = sorted([t for t in all_short if (t[2].get("age_days") or 0) == 0],
+                        key=lambda t: t[2].get("entry_risk_now") or 99)
+    carried = sorted([t for t in all_short if (t[2].get("age_days") or 0) > 0],
+                      key=lambda t: t[2].get("entry_risk_now") or 99)
+
+    short = []
+    if new_short:
+        lines.append(f"\n\U0001F195 *NEW TODAY* ({len(new_short)})")
+        for i, (key, cur, s) in enumerate(new_short):
+            tag = "  \u2190 cleanest" if i == 0 and len(new_short) > 1 else ""
+            lines.extend(_pick_lines(key, cur, s, tag))
+            short.append(s)
+
+    if carried:
+        shown = carried[:CARRY_CAP]
+        lines.append(f"\n\U0001F3AF *STILL QUALIFYING* ({len(carried)})")
+        for key, cur, s in shown:
+            lines.extend(_pick_lines(key, cur, s))
+            short.append(s)
+        if len(carried) > CARRY_CAP:
+            lines.append(f"   +{len(carried) - CARRY_CAP} more on the dashboard's Today tab")
+
+    if not new_short and not carried:
+        lines.append("\n\U0001F3AF *TODAY'S SHORTLIST* \u2014 none")
 
     # ---- 3) STREAK WATCH: every 3+ day up-streak, risky or not --------
     STREAK_MIN = 3
-    watch = []
-    shortlist_tickers = {s["ticker"] for m in data["markets"].values()
-                          for s in m.get("signals", [])
-                          if s.get("status") == "TRENDING"
-                          and (s.get("streak") or 0) >= 2
-                          and s.get("clean_entry") is True}
+    WATCH_CAP = 8
+    shortlist_tickers = {s["ticker"] for s in short}
+    watch_all = []
     for key, m in data["markets"].items():
         cur = m["currency"]
         picks = [s for s in m.get("signals", [])
                  if (s.get("streak") or 0) >= STREAK_MIN
                  and s["ticker"] not in shortlist_tickers]
-        picks.sort(key=lambda s: s.get("streak") or 0, reverse=True)
-        for s in picks[:8]:
-            risk = s.get("entry_risk_now")
-            risk_txt = f"risk {risk:.1f}%" if (risk is not None and s.get("clean_entry")) else "extended"
-            watch.append(
-                f"{FLAG[key]} `{s['ticker']}` {s.get('gain_pct', 0):+.1f}%"
-                f"  streak {s.get('streak')}d  {risk_txt}")
+        for s in picks:
+            watch_all.append((key, cur, s))
+    watch_all.sort(key=lambda t: t[2].get("streak") or 0, reverse=True)
+    watch = watch_all[:WATCH_CAP]
 
     if watch:
-        lines.append(f"\n\U0001F525 *STREAK WATCH* ({STREAK_MIN}+ days, risk or not)")
-        lines.extend(watch)
+        lines.append(f"\n\U0001F525 *STREAK WATCH* ({STREAK_MIN}+ days)")
+        for key, cur, s in watch:
+            risk = s.get("entry_risk_now")
+            risk_txt = f"risk {risk:.1f}%" if (risk is not None and s.get("clean_entry")) else "extended"
+            gain = s.get("gain_pct", 0)
+            lines.append(f"{FLAG[key]} *{s['ticker']}*  {gain:+.1f}%")
+            lines.append(f"   streak {s.get('streak')}d \u00b7 {risk_txt}")
+        if len(watch_all) > WATCH_CAP:
+            lines.append(f"   +{len(watch_all) - WATCH_CAP} more on the dashboard")
 
     # ---- 4) Everything else, collapsed --------------------------------
-    rest = total_signals - len(short) - len(watch)
+    rest = total_signals - len(short) - len(watch_all)
     if rest > 0:
         lines.append(f"\n\U0001F634 Everything else: {rest} signals, nothing actionable")
 
