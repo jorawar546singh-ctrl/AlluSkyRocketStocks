@@ -68,7 +68,7 @@ def _finviz_csv(filt: str) -> list[str]:
     return syms
 
 
-def _finviz_html(filt: str, max_pages: int = 6) -> list[str]:
+def _finviz_html(filt: str, max_pages: int = 12) -> list[str]:
     """Fallback: scrape the screener HTML. Finviz shows 20 rows per page
     (offset param r=1, r=21, r=41, ...) with nothing on the page itself
     indicating how many pages exist - so without pagination this silently
