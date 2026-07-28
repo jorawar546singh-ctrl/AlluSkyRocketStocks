@@ -401,7 +401,7 @@ function renderTable(){
         <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
         <span>age <b>${s.age_days!=null?s.age_days+'d':'—'}</b> · streak <b>${s.streak??'—'}</b></span>
         <span>RS <b class="acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b> · vol <b>${fmt(s.vol_ratio,1)}×</b></span>
-        <span>${s.box_bottom_now!=null?`box ${cur()}${fmt(s.box_bottom_now)}–${fmt(s.box_top_now)} <span class="${s.box_pos==='inside'?'chk':s.box_pos==='above'?'acc':'x'}">${(s.box_pos||'').toUpperCase()}</span>`:'stop'} ${s.box_bottom_now!=null&&!s.clean_entry?'<span class="sub">→ too wide</span>':`<b class="down">→ ${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</b>${s.entry_risk_now!=null?` <span class="sub">(${fmt(s.entry_risk_now,1)}%)</span>`:''}`}</span>
+        <span>${s.box_bottom_now!=null?`box ${cur()}${fmt(s.box_bottom_now)}–${fmt(s.box_top_now)} <span class="${s.box_pos==='inside'?'chk':s.box_pos==='above'?'acc':'x'}">${(s.box_pos||'').toUpperCase()}</span>`:'stop'} ${s.box_bottom_now!=null&&!s.clean_entry?'<span class="sub">→ too wide</span>':`<b class="down">→ ${cur()}${fmt(s.entry_stop_now??s.suggested_stop)}</b>${s.entry_risk_now!=null?` <span class="${riskClass(s.entry_risk_now)}">(${fmt(s.entry_risk_now,1)}%)</span>`:''}`}</span>
         <span>${s.vol_today==null?'—':`Vol <b class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</b> · Box <b class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</b>`}</span>
       </div>
     </div>`;
