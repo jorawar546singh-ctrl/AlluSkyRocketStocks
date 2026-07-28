@@ -8,6 +8,7 @@ Actions log and the Telegram digest instead of dying silently.
 import io
 import os
 import re
+import time
 
 import pandas as pd
 import requests
@@ -63,20 +64,38 @@ def _finviz_csv(filt: str) -> list[str]:
     return syms
 
 
-def _finviz_html(filt: str) -> list[str]:
-    """Fallback: scrape the screener HTML. Tries current + legacy selectors."""
+def _finviz_html(filt: str, max_pages: int = 6) -> list[str]:
+    """Fallback: scrape the screener HTML. Finviz shows 20 rows per page
+    (offset param r=1, r=21, r=41, ...) with nothing on the page itself
+    indicating how many pages exist - so without pagination this silently
+    caps at 20 tickers no matter how many actually match the filter.
+    (Found 2026-07-28: this had been quietly capping the US universe at
+    20 the whole time the HTML fallback was in use; it went unnoticed
+    while the gap-up filter kept true match counts near/under 20 anyway.)
+    Pages forward until a page returns no new tickers or comes back short
+    (< 20 rows = last page), capped at max_pages (120 tickers) so a
+    markup change can't cause a runaway loop against Finviz."""
     from bs4 import BeautifulSoup
-    url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4"
-    r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
     syms: list[str] = []
-    # current finviz markup: ticker links carry ?t=SYMBOL in the href
-    for a in soup.find_all("a", href=True):
-        m = re.search(r"[?&]t=([A-Z][A-Z0-9.\-]{0,6})(?:&|$)", a["href"])
-        if m and a.get_text(strip=True) == m.group(1):
-            if m.group(1) not in syms:
-                syms.append(m.group(1))
+    for page in range(max_pages):
+        offset = page * 20 + 1
+        url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4&r={offset}"
+        r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+        page_syms: list[str] = []
+        for a in soup.find_all("a", href=True):
+            m = re.search(r"[?&]t=([A-Z][A-Z0-9.\-]{0,6})(?:&|$)", a["href"])
+            if m and a.get_text(strip=True) == m.group(1):
+                if m.group(1) not in page_syms:
+                    page_syms.append(m.group(1))
+        new = [s for s in page_syms if s not in syms]
+        if not new:
+            break
+        syms.extend(new)
+        if len(page_syms) < 20:
+            break              # short page = last page, stop paging
+        time.sleep(1)          # polite gap between pages
     if not syms:
         raise RuntimeError("HTML parse found 0 tickers (markup changed)")
     return syms
