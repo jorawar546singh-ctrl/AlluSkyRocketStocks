@@ -35,7 +35,9 @@ def _warn(msg: str):
 # do NOT hardcode a price bucket here, or it'll silently drift from core/config.py
 # (this happened once already: a stale "sh_price_1to100" kept the universe capped
 # at $100 even after max_price was raised to $1000).
-FINVIZ_FILTER_BASE = "cap_smallover,sh_avgvol_o300,sh_relvol_o1.5,ta_gap_u,ta_perf_1w5o"
+# Dropped ta_gap_u (2026-07-28): excluded quiet climbers that never gap;
+# gappy names were also the likeliest to form wide/messy boxes (BLZE, CLSK).
+FINVIZ_FILTER_BASE = "cap_smallover,sh_avgvol_o300,sh_relvol_o1.5,ta_perf_1w5o"
 FINVIZ_HEADERS = {
     "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36"),
