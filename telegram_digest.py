@@ -1,12 +1,18 @@
 """
-Telegram EOD digest, v3 — decisions, not data.
+Telegram EOD digest, v4 — decisions, not data.
 
 Format goal: tell me what to DO, then let me close the app.
   1. HOLDING — position(s) first, with a verdict: distance to stop + tier.
   2. TODAY'S SHORTLIST — signals that are actionable *right now*, mechanically:
        status TRENDING + streak >= 2 + clean entry (risk-to-stop <= 12%).
      Same rule as the dashboard's "Today" tab. Cleanest (lowest risk) first.
-  3. Everything else collapsed to one line. "Nothing needs you" is a feature.
+  3. STREAK WATCH — every signal on a 3+ day up-streak, risk or not. This is
+     visibility, not a buy signal: it INCLUDES extended/risky entries the
+     shortlist deliberately excludes, so a real momentum run doesn't stay
+     invisible just because it's already extended. Risk-to-stop is shown so
+     you can judge the extension yourself - tap the ticker on the dashboard
+     for the chart before acting.
+  4. Everything else collapsed to one line. "Nothing needs you" is a feature.
 
 Reads data.json (written by export_dashboard.py earlier in the same workflow)
 so it sees the same enriched fields the dashboard does.
@@ -99,8 +105,33 @@ def build() -> str:
     else:
         lines.append("\n\U0001F3AF *TODAY'S SHORTLIST* — none")
 
-    # ---- 3) Everything else, collapsed --------------------------------
-    rest = total_signals - len(short)
+    # ---- 3) STREAK WATCH: every 3+ day up-streak, risky or not --------
+    STREAK_MIN = 3
+    watch = []
+    shortlist_tickers = {s["ticker"] for m in data["markets"].values()
+                          for s in m.get("signals", [])
+                          if s.get("status") == "TRENDING"
+                          and (s.get("streak") or 0) >= 2
+                          and s.get("clean_entry") is True}
+    for key, m in data["markets"].items():
+        cur = m["currency"]
+        picks = [s for s in m.get("signals", [])
+                 if (s.get("streak") or 0) >= STREAK_MIN
+                 and s["ticker"] not in shortlist_tickers]
+        picks.sort(key=lambda s: s.get("streak") or 0, reverse=True)
+        for s in picks[:8]:
+            risk = s.get("entry_risk_now")
+            risk_txt = f"risk {risk:.1f}%" if (risk is not None and s.get("clean_entry")) else "extended"
+            watch.append(
+                f"{FLAG[key]} `{s['ticker']}` {s.get('gain_pct', 0):+.1f}%"
+                f"  streak {s.get('streak')}d  {risk_txt}")
+
+    if watch:
+        lines.append(f"\n\U0001F525 *STREAK WATCH* ({STREAK_MIN}+ days, risk or not)")
+        lines.extend(watch)
+
+    # ---- 4) Everything else, collapsed --------------------------------
+    rest = total_signals - len(short) - len(watch)
     if rest > 0:
         lines.append(f"\n\U0001F634 Everything else: {rest} signals, nothing actionable")
 
