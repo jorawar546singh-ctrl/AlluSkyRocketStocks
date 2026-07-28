@@ -31,6 +31,11 @@ from core.db import connect
 from core.stops import position_trailing_stop, watchlist_entry_stop
 
 RECENT_DAYS = 30
+# Older signals are only worth fetching/showing if they're still winning.
+# Bounding at 180d keeps the daily price-fetch cost sane (Darvas-style
+# breakouts rarely stay meaningfully "trending" for six months, and the
+# spark/box-today math wasn't validated much past that either).
+EXTENDED_DAYS = 180
 
 
 def _streaks(closes: pd.Series, breakout_price: float) -> tuple[int, int]:
@@ -170,11 +175,21 @@ def export():
                 "LEFT JOIN outcomes o ON o.signal_id = s.id "
                 "WHERE s.market=? AND julianday('now') - julianday(s.scan_date) <= ? "
                 "ORDER BY s.scan_date DESC, s.rs_pct DESC",
-                con, params=(key, RECENT_DAYS))
+                con, params=(key, EXTENDED_DAYS))
             pos = pd.read_sql_query(
                 "SELECT * FROM positions WHERE market=? AND status='open'", con, params=(key,))
             signals = json.loads(sig.to_json(orient="records"))
             enrich(signals, cfg)
+            # Two-tier retention, applied AFTER enrich() so status is known:
+            #   age <= 30d        -> always shown (fresh signals get a fair look
+            #                         regardless of how they're doing yet)
+            #   30d < age <= 180d -> shown only if still status=='TRENDING'
+            #                         (a real winner shouldn't vanish just for
+            #                         being old; a stalled/faded one should)
+            #   age > 180d        -> dropped (outer bound, see EXTENDED_DAYS)
+            signals = [s for s in signals
+                       if (s.get("age_days") or 0) <= RECENT_DAYS
+                       or s.get("status") == "TRENDING"]
             positions = json.loads(pos.to_json(orient="records"))
             enrich_positions(positions, cfg)
             # Persist any ratcheted stops back to the db
