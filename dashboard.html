@@ -13,6 +13,8 @@
     --amber:#FFB224; --amber-dim:rgba(255,178,36,.14);
     --green:#3DDC84; --green-dim:rgba(61,220,132,.12);
     --red:#FF5C5C;  --red-dim:rgba(255,92,92,.10);
+    --blue:#4FA8FF; --blue-dim:rgba(79,168,255,.14);
+    --violet:#B98CFF; --violet-dim:rgba(185,140,255,.14);
     --mono:'IBM Plex Mono',ui-monospace,monospace;
     --grot:'Space Grotesk',system-ui,sans-serif;
   }
@@ -69,7 +71,8 @@
   .btn.on.f-win{background:var(--green);border-color:var(--green)}
   .btn.on.f-TRENDING{background:var(--amber);border-color:var(--amber)}
   .btn.on.f-FADING{background:var(--red);border-color:var(--red)}
-  .btn.on.f-WATCHING{background:var(--sec);border-color:var(--sec)}
+  .btn.on.f-WATCHING{background:var(--blue);border-color:var(--blue)}
+  .btn.on.f-today{background:var(--violet);border-color:var(--violet)}
   .btn.on.f-chk{background:var(--panel2);color:var(--green);border-color:var(--green)}
   .showing{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--sec);letter-spacing:.1em}
 
@@ -78,7 +81,7 @@
        margin-left:8px;vertical-align:2px;font-weight:600}
   .b-new{color:var(--green);border:1px solid var(--green)}
   .b-TRENDING{background:var(--amber);color:#0B0B0D}
-  .b-WATCHING{color:var(--sec);border:1px solid var(--hair);background:var(--panel2)}
+  .b-WATCHING{color:var(--blue);border:1px solid var(--blue);background:var(--blue-dim)}
   .b-FADING{color:var(--red);border:1px solid var(--red)}
 
   /* ---------- table ---------- */
@@ -119,7 +122,14 @@
   .shist{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 16px}
   .schip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:4px;
          border:1px solid var(--hair);color:var(--sec)}
-  .schip.on{border-color:var(--green);color:var(--green)}
+  .schip.h2{border-color:var(--violet);color:var(--violet);background:var(--violet-dim)}
+  .schip.h4{background:var(--violet);color:#0B0B0D;border-color:var(--violet)}
+  .schip.on{box-shadow:0 0 0 1px var(--green) inset;color:var(--green)}
+  .schip.on.h2{color:var(--violet)}
+  .schip.on.h4{color:#0B0B0D}
+  .schip.on::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
+                    background:var(--green);margin-left:5px;vertical-align:middle}
+  .risk-lo{color:var(--green)} .risk-mid{color:var(--amber)} .risk-hi{color:var(--red)}
   .spark{width:100%;height:120px;display:block;margin:10px 0 16px;background:#0d0d0d;border:1px solid #222;border-radius:6px}
   .sline{fill:none;stroke-width:2}.sline.up{stroke:#2ecc71}.sline.down{stroke:#e74c3c}
   .sdot.up{fill:#2ecc71}.sdot.down{fill:#e74c3c}
@@ -282,6 +292,7 @@ async function load(){
 }
 function mkt(){return DATA.markets[MARKET];}
 function cur(){return mkt().currency;}
+function riskClass(p){return p==null?'':p<=6?'risk-lo':p<=12?'risk-mid':'risk-hi';}
 
 function setMarket(m){
   MARKET=m; SELECTED=null;
@@ -384,7 +395,7 @@ function renderTable(){
       <td>${s.rs_pct!=null?fmt(s.rs_pct,0):'<span class="sub">—</span>'}</td>
       <td>${s.box_bottom_now!=null?
           `<span class="sub">${cur()}${fmt(s.box_bottom_now)}–${fmt(s.box_top_now)}</span> <span class="${s.box_pos==='inside'?'chk':s.box_pos==='above'?'acc':'x'}" style="font-size:10px">${(s.box_pos||'').toUpperCase()}</span><br>`+
-          (s.clean_entry?`<span class="down">→ ${cur()}${fmt(s.entry_stop_now)}</span> <span class="sub">${fmt(s.entry_risk_now,1)}%</span>`
+          (s.clean_entry?`<span class="down">→ ${cur()}${fmt(s.entry_stop_now)}</span> <span class="${riskClass(s.entry_risk_now)}">${fmt(s.entry_risk_now,1)}%</span>`
                         :`<span class="sub" style="font-size:11px">box too wide — no clean entry</span>`)
           :`<span class="down">${cur()}${fmt(s.suggested_stop)}</span>`}</td>
       <td>${s.vol_today==null?'<span class="sub">—</span>':
@@ -475,7 +486,8 @@ function renderDetail(){
     ${spark(s)}
     ${(()=>{const runs=streakRuns(s.spark);
       if(!runs.length) return '';
-      const chips=runs.map(r=>`<span class="schip${r.active?' on':''}">${r.len}d${r.active?' current':''}</span>`).join('');
+      const heat=l=>l>=4?' h4':l>=2?' h2':'';
+      const chips=runs.map(r=>`<span class="schip${r.active?' on':''}${heat(r.len)}">${r.len}d${r.active?' current':''}</span>`).join('');
       const note=(s.age_days??0)>60?' <span class="sub">(last 60 sessions tracked)</span>':'';
       return `<div class="shist">${chips}</div><div class="sub" style="margin:-10px 0 16px">streak history — each run resets on a lower close${note}</div>`;
     })()}
@@ -488,7 +500,7 @@ function renderDetail(){
       <div class="stat"><b class="num">${fmt(s.vol_ratio,1)}×</b><span>vol at breakout</span></div>
       <div class="stat"><b class="num acc">${s.rs_pct!=null?fmt(s.rs_pct,0):'—'}</b><span>rs percentile</span></div>
       <div class="stat"><b class="num">${s.rs_excess!=null?fmt(s.rs_excess,1)+'pp':'—'}</b><span>vs benchmark 63d</span></div>
-      <div class="stat"><b class="num down">${s.clean_entry?cur()+fmt(s.entry_stop_now):cur()+fmt(s.suggested_stop)}</b><span>stop today${s.clean_entry?' · risk '+fmt(s.entry_risk_now,1)+'%':' (box too wide)'}</span></div>
+      <div class="stat"><b class="num down">${s.clean_entry?cur()+fmt(s.entry_stop_now):cur()+fmt(s.suggested_stop)}</b><span>stop today${s.clean_entry?` · risk <b class="${riskClass(s.entry_risk_now)}">${fmt(s.entry_risk_now,1)}%</b>`:' (box too wide)'}</span></div>
       <div class="stat"><b class="num">${cur()}${fmt(s.suggested_stop)}</b><span>stop @ signal · risk ${fmt(s.risk_pct,1)}%</span></div>
       <div class="stat"><b class="num">${s.streak!=null?s.streak+' (peak '+s.peak_streak+')':'—'}</b><span>up-day streak</span></div>
       <div class="stat"><b class="num">${s.ret_d30!=null?fmt(s.ret_d30,1)+'%':'pending'}</b><span>outcome 30d</span></div>
