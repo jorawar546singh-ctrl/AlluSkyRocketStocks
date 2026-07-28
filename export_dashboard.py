@@ -34,18 +34,21 @@ RECENT_DAYS = 30
 
 
 def _streaks(closes: pd.Series, breakout_price: float) -> tuple[int, int]:
-    """(current, peak) runs of consecutive day-over-day HIGHER closes (v1 logic).
-    Resets to 0 on any close that isn't strictly higher than the prior close.
-    Fallback: if the current run is 0 but price is still above the breakout
-    price, current shows 1 (still "up" overall even without a fresh up-day)."""
+    """(current, peak) runs of consecutive day-over-day HIGHER closes.
+    Strict v1 logic: resets to 0 on ANY close that isn't strictly higher
+    than the prior close. No exceptions - if yesterday was flat or down,
+    streak is 0, even if price is still above the original breakout price.
+    (breakout_price kept as a param for call-site compat; unused now -
+    a prior version used it for a "still above entry" fallback that made
+    down-days show a false streak of 1. Removed: that conflated two
+    different ideas - streak and gain-since-entry - into one misleading
+    number.)"""
     vals = closes.tolist()
     cur = peak = run = 0
     for i in range(1, len(vals)):
         run = run + 1 if vals[i] > vals[i - 1] else 0
         peak = max(peak, run)
     cur = run
-    if cur == 0 and vals and vals[-1] > breakout_price:
-        cur = 1
     return cur, peak
 
 
