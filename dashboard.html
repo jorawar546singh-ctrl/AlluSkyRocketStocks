@@ -195,6 +195,7 @@
       <div class="toggle">
         <button id="tgUS" class="on" onclick="setMarket('US')">US</button>
         <button id="tgIN" onclick="setMarket('IN')">INDIA</button>
+        <button id="tgCA" onclick="setMarket('CA')">CANADA</button>
       </div>
       <div class="stamp" id="stamp">—</div>
     </div>
@@ -291,7 +292,9 @@ async function load(){
       '<div class="empty">data.json not found. Run the workflow once, or serve via http (not file://).</div>';
   }
 }
-function mkt(){return DATA.markets[MARKET];}
+function mkt(){
+  return DATA.markets[MARKET] || {signals:[], positions:[], currency:'', label:MARKET, edge:null};
+}
 function cur(){return mkt().currency;}
 function riskClass(p){return p==null?'':p<=6?'risk-lo':p<=12?'risk-mid':'risk-hi';}
 
@@ -299,6 +302,7 @@ function setMarket(m){
   MARKET=m; SELECTED=null;
   document.getElementById('tgUS').classList.toggle('on',m==='US');
   document.getElementById('tgIN').classList.toggle('on',m==='IN');
+  document.getElementById('tgCA').classList.toggle('on',m==='CA');
   render();
 }
 function flipDir(){DIR=-DIR;document.getElementById('fDir').textContent=DIR<0?'↓':'↑';renderTable();}
@@ -496,14 +500,18 @@ function renderDetail(){
   const bk=document.getElementById('dback');
   const s=mkt().signals.find(x=>x.id===SELECTED);
   if(!s){el.classList.remove('on');bk.classList.remove('on');return;}
-  const acct=ACCOUNT[MARKET], riskAmt=acct*0.02;
+  const acct=ACCOUNT[MARKET];
+  const riskAmt=acct?acct*0.02:null;
   const liveStop=s.clean_entry?s.entry_stop_now:s.suggested_stop;
   const perShare=s.price-(liveStop||s.price);
-  const maxShares=perShare>0?Math.floor(riskAmt/perShare):0;
-  const yq=MARKET==='IN'?s.ticker+'.NS':s.ticker;
+  const maxShares=(acct&&perShare>0)?Math.floor(riskAmt/perShare):0;
+  const yq=MARKET==='IN'?s.ticker+'.NS':MARKET==='CA'?s.ticker+'.TO':s.ticker;
   const ref=MARKET==='IN'
     ?`<a href="https://www.screener.in/company/${s.ticker}/" target="_blank">Screener.in</a>`
+    :MARKET==='CA'
+    ?`<a href="https://money.tmx.com/en/quote/${s.ticker}" target="_blank">TMX Money</a>`
     :`<a href="https://finviz.com/quote.ashx?t=${s.ticker}" target="_blank">Finviz</a>`;
+  const tvSymbol=MARKET==='IN'?'NSE:'+s.ticker:MARKET==='CA'?'TSX:'+s.ticker:s.ticker;
   el.classList.add('on');bk.classList.add('on');
   el.innerHTML=`<button class="dclose" onclick="select(SELECTED)">✕</button>
     <h3>${s.ticker}<em>${s.scan_date} · ${(s.source||'').replace('migration_','legacy ')}</em></h3>
@@ -530,12 +538,13 @@ function renderDetail(){
       <div class="stat"><b class="num">${s.ret_d30!=null?fmt(s.ret_d30,1)+'%':'pending'}</b><span>outcome 30d</span></div>
       <div class="stat wide"><b class="num">${s.trend_detail||'legacy — not gated'}</b><span>trend gate</span></div>
     </div>
-    <div class="sizing">2% rule @ ${cur()}${acct.toLocaleString()} → max loss ${cur()}${riskAmt.toFixed(0)}
-      → <b>max ${maxShares} shares</b> at this stop. These numbers must match the journal.</div>
+    <div class="sizing">${acct?`2% rule @ ${cur()}${acct.toLocaleString()} → max loss ${cur()}${riskAmt.toFixed(0)}
+      → <b>max ${maxShares} shares</b> at this stop. These numbers must match the journal.`
+      :`Position sizing not set up for ${MARKET} yet — add an account value to ACCOUNT in dashboard.html to enable the 2% rule calculator here.`}</div>
     <div class="links">
       ${ref}
       <a href="https://finance.yahoo.com/quote/${yq}" target="_blank">Yahoo</a>
-      <a href="https://www.tradingview.com/chart/?symbol=${MARKET==='IN'?'NSE:'+s.ticker:s.ticker}" target="_blank">TradingView</a>
+      <a href="https://www.tradingview.com/chart/?symbol=${tvSymbol}" target="_blank">TradingView</a>
     </div>`;
 }
 

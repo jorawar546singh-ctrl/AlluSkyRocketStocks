@@ -21,7 +21,9 @@ def run(market_key: str) -> list[dict]:
     cfg = MARKETS[market_key]
     print(f"=== AlluSkyRocketStocks scan: {cfg.label} ===")
 
-    bare = uni.us_universe(cfg) if cfg.key == "US" else uni.in_universe()
+    bare = (uni.us_universe(cfg) if cfg.key == "US"
+            else uni.ca_universe() if cfg.key == "CA"
+            else uni.in_universe())
     if not bare:
         return []
     tickers = [b + cfg.ticker_suffix for b in bare]

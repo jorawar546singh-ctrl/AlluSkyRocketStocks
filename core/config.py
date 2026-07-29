@@ -7,10 +7,10 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class MarketConfig:
-    key: str                 # "US" | "IN"
+    key: str                 # "US" | "IN" | "CA"
     label: str
     currency: str
-    ticker_suffix: str       # "" for US, ".NS" for NSE
+    ticker_suffix: str       # "" for US, ".NS" for NSE, ".TO" for TSX
     benchmark: str           # index proxy for relative strength
     min_price: float
     max_price: float
@@ -31,7 +31,12 @@ IN = MarketConfig(
     benchmark="^NSEI", min_price=50.0, max_price=5000.0, top_n=15,
 )
 
-MARKETS = {m.key: m for m in (US, IN)}
+CA = MarketConfig(
+    key="CA", label="Canada / TSX", currency="C$", ticker_suffix=".TO",
+    benchmark="^GSPTSE", min_price=2.0, max_price=1000.0, top_n=15,
+)
+
+MARKETS = {m.key: m for m in (US, IN, CA)}
 
 DB_PATH = "data/asr.db"
 DASHBOARD_JSON = "data.json"

@@ -31,7 +31,7 @@ import requests
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHAT = os.environ.get("TELEGRAM_CHAT_ID", "")
-FLAG = {"US": "\U0001F1FA\U0001F1F8", "IN": "\U0001F1EE\U0001F1F3"}
+FLAG = {"US": "\U0001F1FA\U0001F1F8", "IN": "\U0001F1EE\U0001F1F3", "CA": "\U0001F1E8\U0001F1E6"}
 TIER = [(30, "trail 7% below high"), (20, "trail 10% below high"),
         (10, "breakeven locked"), (0, "initial stop")]
 

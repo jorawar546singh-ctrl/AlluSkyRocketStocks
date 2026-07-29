@@ -34,9 +34,9 @@ jobs:
         run: |
           HOUR=$(date -u +%H)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "markets=US IN" >> "$GITHUB_OUTPUT"   # manual run does both
+            echo "markets=US IN CA" >> "$GITHUB_OUTPUT"   # manual run does all three
           elif [ "$HOUR" -ge 15 ]; then
-            echo "markets=US" >> "$GITHUB_OUTPUT"
+            echo "markets=US CA" >> "$GITHUB_OUTPUT"   # TSX closes same time as US (4pm ET)
           else
             echo "markets=IN" >> "$GITHUB_OUTPUT"
           fi

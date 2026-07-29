@@ -25,6 +25,8 @@ MAX_CANDIDATES = 150  # raised from 80 (2026-07-28): Finviz alone was already
 # alphabetical or arbitrary slice.
 NIFTY_500_URL = "https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv"
 NIFTY_STATIC = os.path.join("data", "nifty500.csv")
+TSX_WIKI_URL = "https://en.wikipedia.org/wiki/S%26P/TSX_Composite_Index"
+TSX_STATIC = os.path.join("data", "tsx_composite.csv")
 
 WARNINGS: list[str] = []   # scanner.py appends these to the digest
 
@@ -182,4 +184,45 @@ def in_universe() -> list[str]:
         return syms
 
     _warn("No NIFTY universe available — scan aborted for IN")
+    return []
+
+
+def ca_universe() -> list[str]:
+    """S&P/TSX Composite constituents (~220 names), same design as India:
+    no daily momentum pre-screen (Finviz doesn't meaningfully cover TSX) —
+    the trend gate + Darvas trigger do ALL the filtering, same as they do
+    against the full Nifty 500. Tries Wikipedia's maintained constituents
+    table live first (dot-class tickers like TECK.B are converted to the
+    dash form yfinance actually expects: TECK-B), falls back to the
+    bundled CSV if the page structure changes or the fetch fails."""
+    try:
+        r = requests.get(TSX_WIKI_URL, headers=HEADERS, timeout=20)
+        r.raise_for_status()
+        tables = pd.read_html(io.StringIO(r.text), keep_default_na=False)
+        # the constituents table is the one with a "Ticker" column
+        tbl = next((t for t in tables if "Ticker" in t.columns), None)
+        if tbl is not None:
+            syms = [str(s).strip().replace(".", "-")
+                    for s in tbl["Ticker"].dropna().tolist()]
+            syms = [s for s in syms if s and s.upper() != "NAN"]
+            if len(syms) > 150:
+                print(f"  universe: live TSX Composite (Wikipedia) ({len(syms)})")
+                return syms
+            _warn(f"Wikipedia TSX table returned only {len(syms)} rows")
+        else:
+            _warn("Wikipedia TSX page: no table with a 'Ticker' column found")
+    except Exception as e:                                  # noqa: BLE001
+        _warn(f"Wikipedia TSX fetch failed: {e}")
+
+    if os.path.exists(TSX_STATIC):
+        # keep_default_na=False matters here: National Bank of Canada's
+        # real ticker is the literal string "NA", which pandas otherwise
+        # silently reads as a null and drops — no error, just a quietly
+        # wrong count. Found this while testing the fallback path.
+        df = pd.read_csv(TSX_STATIC, keep_default_na=False)
+        syms = [s.strip() for s in df["ticker"].tolist() if s.strip()]
+        print(f"  universe: bundled CSV fallback ({len(syms)})")
+        return syms
+
+    _warn("No TSX universe available — scan aborted for CA")
     return []
