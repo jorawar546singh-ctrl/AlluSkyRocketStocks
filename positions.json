@@ -1,9 +1,0 @@
-{
-  "_instructions": [
-    "Add your open trades to the 'positions' list below.",
-    "The tracker runs hourly and will manage trailing stops automatically.",
-    "When a stop hits, Telegram pings you, you sell in your broker, then delete that entry.",
-    "Fields: ticker, shares, entry_price, entry_date (YYYY-MM-DD), initial_stop, notes (optional)."
-  ],
-  "positions": []
-}

@@ -8,6 +8,13 @@ The EARLIEST record of each breakout is kept; orphaned outcomes are removed.
 
 Run from repo root:  python3 dedupe.py
 Then:                python3 export_dashboard.py  &&  commit db + data.json
+
+NOTE (fixed 2026-08-11): the DELETE statements below used to sit at module
+level, so merely `import dedupe` would silently drop rows from asr.db —
+no command, no confirmation, no warning. Nothing in the live pipeline
+imported it, so no damage was done, but it was one stray import away from
+quietly destroying signal history. Now guarded behind __main__: the file is
+safe to import, and only deletes when you deliberately run it as a script.
 """
 from core.db import connect
 
@@ -19,19 +26,25 @@ JOIN signals s2
  AND julianday(s2.scan_date) - julianday(s1.scan_date) <= 21
 """
 
-with connect() as con:
-    before = {r["market"]: r["n"] for r in
-              con.execute("SELECT market, COUNT(*) n FROM signals GROUP BY market")}
-    dup_ids = [r["id"] for r in con.execute(DUP_SQL)]
-    if dup_ids:
-        ph = ",".join("?" * len(dup_ids))
-        con.execute(f"DELETE FROM outcomes WHERE signal_id IN ({ph})", dup_ids)
-        con.execute(f"DELETE FROM signals  WHERE id IN ({ph})", dup_ids)
-    con.execute("DELETE FROM outcomes WHERE signal_id NOT IN (SELECT id FROM signals)")
-    after = {r["market"]: r["n"] for r in
-             con.execute("SELECT market, COUNT(*) n FROM signals GROUP BY market")}
 
-for m in sorted(before):
-    print(f"{m}: {before[m]} -> {after.get(m, 0)} signals "
-          f"({before[m] - after.get(m, 0)} duplicates removed)")
-print("Done. Now run: python3 export_dashboard.py, then commit data/asr.db + data.json")
+def run() -> None:
+    with connect() as con:
+        before = {r["market"]: r["n"] for r in
+                  con.execute("SELECT market, COUNT(*) n FROM signals GROUP BY market")}
+        dup_ids = [r["id"] for r in con.execute(DUP_SQL)]
+        if dup_ids:
+            ph = ",".join("?" * len(dup_ids))
+            con.execute(f"DELETE FROM outcomes WHERE signal_id IN ({ph})", dup_ids)
+            con.execute(f"DELETE FROM signals  WHERE id IN ({ph})", dup_ids)
+        con.execute("DELETE FROM outcomes WHERE signal_id NOT IN (SELECT id FROM signals)")
+        after = {r["market"]: r["n"] for r in
+                 con.execute("SELECT market, COUNT(*) n FROM signals GROUP BY market")}
+
+    for m in sorted(before):
+        print(f"{m}: {before[m]} -> {after.get(m, 0)} signals "
+              f"({before[m] - after.get(m, 0)} duplicates removed)")
+    print("Done. Now run: python3 export_dashboard.py, then commit data/asr.db + data.json")
+
+
+if __name__ == "__main__":
+    run()

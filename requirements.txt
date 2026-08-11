@@ -1,5 +1,27 @@
-pandas>=2.0
-yfinance>=0.2.40
-requests>=2.31
-beautifulsoup4>=4.12
-lxml>=5.0
+# Pinned 2026-08-11. These are the exact versions that ran successfully in the
+# Aug 10 workflow. Bounds are deliberately NOT uniform — rationale per package:
+#
+#   pandas     patch-only (~=3.0.5). pandas 3.0 was a major rewrite; a jump to
+#              3.1 could change DataFrame / read_html behaviour the scanner and
+#              export rely on. Nothing here needs newer pandas features, so
+#              there's no upside to allowing minor bumps.
+#
+#   yfinance   minor updates ALLOWED on purpose (<2.0). yfinance ships fixes
+#              whenever Yahoo changes their backend — pinning it tightly means
+#              that the day Yahoo breaks something, you're stuck on a version
+#              that can't fetch and the scan silently returns nothing. Blocking
+#              only the 2.0 major keeps compat fixes flowing while avoiding the
+#              next big rewrite.
+#
+#   requests   stable, well-behaved libraries. A major-version ceiling is
+#   bs4        enough protection; minor updates are safe and worth having for
+#   lxml       security patches.
+#
+# If a scan ever fails right after a dependency update: pin the offending line
+# to the exact version listed in the comment above it, re-run, and it's fixed.
+
+pandas~=3.0.5              # last known good: 3.0.5
+yfinance>=1.5.2,<2.0       # last known good: 1.5.2
+requests>=2.34.2,<3.0      # last known good: 2.34.2
+beautifulsoup4>=4.15.0,<5.0  # last known good: 4.15.0
+lxml>=6.1.1,<7.0           # last known good: 6.1.1
