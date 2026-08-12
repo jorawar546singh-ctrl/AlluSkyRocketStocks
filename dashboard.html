@@ -131,6 +131,14 @@
   .schip.on::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
                     background:var(--green);margin-left:5px;vertical-align:middle}
   .risk-lo{color:var(--green)} .risk-mid{color:var(--amber)} .risk-hi{color:var(--red)}
+  .plan{margin:18px 0 4px;border:1px solid var(--hair);border-radius:8px;padding:14px 16px;background:var(--panel2)}
+  .plan-h{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+          color:var(--sec);margin-bottom:12px}
+  .plan-row{padding:10px 0;border-top:1px solid var(--hair)}
+  .plan-row:first-of-type{border-top:none;padding-top:0}
+  .plan-name{font-size:12.5px;color:var(--ink);margin-bottom:4px}
+  .plan-nums{font-family:var(--mono);font-size:14px;display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
+  .plan-note{margin-top:5px;line-height:1.5}
   .spark{width:100%;height:120px;display:block;margin:10px 0 16px;background:#0d0d0d;border:1px solid #222;border-radius:6px}
   .sline{fill:none;stroke-width:2}.sline.up{stroke:#2ecc71}.sline.down{stroke:#e74c3c}
   .sdot.up{fill:#2ecc71}.sdot.down{fill:#e74c3c}
@@ -495,6 +503,63 @@ function spark(s){
   </svg>`;
 }
 
+function entryPlanner(s, acct){
+  // "If I buy TODAY, where does the stop go?" — two defensible answers,
+  // shown side by side so the choice is explicit per trade.
+  //
+  //   TIGHT (classic Darvas): just under the CURRENT BOX TOP. Darvas's own
+  //     rule after a breakout was that the broken box top becomes the floor;
+  //     falling back inside the box = exit. Only valid when price is actually
+  //     ABOVE the box — otherwise this "stop" sits above the price, which is
+  //     not a stop at all, so it's suppressed in that case.
+  //   FULL BOX (what the system flags/filters on): under the box BOTTOM.
+  //     Survives a dip back into the box; wider risk. This is the one every
+  //     measured stat (53-56% stop-hit rate) was earned on.
+  //
+  // Display only — no filter, no scoring, no change to Today-tab behaviour.
+  const now=s.now_price, top=s.box_top_now, bot=s.box_bottom_now;
+  if(now==null||top==null||bot==null)
+    return '<div class="plan"><div class="plan-h">If entering today</div><div class="sub">No current box — not enough recent data to place an entry stop.</div></div>';
+
+  const rows=[];
+  const mk=(name,stop,note)=>{
+    if(stop==null||stop>=now) return null;
+    const risk=(now-stop)/now*100;
+    const shares=acct?Math.floor((acct*0.02)/(now-stop)):null;
+    return {name,stop,risk,shares,note};
+  };
+  const tight=(s.box_pos==='above')?mk('Tight — under box top',+(top*0.98).toFixed(2),
+      'Classic Darvas: broken box top is the new floor. Smaller loss when wrong, but stops out more often — dips back into the box are common.')
+    :null;
+  const full=mk('Full box — under box bottom',+(bot*0.98).toFixed(2),
+      'Survives a pullback into the box. Wider risk. All measured stats use this one.');
+
+  if(tight) rows.push(tight);
+  if(full) rows.push(full);
+  if(!rows.length)
+    return `<div class="plan"><div class="plan-h">If entering today</div><div class="sub">Price (${cur()}${fmt(now)}) is at or below the box bottom — no valid stop below current price. Not an entry.</div></div>`;
+
+  const body=rows.map(r=>`
+    <div class="plan-row">
+      <div class="plan-name">${r.name}</div>
+      <div class="plan-nums">
+        <b class="down">${cur()}${fmt(r.stop)}</b>
+        <span class="${riskClass(r.risk)}">${fmt(r.risk,1)}% risk</span>
+        <span class="sub">${r.shares!=null?`${r.shares} shares @2%`:'set account size'}</span>
+      </div>
+      <div class="sub plan-note">${r.note}</div>
+    </div>`).join('');
+
+  const posNote = s.box_pos==='above'
+    ? ''
+    : `<div class="sub plan-note">Price is ${String(s.box_pos||'').toUpperCase()} the box, so the tight stop doesn't apply — it would sit above today's price.</div>`;
+
+  return `<div class="plan">
+    <div class="plan-h">If entering today at ${cur()}${fmt(now)} · box ${cur()}${fmt(bot)}–${fmt(top)}</div>
+    ${body}${posNote}
+  </div>`;
+}
+
 function renderDetail(){
   const el=document.getElementById('detail');
   const bk=document.getElementById('dback');
@@ -538,6 +603,7 @@ function renderDetail(){
       <div class="stat"><b class="num">${s.ret_d30!=null?fmt(s.ret_d30,1)+'%':'pending'}</b><span>outcome 30d</span></div>
       <div class="stat wide"><b class="num">${s.trend_detail||'legacy — not gated'}</b><span>trend gate</span></div>
     </div>
+    ${entryPlanner(s, acct)}
     <div class="sizing">${acct?`2% rule @ ${cur()}${acct.toLocaleString()} → max loss ${cur()}${riskAmt.toFixed(0)}
       → <b>max ${maxShares} shares</b> at this stop. These numbers must match the journal.`
       :`Position sizing not set up for ${MARKET} yet — add an account value to ACCOUNT in dashboard.html to enable the 2% rule calculator here.`}</div>
