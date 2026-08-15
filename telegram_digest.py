@@ -27,6 +27,9 @@ from the surrounding plain text at a glance, which is what changed here.
 Each market is a self-contained block — no interleaving of US/India/Canada
 picks in one flat list.
 
+A "\u26a1 LIVE" tag means the signal came from the mid-session scan: the
+close isn't confirmed yet and it may be replaced or removed after 4pm ET.
+
 Reads data.json (written by export_dashboard.py earlier in the same workflow)
 so it sees the same enriched fields the dashboard does.
 """
@@ -72,7 +75,8 @@ def _pick_lines(cur, s, tag=""):
     gain = s.get("gain_pct", 0)
     risk = s.get("entry_risk_now")
     risk_txt = f"*{risk:.1f}%*" if (risk is not None and s.get("clean_entry")) else "*extended*"
-    line1 = f"  *{s['ticker']}*  *{gain:+.1f}%*{tag}"
+    live = " \u26a1 LIVE" if s.get("source") == "scanner_intraday" else ""
+    line1 = f"  *{s['ticker']}*{live}  *{gain:+.1f}%*{tag}"
     line2 = f"     streak *{s.get('streak')}* \u00b7 risk {risk_txt} \u00b7 stop *{cur}{s.get('entry_stop_now')}*"
     return [line1, line2]
 

@@ -1,10 +1,20 @@
 name: AlluSkyRocketStocks v2
 
-# One clean EOD run per market. The old "hourly" comment was wrong —
-# the cron only ever fired once a day anyway. EOD is the design now.
+# Two runs per US/CA day plus one for India.
+#   19:00 UTC — noon PT (PDT). US/TSX still OPEN (3pm ET, ~1h before close).
+#               Runs with --intraday: signals are PROVISIONAL and get replaced
+#               or deleted by the EOD run below. This is the "act during the
+#               session" alert, not the record of truth.
+#   21:15 UTC — after the US/TSX close. The confirming run; this is what every
+#               measured edge stat is built from.
+#   10:30 UTC — 4:00pm IST, after the NSE close.
+# NOTE: GitHub cron is fixed UTC and does NOT follow daylight saving, so the
+# 19:00 run is noon PT in summer and 11am PT in winter. Both are mid-session,
+# so the intraday behaviour is unaffected either way.
 on:
   schedule:
-    - cron: "15 21 * * 1-5"   # 21:15 UTC = ~4:15pm ET, just after US close
+    - cron: "0 19 * * 1-5"    # 19:00 UTC = noon PT — US/CA INTRADAY (provisional)
+    - cron: "15 21 * * 1-5"   # 21:15 UTC = after US close — US/CA confirming run
     - cron: "30 10 * * 1-5"   # 10:30 UTC = 4:00pm IST, after NSE close
   workflow_dispatch:
 
@@ -33,18 +43,26 @@ jobs:
         id: mkt
         run: |
           HOUR=$(date -u +%H)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "markets=US IN CA" >> "$GITHUB_OUTPUT"   # manual run does all three
-          elif [ "$HOUR" -ge 15 ]; then
-            echo "markets=US CA" >> "$GITHUB_OUTPUT"   # TSX closes same time as US (4pm ET)
+          # Only the 19:00 UTC cron is the mid-session run. Detect it by the
+          # schedule string itself rather than hour math, so it can't drift.
+          if [ "${{ github.event.schedule }}" = "0 19 * * 1-5" ]; then
+            echo "intraday=--intraday" >> "$GITHUB_OUTPUT"
+            echo "markets=US CA" >> "$GITHUB_OUTPUT"
           else
-            echo "markets=IN" >> "$GITHUB_OUTPUT"
+            echo "intraday=" >> "$GITHUB_OUTPUT"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "markets=US IN CA" >> "$GITHUB_OUTPUT"   # manual run does all three
+            elif [ "$HOUR" -ge 15 ]; then
+              echo "markets=US CA" >> "$GITHUB_OUTPUT"   # TSX closes same time as US (4pm ET)
+            else
+              echo "markets=IN" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Scan
         run: |
           for m in ${{ steps.mkt.outputs.markets }}; do
-            python scanner.py "$m"
+            python scanner.py "$m" ${{ steps.mkt.outputs.intraday }}
             python analyzer.py "$m"
           done
 

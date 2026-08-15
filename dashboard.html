@@ -81,6 +81,7 @@
        margin-left:8px;vertical-align:2px;font-weight:600}
   .b-new{color:var(--green);border:1px solid var(--green)}
   .b-dup{color:var(--sec);border:1px solid var(--hair);cursor:help}
+  .b-live{color:var(--violet);border:1px solid var(--violet);background:var(--violet-dim);cursor:help}
   .b-TRENDING{background:var(--amber);color:#0B0B0D}
   .b-WATCHING{color:var(--blue);border:1px solid var(--blue);background:var(--blue-dim)}
   .b-FADING{color:var(--red);border:1px solid var(--red)}
@@ -401,6 +402,14 @@ function dupInfo(){
   }
   return info;
 }
+function liveBadge(s){
+  // Signals written by the mid-session (--intraday) scan. The day's candle
+  // isn't closed yet, so the breakout can still fail before 4pm. Flagged so a
+  // provisional row is never mistaken for a confirmed one.
+  return s.source==='scanner_intraday'
+    ? '<span class="bdg b-live" title="Provisional: found mid-session, close not confirmed yet. The EOD scan will confirm it with the real closing price or remove it.">LIVE</span>'
+    : '';
+}
 function dupBadge(s,dups){
   const d=dups[s.id];
   return d?`<span class="bdg b-dup" title="Signal ${d.rank} of ${d.total} for this ticker — a separate breakout at a different price/date, not a duplicate">${d.rank}/${d.total}</span>`:'';
@@ -422,7 +431,7 @@ function renderTable(){
     const g=s.gain_pct;
     const limit=s.suggested_stop?(s.suggested_stop*0.997):null;
     return `<tr class="${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
-      <td class="tick-cell">${s.ticker}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
+      <td class="tick-cell">${s.ticker}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
       <td>${cur()}${fmt(s.price)} <span class="sub">· ${s.scan_date.slice(5)}</span></td>
       <td>${s.now_price!=null?cur()+fmt(s.now_price):'<span class="sub">—</span>'}</td>
       <td class="${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'<span class="sub">—</span>'}</td>
@@ -442,7 +451,7 @@ function renderTable(){
     const fresh=s.scan_date===today();
     const g=s.gain_pct;
     return `<div class="card ${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
-      <div class="top"><span class="tk">${s.ticker}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
+      <div class="top"><span class="tk">${s.ticker}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
         <span class="g ${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'—'}</span></div>
       <div class="rows">
         <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
