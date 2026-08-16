@@ -28,6 +28,8 @@ from analyzer import report
 from core.config import DASHBOARD_JSON, MARKETS
 from core.datafeed import fetch_history
 from core.db import connect
+from core.datafeed import fetch_history as _fetch_bench
+from core.signals import regime as _regime
 from core.stops import position_trailing_stop, watchlist_entry_stop
 
 RECENT_DAYS = 30
@@ -197,12 +199,24 @@ def export():
                 if p.get("current_stop") is not None:
                     con.execute("UPDATE positions SET current_stop=?, running_high=? WHERE id=?",
                                 (p["current_stop"], p.get("running_high"), p["id"]))
+            # Market regime, recomputed here so it's current as of THIS export
+            # (the scan may not have run for this market today). Fail-soft:
+            # any fetch problem yields UNKNOWN rather than a wrong label.
+            try:
+                bench = _fetch_bench([cfg.benchmark], period="1y").get(cfg.benchmark)
+            except Exception as e:                              # noqa: BLE001
+                print(f"  regime: benchmark fetch failed ({e})")
+                bench = None
+            mkt_regime = _regime.evaluate(bench)
+            print(f"  {key} regime: {mkt_regime['label']} ({mkt_regime['detail']})")
+
             payload["markets"][key] = {
                 "label": cfg.label,
                 "currency": cfg.currency,
                 "signals": signals,
                 "positions": positions,
                 "edge": report(key),
+                "regime": mkt_regime,
             }
     with open(DASHBOARD_JSON, "w") as f:
         json.dump(payload, f, separators=(",", ":"))

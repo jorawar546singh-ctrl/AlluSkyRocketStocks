@@ -35,7 +35,7 @@ from core import universe as uni
 from core.config import MARKETS
 from core.datafeed import fetch_history
 from core.db import connect, upsert_signal
-from core.signals import darvas, relative_strength, trend_filter
+from core.signals import darvas, regime, relative_strength, trend_filter
 
 
 def run(market_key: str, intraday: bool = False) -> list[dict]:
@@ -70,6 +70,11 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
     bench_df = histories.pop(cfg.benchmark, None)
     if bench_df is None:
         uni.WARNINGS.append(f"benchmark {cfg.benchmark} fetch failed — rs_excess will be null")
+
+    # 0) Market regime — INFORMATION ONLY, gates nothing. Read off the same
+    #    benchmark already fetched above for relative strength.
+    mkt_regime = regime.evaluate(bench_df)
+    print(f"  market regime: {mkt_regime['label']} ({mkt_regime['detail']})")
 
     # 1) Trend gate — kills ineligible stocks before the trigger ever runs
     eligible: dict[str, dict] = {}

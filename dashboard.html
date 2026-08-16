@@ -133,6 +133,15 @@
   .schip.on::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
                     background:var(--green);margin-left:5px;vertical-align:middle}
   .risk-lo{color:var(--green)} .risk-mid{color:var(--amber)} .risk-hi{color:var(--red)}
+  .rgm{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--hair);
+       border-radius:8px;padding:11px 14px;margin:0 0 18px;background:var(--panel)}
+  .rgm-tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+           padding:3px 9px;border-radius:4px}
+  .rgm-on{color:#0B0B0D;background:var(--green)}
+  .rgm-mid{color:#0B0B0D;background:var(--amber)}
+  .rgm-off{color:#0B0B0D;background:var(--red)}
+  .rgm-unk{color:var(--sec);border:1px solid var(--hair)}
+  .rgm-txt{font-size:12.5px;color:var(--sec);line-height:1.5}
   .plan{margin:18px 0 4px;border:1px solid var(--hair);border-radius:8px;padding:14px 16px;background:var(--panel2)}
   .plan-h{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
           color:var(--sec);margin-bottom:12px}
@@ -211,6 +220,7 @@
     </div>
   </header>
 
+  <div id="regime"></div>
   <div class="lbl">Primary candidate <span class="meta" id="pmeta"></span></div>
   <div id="primary"></div>
 
@@ -361,7 +371,7 @@ function filtered(){
   return rows;
 }
 
-function render(){renderPrimary();renderTable();renderPositions();renderEdge();renderDetail();}
+function render(){renderPrimary();renderTable();renderRegime();renderPositions();renderEdge();renderDetail();}
 
 function renderPrimary(){
   const t=today();
@@ -625,6 +635,24 @@ function renderDetail(){
       <a href="https://finance.yahoo.com/quote/${yq}" target="_blank">Yahoo</a>
       <a href="https://www.tradingview.com/chart/?symbol=${tvSymbol}" target="_blank">TradingView</a>
     </div>`;
+}
+
+function renderRegime(){
+  const el=document.getElementById('regime');
+  const r=mkt().regime;
+  if(!r||!r.label){el.innerHTML='';return;}
+  const cls={'RISK-ON':'rgm-on','MIXED':'rgm-mid','RISK-OFF':'rgm-off'}[r.label]||'rgm-unk';
+  const note={
+    'RISK-ON' :'Index above its 50 & 200-day averages — the backdrop breakouts do best in.',
+    'MIXED'   :'Index is between its averages. Breakouts still fire, but more of them fail.',
+    'RISK-OFF':'Index below its own averages. In this repo\u2019s own data, breakout months like this averaged deeply negative 30-day returns. Consider smaller size or sitting out.',
+    'UNKNOWN' :'Index data unavailable this run — no regime read.'
+  }[r.label]||'';
+  const pct=r.pct_from_200ma!=null?` <span class="sub">(${r.pct_from_200ma>0?'+':''}${fmt(r.pct_from_200ma,1)}% vs 200-day)</span>`:'';
+  el.innerHTML=`<div class="rgm">
+    <span class="rgm-tag ${cls}">${r.label}</span>
+    <span class="rgm-txt">${note}${pct}</span>
+  </div>`;
 }
 
 function renderPositions(){

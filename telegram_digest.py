@@ -87,6 +87,18 @@ def _market_block(key: str, m: dict) -> list[str]:
     sigs = m.get("signals", [])
     out = [f"\n{FLAG.get(key,'')} *{label.upper()}*"]
 
+    # Market regime line — context for every pick below it. Information only:
+    # it does not filter or reorder anything, it just says what conditions
+    # these signals fired in.
+    r = m.get("regime") or {}
+    if r.get("label"):
+        icon = {"RISK-ON": "\U0001F7E2", "MIXED": "\U0001F7E1",
+                "RISK-OFF": "\U0001F534"}.get(r["label"], "\u26aa")
+        tail = {"RISK-ON": "backdrop favours breakouts",
+                "MIXED": "mixed backdrop \u2014 expect more failures",
+                "RISK-OFF": "weak backdrop \u2014 size down or sit out"}.get(r["label"], "no read")
+        out.append(f" {icon} market: *{r['label']}* \u00b7 {tail}")
+
     # ---- HOLDING ----
     hold = []
     for p in m.get("positions", []):
