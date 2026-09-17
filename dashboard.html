@@ -75,6 +75,10 @@
   .btn.on.f-today{background:var(--violet);border-color:var(--violet)}
   .btn.on.f-live{background:var(--violet);border-color:var(--violet)}
   .btn.on.f-chk{background:var(--panel2);color:var(--green);border-color:var(--green)}
+  /* Losers is an outline, not a solid: FADING already owns solid red, and these
+     two tabs mean different things (FADING is a subset of what is losing). */
+  .btn.on.f-lose{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+  .btn.on.f-grp{background:var(--panel2);color:var(--blue);border-color:var(--blue)}
   .showing{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--sec);letter-spacing:.1em}
 
   /* ---------- badges ---------- */
@@ -103,6 +107,23 @@
   .tick-cell{font-weight:600;font-size:15px;letter-spacing:.04em}
   .sub{color:var(--sec);font-size:11.5px}
   .chk{color:var(--green)} .x{color:var(--red)}
+
+  /* ---------- month cohorts ---------- */
+  tbody tr.mhdr{cursor:pointer}
+  tbody tr.mhdr td{text-align:left;padding:14px 12px 10px;background:var(--panel2);
+       border-bottom:1px solid var(--hair);border-top:1px solid var(--hair);
+       font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+       text-transform:uppercase;color:var(--sec);white-space:normal}
+  tbody tr.mhdr:hover td{background:var(--panel)}
+  .mchev{display:inline-block;width:15px;color:var(--sec)}
+  .mname{color:var(--ink);font-weight:600;margin-right:18px;letter-spacing:.14em}
+  .mstat{margin-right:15px}
+  .mwarn{margin-right:15px;color:var(--amber);cursor:help;border-bottom:1px dotted var(--amber)}
+  .mcold{margin-right:15px;color:var(--sec);cursor:help;border-bottom:1px dotted var(--hair)}
+  .mcard{cursor:pointer;background:var(--panel2);border:1px solid var(--hair);
+         padding:12px 14px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+         text-transform:uppercase;color:var(--sec)}
+  .mcard .mname{margin-right:12px}
 
   /* ---------- detail (modal) ---------- */
   .dback{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(2px);
@@ -155,6 +176,7 @@
   .sdot.up{fill:#2ecc71}.sdot.down{fill:#e74c3c}
   .sl{stroke-width:1;stroke-dasharray:4 4}.sl.sbox{stroke:#f0a500;opacity:.55}.sl.sstop{stroke:#e74c3c;opacity:.7}
   .slt{font-size:9px;font-family:inherit}.slt.sbox{fill:#f0a500}.slt.sstop{fill:#e74c3c}
+  .sltbg{fill:#0d0d0d;opacity:.82}
   .links{margin-top:20px;display:flex;gap:24px}
   .links a{color:var(--sec);font-family:var(--mono);font-size:12px;text-decoration:none;
            border-bottom:1px solid var(--hair);padding-bottom:2px}
@@ -248,6 +270,7 @@
       <button class="btn f-FADING" data-st="FADING">Fading</button>
       <button class="btn f-WATCHING" data-st="WATCHING">Watching</button>
       <button class="btn f-win" data-st="WINNERS">Winners ★</button>
+      <button class="btn f-lose" data-st="LOSERS">Losers ▼</button>
     </div>
   </div>
   <div class="fbar">
@@ -257,8 +280,14 @@
       <span class="sub">–</span>
       <input type="number" id="fAgeMax" min="0" placeholder="max" style="width:64px">
       <label>d</label></div>
+    <div class="grp"><label>Gain</label>
+      <input type="number" id="fGainMin" placeholder="min" style="width:64px">
+      <span class="sub">–</span>
+      <input type="number" id="fGainMax" placeholder="max" style="width:64px">
+      <label>%</label></div>
     <button class="btn f-chk" id="fVolT" onclick="toggleChk('fVolT')">Vol ✓ today</button>
     <button class="btn f-chk" id="fBoxT" onclick="toggleChk('fBoxT')">Box ✓ today</button>
+    <button class="btn f-grp" id="fGroup" onclick="toggleGroup()">Group by month</button>
     <button class="btn" onclick="clearFilters()">Clear</button>
     <div class="showing" id="count"></div>
   </div>
@@ -285,9 +314,27 @@
 
 <script>
 let DATA=null, MARKET='US', DIR=-1, STATUS='ALL', SELECTED=null;
+// Month grouping is opt-in. Left always-on it would silently reorder the table
+// (months first, sort key second), and collapsing by default would hide the
+// oldest signals -- which under the two-tier retention rule are old precisely
+// BECAUSE they are still trending. So: off by default, nothing collapsed.
+let GROUP=false;
+const COLLAPSED=new Set();
+const WINNER_FLOOR=5;   // % -- Winners held 62% of all signals at >0; a tab
+                        // that wide is a second All tab, not a shortlist.
 const ACCOUNT={US:1800, IN:25000};
 const fmt=(v,d=2)=>v==null?'—':Number(v).toFixed(d);
-const today=()=>new Date().toISOString().slice(0,10);
+// The date the LOADED DATA was stamped with (UTC), not the browser's clock.
+// Bug this fixes: the old helper used new Date().toISOString(), which is
+// always UTC. The scanner stamps scan_date in UTC too, so they agreed — until
+// the viewer's local evening. From 5pm Pacific onward UTC has already rolled
+// to tomorrow, so the browser asked for tomorrow's signals, found none, and
+// every evening the primary panel read "No qualified breakouts" and the NEW
+// badges vanished, while that day's scan sat right there in the table.
+// Deriving the date from the payload takes the browser clock out of the
+// comparison entirely, so it behaves identically in any timezone.
+const dataDate=()=>(DATA&&DATA.generated)?DATA.generated.slice(0,10)
+                                         :new Date().toISOString().slice(0,10);
 
 const COLS=[
   {k:'ticker',label:'Ticker'},
@@ -329,7 +376,7 @@ function setMarket(m){
 function flipDir(){DIR=-DIR;document.getElementById('fDir').textContent=DIR<0?'↓':'↑';renderTable();}
 function toggleChk(id){document.getElementById(id).classList.toggle('on');renderTable();}
 function clearFilters(){
-  ['fStreak','fAgeMin','fAgeMax'].forEach(i=>document.getElementById(i).value='');
+  ['fStreak','fAgeMin','fAgeMax','fGainMin','fGainMax'].forEach(i=>document.getElementById(i).value='');
   ['fVolT','fBoxT'].forEach(i=>document.getElementById(i).classList.remove('on'));
   STATUS='ALL'; syncStatusBtns(); document.getElementById('fSort').value='age_days';
   DIR=-1; document.getElementById('fDir').textContent='↓'; renderTable();
@@ -344,6 +391,7 @@ document.getElementById('statusBtns').addEventListener('click',e=>{
   if(STATUS==='WINNERS'){document.getElementById('fSort').value='gain_pct';DIR=-1;document.getElementById('fDir').textContent='↓';}
   if(STATUS==='TODAY'){document.getElementById('fSort').value='entry_risk_now';DIR=1;document.getElementById('fDir').textContent='↑';}
   if(STATUS==='LIVE'){document.getElementById('fSort').value='rs_pct';DIR=-1;document.getElementById('fDir').textContent='↓';}
+  if(STATUS==='LOSERS'){document.getElementById('fSort').value='gain_pct';DIR=1;document.getElementById('fDir').textContent='↑';}
   syncStatusBtns(); renderTable();
 });
 
@@ -351,17 +399,26 @@ function filtered(){
   const st=parseInt(document.getElementById('fStreak').value);
   const a0=parseInt(document.getElementById('fAgeMin').value);
   const a1=parseInt(document.getElementById('fAgeMax').value);
+  const g0=parseFloat(document.getElementById('fGainMin').value);
+  const g1=parseFloat(document.getElementById('fGainMax').value);
   const volT=document.getElementById('fVolT').classList.contains('on');
   const boxT=document.getElementById('fBoxT').classList.contains('on');
   const key=document.getElementById('fSort').value;
   let rows=mkt().signals.slice();
-  if(STATUS==='WINNERS') rows=rows.filter(s=>(s.gain_pct??0)>0&&(s.age_days??0)>=2&&s.box_today!==false);
+  if(STATUS==='WINNERS') rows=rows.filter(s=>(s.gain_pct??0)>=WINNER_FLOOR&&(s.age_days??0)>=2&&s.box_today!==false);
+  // LOSERS is deliberately every losing signal, not just the FADING ones.
+  // FADING is a subset: on US, 29 signals were down money while tagged
+  // TRENDING or WATCHING, so no tab in the dashboard ever showed them.
+  // The status badge on each row still says which kind it is.
+  else if(STATUS==='LOSERS') rows=rows.filter(s=>(s.gain_pct??0)<0&&(s.age_days??0)>=2);
   else if(STATUS==='TODAY') rows=rows.filter(s=>s.status==='TRENDING'&&(s.streak??0)>=2&&s.clean_entry===true);
   else if(STATUS==='LIVE') rows=rows.filter(s=>s.source==='scanner_intraday');
   else if(STATUS!=='ALL') rows=rows.filter(s=>s.status===STATUS);
   if(!isNaN(st)) rows=rows.filter(s=>(s.streak??0)>=st);
   if(!isNaN(a0)) rows=rows.filter(s=>(s.age_days??0)>=a0);
   if(!isNaN(a1)) rows=rows.filter(s=>(s.age_days??1e9)<=a1);
+  if(!isNaN(g0)) rows=rows.filter(s=>(s.gain_pct??-1e9)>=g0);
+  if(!isNaN(g1)) rows=rows.filter(s=>(s.gain_pct??1e9)<=g1);
   if(volT) rows=rows.filter(s=>s.vol_today===true);
   if(boxT) rows=rows.filter(s=>s.box_today===true);
   rows.sort((a,b)=>{
@@ -374,14 +431,14 @@ function filtered(){
 function render(){renderPrimary();renderTable();renderRegime();renderPositions();renderEdge();renderDetail();}
 
 function renderPrimary(){
-  const t=today();
+  const t=dataDate();
   const todays=mkt().signals.filter(s=>s.scan_date===t&&s.trend_pass)
     .sort((a,b)=>(b.rs_pct??0)-(a.rs_pct??0));
   document.getElementById('pmeta').textContent=
-    todays.length?`strongest RS of ${todays.length} qualified today`:'';
+    todays.length?`strongest RS of ${todays.length} qualified in the ${t} scan`:'';
   const el=document.getElementById('primary');
   if(!todays.length){
-    el.innerHTML='<div class="empty">No qualified breakouts today. No trade is a position.</div>';return;
+    el.innerHTML=`<div class="empty">No qualified breakouts in the ${t} scan. No trade is a position.</div>`;return;
   }
   const s=todays[0];
   el.innerHTML=`<div class="primary">
@@ -429,6 +486,91 @@ function dupBadge(s,dups){
   return d?`<span class="bdg b-dup" title="Signal ${d.rank} of ${d.total} for this ticker — a separate breakout at a different price/date, not a duplicate">${d.rank}/${d.total}</span>`:'';
 }
 
+const MONTH_ABBR=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function monthLabel(m){
+  const p=m.split('-');
+  return (MONTH_ABBR[parseInt(p[1],10)-1]||m)+' '+p[0];
+}
+function toggleGroup(){
+  GROUP=!GROUP;
+  document.getElementById('fGroup').classList.toggle('on',GROUP);
+  renderTable();
+}
+function toggleMonth(m){
+  COLLAPSED.has(m)?COLLAPSED.delete(m):COLLAPSED.add(m);
+  renderTable();
+}
+function groupByMonth(rows){
+  // Months newest-first always; the chosen sort key still orders rows WITHIN
+  // each month, and the filters have already run -- so the per-month stats
+  // describe exactly what is on screen, not the whole market.
+  const map=new Map();
+  for(const s of rows){
+    const m=(s.scan_date||'').slice(0,7);
+    if(!map.has(m)) map.set(m,[]);
+    map.get(m).push(s);
+  }
+  return [...map.entries()].sort((a,b)=>a[0]<b[0]?1:a[0]>b[0]?-1:0);
+}
+function monthStats(list){
+  const g=list.map(s=>s.gain_pct).filter(v=>v!=null);
+  return {
+    n:list.length,
+    avg:g.length?g.reduce((a,b)=>a+b,0)/g.length:null,
+    hit:g.length?g.filter(v=>v>0).length/g.length*100:null,
+  };
+}
+function retentionEdge(){
+  // export_dashboard.py keeps EVERY signal for ~30 days, then keeps only the
+  // ones still TRENDING. So the oldest signal that is NOT trending marks the
+  // boundary: before it, the losers have already been dropped and what is left
+  // is survivors. Averaging across that line is how a month whose real 30-day
+  // outcome was -10.2% comes out reading "+18.9%, 100% up".
+  //
+  // Read off the data rather than hardcoded, so it follows RECENT_DAYS.
+  let edge=null;
+  for(const s of mkt().signals){
+    if(s.status&&s.status!=='TRENDING'&&s.scan_date){
+      if(edge===null||s.scan_date<edge) edge=s.scan_date;
+    }
+  }
+  return edge;
+}
+function cohortKind(m,edge){
+  if(!edge) return 'full';
+  const em=edge.slice(0,7);
+  return m>em?'full':m===em?'partial':'survivors';
+}
+const SURV_TIP='Only the signals still TRENDING from this month are kept on the '+
+  'dashboard - the ones that failed were dropped weeks ago. An average here would '+
+  'be the survivors congratulating themselves. The Edge report reads the full '+
+  'database and is the honest number for old months.';
+const PART_TIP='Part of this month falls before the retention cutoff, so its '+
+  'earlier failures have been dropped. These figures lean optimistic.';
+
+function monthHeadInner(m,list,edge){
+  const st=monthStats(list), open=!COLLAPSED.has(m);
+  const kind=cohortKind(m,edge);
+  const cls=st.avg==null?'':st.avg>0?'up':'down';
+  let stats='';
+  if(kind==='survivors'){
+    stats=`<span class="mcold" title="${SURV_TIP}">survivors only · no average</span>`;
+  }else{
+    stats=(st.avg!=null?`<span class="mstat ${cls}">avg ${(st.avg>0?'+':'')+fmt(st.avg,1)}%</span>`:'')+
+          (st.hit!=null?`<span class="mstat">${fmt(st.hit,0)}% up</span>`:'')+
+          (kind==='partial'?`<span class="mwarn" title="${PART_TIP}">⚠ partial</span>`:'');
+  }
+  return `<span class="mchev">${open?'▾':'▸'}</span>`+
+    `<span class="mname">${monthLabel(m)}</span>`+
+    `<span class="mstat">${st.n} signal${st.n===1?'':'s'}</span>`+stats;
+}
+function monthHeadRow(m,list,cols,edge){
+  return `<tr class="mhdr" onclick="toggleMonth('${m}')"><td colspan="${cols}">${monthHeadInner(m,list,edge)}</td></tr>`;
+}
+function monthHeadCard(m,list,edge){
+  return `<div class="mcard" onclick="toggleMonth('${m}')">${monthHeadInner(m,list,edge)}</div>`;
+}
+
 function renderTable(){
   const key=document.getElementById('fSort').value;
   document.getElementById('thead').innerHTML=COLS.map(c=>
@@ -438,10 +580,32 @@ function renderTable(){
   const fade=mkt().signals.filter(s=>s.status==='FADING').length;
   document.getElementById('wmeta').textContent=
     `${total} tracked · ${trend} trending · ${fade} fading`;
-  document.getElementById('count').textContent=`showing ${rows.length} of ${total}`;
   const dups=dupInfo();
-  document.getElementById('tbody').innerHTML=rows.map(s=>{
-    const fresh=s.scan_date===today();
+  if(GROUP){
+    const groups=groupByMonth(rows), edge=retentionEdge();
+    document.getElementById('count').textContent=
+      `showing ${rows.length} of ${total} · ${groups.length} month${groups.length===1?'':'s'}`;
+    let tH='', cH='';
+    for(const g of groups){
+      tH+=monthHeadRow(g[0],g[1],COLS.length,edge);
+      cH+=monthHeadCard(g[0],g[1],edge);
+      if(!COLLAPSED.has(g[0])){
+        tH+=g[1].map(s=>rowHTML(s,dups)).join('');
+        cH+=g[1].map(s=>cardHTML(s,dups)).join('');
+      }
+    }
+    document.getElementById('tbody').innerHTML=tH;
+    document.getElementById('cards').innerHTML=cH;
+    return;
+  }
+  document.getElementById('count').textContent=`showing ${rows.length} of ${total}`;
+  document.getElementById('tbody').innerHTML=rows.map(s=>rowHTML(s,dups)).join('');
+  document.getElementById('cards').innerHTML=rows.map(s=>cardHTML(s,dups)).join('');
+}
+
+function rowHTML(s,dups){
+  {
+    const fresh=s.scan_date===dataDate();
     const g=s.gain_pct;
     const limit=s.suggested_stop?(s.suggested_stop*0.997):null;
     return `<tr class="${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
@@ -460,9 +624,12 @@ function renderTable(){
       <td>${s.vol_today==null?'<span class="sub">—</span>':
            `Vol <span class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</span> · Box <span class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</span>`}</td>
     </tr>`;
-  }).join('');
-  document.getElementById('cards').innerHTML=rows.map(s=>{
-    const fresh=s.scan_date===today();
+  }
+}
+
+function cardHTML(s,dups){
+  {
+    const fresh=s.scan_date===dataDate();
     const g=s.gain_pct;
     return `<div class="card ${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
       <div class="top"><span class="tk">${s.ticker}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
@@ -475,7 +642,7 @@ function renderTable(){
         <span>${s.vol_today==null?'—':`Vol <b class="${s.vol_today?'chk':'x'}">${s.vol_today?'✓':'✗'}</b> · Box <b class="${s.box_today?'chk':'x'}">${s.box_today?'✓':'✗'}</b>`}</span>
       </div>
     </div>`;
-  }).join('');
+  }
 }
 function sortBy(k){
   const sel=document.getElementById('fSort');
@@ -515,14 +682,25 @@ function spark(s){
     if(items[i].ly>H-3) items[i].ly=H-3;
     if(i<items.length-1&&items[i+1].ly-items[i].ly<LH) items[i].ly=items[i+1].ly-LH;
   }
-  const linesSvg=items.map(o=>
-    `<line x1="${P}" x2="${W-P}" y1="${Y(o.p).toFixed(1)}" y2="${Y(o.p).toFixed(1)}" class="sl ${o.cls}"/>`+
-    `<text x="${W-P}" y="${o.ly.toFixed(1)}" text-anchor="end" class="slt ${o.cls}">${o.lbl} ${cur()}${fmt(o.p)}</text>`).join('');
+  // Reference LINES go under the price path; reference LABELS go over it, each
+  // on its own backing rect. Before this, everything was emitted ahead of the
+  // path, so on a big winner (price far above the signal-time box) the green
+  // line ran straight through "stop $127.77" and made it unreadable.
+  const refLines=items.map(o=>
+    `<line x1="${P}" x2="${W-P}" y1="${Y(o.p).toFixed(1)}" y2="${Y(o.p).toFixed(1)}" class="sl ${o.cls}"/>`).join('');
+  const CW=5.4;   // ~width of one 9px monospace char in viewBox units
+  const refLabels=items.map(o=>{
+    const txt=`${o.lbl} ${cur()}${fmt(o.p)}`;
+    const w=txt.length*CW+6;
+    return `<rect x="${(W-P-w).toFixed(1)}" y="${(o.ly-8).toFixed(1)}" width="${w.toFixed(1)}" height="10.5" class="sltbg"/>`+
+           `<text x="${(W-P-3).toFixed(1)}" y="${o.ly.toFixed(1)}" text-anchor="end" class="slt ${o.cls}">${txt}</text>`;
+  }).join('');
   const up=v[v.length-1]>=v[0];
   return `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none">
-    ${linesSvg}
+    ${refLines}
     <path d="${path}" class="sline ${up?'up':'down'}"/>
     <circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(v[v.length-1]).toFixed(1)}" r="3" class="sdot ${up?'up':'down'}"/>
+    ${refLabels}
   </svg>`;
 }
 
@@ -692,7 +870,7 @@ function renderEdge(){
   <div class="note">Positive 30-day expectancy after 50+ signals = edge. Anything else = keep paper trading.</div>`;
 }
 
-['fStreak','fAgeMin','fAgeMax'].forEach(id=>
+['fStreak','fAgeMin','fAgeMax','fGainMin','fGainMax'].forEach(id=>
   document.getElementById(id).addEventListener('input',renderTable));
 document.getElementById('fSort').addEventListener('change',renderTable);
 load();
