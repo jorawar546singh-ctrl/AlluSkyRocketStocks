@@ -56,7 +56,7 @@
 
   /* ---------- filter bar ---------- */
   .fbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:8px}
-  .fbar .grp{display:flex;gap:8px;align-items:center}
+  .fbar .grp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .fbar label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--sec);
               text-transform:uppercase}
   select,input[type=number]{background:var(--panel);border:1px solid var(--hair);color:var(--ink);
@@ -199,6 +199,39 @@
   .edge span{font-size:10px;color:var(--sec);letter-spacing:.12em;text-transform:uppercase}
   .note{font-family:var(--mono);font-size:11px;color:var(--sec);margin-top:12px}
 
+  /* ---------- expectancy verdict ---------- */
+  .ptrigger.pv-paper{color:var(--red)}
+  .ptrigger.pv-live{color:var(--green)}
+  .ptrigger.pv-unproven{color:var(--sec)}
+  .pverdict{grid-column:1/-1;border-top:1px solid var(--hair);margin-top:4px;padding-top:14px;
+            font-size:12.5px;line-height:1.55;color:var(--sec)}
+  .pverdict b{font-family:var(--mono);font-weight:600}
+  .pverdict.pv-paper b{color:var(--red)}
+  .pverdict.pv-live b{color:var(--green)}
+  .pverdict.pv-unproven b{color:var(--amber)}
+
+  /* ---------- staleness ---------- */
+  .stale{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;
+         margin-bottom:10px;font-size:12.5px;line-height:1.5}
+  .stale-warn{border:1px solid var(--amber);background:var(--amber-dim);color:var(--sec)}
+  .stale-bad{border:1px solid var(--red);background:var(--red-dim);color:var(--sec)}
+  .stale b{font-family:var(--mono);color:var(--ink);font-weight:600}
+
+  /* ---------- month edge table ---------- */
+  .mwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .mtbl{width:100%;border-collapse:collapse;margin-top:18px;min-width:420px}
+  .mtbl th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--sec);
+       text-transform:uppercase;text-align:right;padding:10px 12px;
+       border-bottom:1px solid var(--hair);white-space:nowrap}
+  .mtbl th:first-child{text-align:left}
+  .mtbl td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 12px;
+       border-bottom:1px solid var(--hair);white-space:nowrap}
+  .mtbl td:first-child{text-align:left;color:var(--ink)}
+  .mtbl tr.pend td{color:var(--sec)}
+  .gate-none{color:var(--sec);font-size:10px;letter-spacing:.1em}
+  .gate-mixed{color:var(--amber);font-size:10px;letter-spacing:.1em;cursor:help}
+  .gate-all{color:var(--sec);font-size:10px;letter-spacing:.1em;opacity:.6}
+
   footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--hair);
          font-family:var(--mono);font-size:11px;color:var(--sec);
          display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
@@ -242,6 +275,7 @@
     </div>
   </header>
 
+  <div id="stale"></div>
   <div id="regime"></div>
   <div class="lbl">Primary candidate <span class="meta" id="pmeta"></span></div>
   <div id="primary"></div>
@@ -428,7 +462,37 @@ function filtered(){
   return rows;
 }
 
-function render(){renderPrimary();renderTable();renderRegime();renderPositions();renderEdge();renderDetail();}
+function render(){renderStale();renderPrimary();renderTable();renderRegime();renderPositions();renderEdge();renderDetail();}
+
+function edgeVerdict(){
+  // The measured verdict for THIS market, in the words of the rule already
+  // printed under the edge report: positive 30-day expectancy after 50+
+  // signals = edge, anything else = keep paper trading. Rendered next to the
+  // candidate because that is where the decision actually gets made -- at the
+  // bottom of the page it was true and ignored.
+  const d=(mkt().edge||{}).d30;
+  if(!d||!d.n) return {kind:'unproven',tag:'UNPROVEN',
+    html:'No 30-day outcomes measured for this market yet. <b>Paper only</b> until there are.'};
+  if(d.n<50) return {kind:'unproven',tag:'UNPROVEN',
+    html:`Only <b>${d.n}</b> measured outcomes here. The bar is 50+ before the number means `+
+         `anything, so this is <b>paper only</b> for now.`};
+  if(d.avg<=0) return {kind:'paper',tag:'PAPER<br>ONLY',
+    html:`This market averages <b>${fmt(d.avg,1)}%</b> over 30 days across <b>${d.n}</b> `+
+         `measured signals, hit rate <b>${fmt(d.hit_rate,0)}%</b>. The breakout below is real; `+
+         `the expectancy behind it is not. Your own rule says <b>paper</b> until this turns positive.`};
+  // Positive is not the same as real. t = avg / (sd/sqrt(n)): below about 2,
+  // the average is inside the noise and could just as easily be zero.
+  const t=(d.sd&&d.sd>0)?d.avg/(d.sd/Math.sqrt(d.n)):null;
+  if(t!=null&&t<2) return {kind:'unproven',tag:'EDGE<br>THIN',
+    html:`This market averages <b>+${fmt(d.avg,1)}%</b> over 30 days across <b>${d.n}</b> `+
+         `measured signals, hit rate <b>${fmt(d.hit_rate,0)}%</b> — but the spread is `+
+         `<b>${fmt(d.sd,0)}%</b>, so that average sits <b>${fmt(t,1)}</b> standard errors from `+
+         `zero. Positive, not yet distinguishable from luck. <b>Paper</b> until it separates.`};
+  return {kind:'live',tag:'EDGE<br>POSITIVE',
+    html:`This market averages <b>+${fmt(d.avg,1)}%</b> over 30 days across <b>${d.n}</b> `+
+         `measured signals, hit rate <b>${fmt(d.hit_rate,0)}%</b>`+
+         (t!=null?`, <b>${fmt(t,1)}</b> standard errors above zero`:'')+`.`};
+}
 
 function renderPrimary(){
   const t=dataDate();
@@ -438,9 +502,18 @@ function renderPrimary(){
     todays.length?`strongest RS of ${todays.length} qualified in the ${t} scan`:'';
   const el=document.getElementById('primary');
   if(!todays.length){
-    el.innerHTML=`<div class="empty">No qualified breakouts in the ${t} scan. No trade is a position.</div>`;return;
+    // Still show the verdict: it describes the market's measured expectancy,
+    // not today's candidate, and a quiet day is exactly when it is worth
+    // knowing whether this market is worth trading at all.
+    const nv=edgeVerdict();
+    el.innerHTML=`<div class="empty">No qualified breakouts in the ${t} scan. No trade is a position.</div>
+      <div class="primary" style="margin-top:10px">
+        <div class="ptrigger pv-${nv.kind}" style="text-align:left">${nv.tag}</div>
+        <div class="pverdict pv-${nv.kind}" style="grid-column:2/-1;border-top:none;margin:0;padding:0">${nv.html}</div>
+      </div>`;
+    return;
   }
-  const s=todays[0];
+  const s=todays[0], v=edgeVerdict();
   el.innerHTML=`<div class="primary">
     <div class="tick">${s.ticker}<small>${s.scan_date}</small></div>
     <div class="pgrid">
@@ -452,7 +525,8 @@ function renderPrimary(){
       <div class="stat"><b class="num">${fmt(s.rr_ratio,1)}</b><span>r : r</span></div>
       <div class="rsmeter"><i style="width:${s.rs_pct??0}%"></i></div>
     </div>
-    <div class="ptrigger">BREAKOUT<br>CONFIRMED</div>
+    <div class="ptrigger pv-${v.kind}">${v.tag}</div>
+    <div class="pverdict pv-${v.kind}">${v.html}</div>
   </div>`;
 }
 
@@ -815,6 +889,34 @@ function renderDetail(){
     </div>`;
 }
 
+function tradingDaysBetween(a,b){
+  // Weekends are not missed scans, so count weekdays only. Holidays still
+  // read as one stale day, which is the safe direction to be wrong in.
+  let d=new Date(a+'T00:00:00Z'); const end=new Date(b+'T00:00:00Z'); let n=0;
+  while(d<end){
+    d.setUTCDate(d.getUTCDate()+1);
+    const w=d.getUTCDay();
+    if(w!==0&&w!==6) n++;
+  }
+  return n;
+}
+function renderStale(){
+  // A market that stopped scanning looks exactly like a market with no
+  // breakouts: a full table of old signals and a regime read. This is the
+  // difference between "quiet" and "broken".
+  const el=document.getElementById('stale');
+  const last=mkt().last_scan, gen=dataDate();
+  if(!last||!gen){el.innerHTML='';return;}
+  const n=tradingDaysBetween(last,gen);
+  if(n<2){el.innerHTML='';return;}
+  const bad=n>=4;
+  el.innerHTML=`<div class="stale ${bad?'stale-bad':'stale-warn'}">
+    <span>⚠</span>
+    <span>Last ${mkt().label} scan was <b>${last}</b> — <b>${n} trading days</b> ago.
+    Everything below is from that run, not today. Check the workflow before trusting it.</span>
+  </div>`;
+}
+
 function renderRegime(){
   const el=document.getElementById('regime');
   const r=mkt().regime;
@@ -867,7 +969,44 @@ function renderEdge(){
     ${e.d30?c((e.d30.median>0?'+':'')+fmt(e.d30.median,1)+'%','median · 30d',e.d30.median>0?'up':'down'):''}
     ${e.stop_hit_rate!=null?c(e.stop_hit_rate+'%','stops hit · 30d',e.stop_hit_rate>40?'down':''):''}
   </div>
-  <div class="note">Positive 30-day expectancy after 50+ signals = edge. Anything else = keep paper trading.</div>`;
+  <div class="note">Positive 30-day expectancy after 50+ signals = edge. Anything else = keep paper trading.</div>
+  ${monthEdgeHTML()}`;
+}
+
+function monthEdgeHTML(){
+  // Straight from the db via cohorts(), NOT from the signals on this page.
+  // The dashboard drops everything over 30 days old unless it is still
+  // TRENDING, so an average taken from what is on screen would be the
+  // survivors grading themselves. These are every signal that ever fired.
+  const co=mkt().cohorts;
+  if(!co||!co.by_month||!co.by_month.length) return '';
+  const rows=co.by_month.slice().reverse().map(m=>{
+    const gate=m.gated==='mixed'
+      ? '<span class="gate-mixed" title="The trend gate went live partway through this month, so these signals are not all screened the same way.">MIXED</span>'
+      : m.gated==='none' ? '<span class="gate-none">UNGATED</span>'
+      : '<span class="gate-all">gated</span>';
+    if(!m.measured) return `<tr class="pend">
+      <td>${monthLabel(m.month)}</td><td>${m.n}</td>
+      <td colspan="3">still maturing — no 30-day number yet</td><td>${gate}</td></tr>`;
+    const a=m.avg_d30;
+    return `<tr>
+      <td>${monthLabel(m.month)}</td>
+      <td>${m.measured}${m.measured<m.n?`<span class="sub"> / ${m.n}</span>`:''}</td>
+      <td class="${a>0?'up':a<0?'down':''}">${(a>0?'+':'')+fmt(a,1)}%</td>
+      <td>${fmt(m.hit_d30,0)}%</td>
+      <td>${m.stop_hit!=null?fmt(m.stop_hit,0)+'%':'—'}</td>
+      <td>${gate}</td></tr>`;
+  }).join('');
+  const p=co.pending;
+  const pendNote=p&&p.n
+    ? `<div class="note"><b class="acc">${p.n} signals still maturing</b> · the whole batch is `+
+      `readable on <b class="acc">${p.all_mature}</b>. That is the next real verdict for this market.`+
+      (p.unmeasured?` · ${p.unmeasured} older signal${p.unmeasured===1?'':'s'} never got priced `+
+       `(delisted or fetch failure) and will not resolve.`:'')+`</div>`
+    : '';
+  return `<div class="mwrap"><table class="mtbl">
+    <thead><tr><th>Month</th><th>Measured</th><th>Avg 30d</th><th>Hit</th><th>Stops hit</th><th>Gate</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>${pendNote}`;
 }
 
 ['fStreak','fAgeMin','fAgeMax','fGainMin','fGainMax'].forEach(id=>

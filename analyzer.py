@@ -96,8 +96,14 @@ def report(market_key: str) -> dict:
         d = df[col].dropna()
         if d.empty:
             return None
+        # sd travels with the average so the dashboard can tell a real edge
+        # from one that is just noise with a positive sign. A 30-day mean of
+        # +0.5% across 160 signals with a 12% spread is inside one standard
+        # error of zero -- presenting that as "edge" is how you talk yourself
+        # into trading a coin flip.
         return {"n": int(len(d)), "hit_rate": round((d > 0).mean() * 100, 1),
-                "avg": round(d.mean(), 2), "median": round(d.median(), 2)}
+                "avg": round(d.mean(), 2), "median": round(d.median(), 2),
+                "sd": round(float(d.std()), 2) if len(d) > 1 else None}
 
     out = {
         "n_signals": int(len(df)),
@@ -128,7 +134,74 @@ def report(market_key: str) -> dict:
     return out
 
 
+def cohorts(market_key: str) -> dict:
+    """Month-by-month measured outcomes, plus what is still maturing.
+
+    Read straight from the db on purpose. The dashboard payload drops any
+    signal older than 30 days unless it is still TRENDING, so anything
+    computed from data.json for an old month is survivors only -- that is how
+    a month whose real 30-day outcome was -10.2% can read "+18.9%, 100% up".
+    The db keeps every signal that ever fired, which is the only honest basis
+    for "how did June actually do".
+
+    'pending' counts signals too young to have a 30-day number yet but still
+    inside the backfill window (see MIN_AGE_DAYS / the 60-day bound in
+    backfill()). Those are the open question, not a gap in the data.
+    """
+    with connect() as con:
+        df = pd.read_sql_query(
+            "SELECT s.scan_date, s.trend_pass, o.ret_d30, o.stop_hit_d30, "
+            "julianday('now') - julianday(s.scan_date) AS age "
+            "FROM signals s LEFT JOIN outcomes o ON o.signal_id = s.id "
+            "WHERE s.market = ?", con, params=(market_key,))
+    if df.empty:
+        return {}
+
+    df["month"] = df["scan_date"].str.slice(0, 7)
+    out = {"by_month": [], "pending": None}
+
+    for month, mdf in df.groupby("month", sort=True):
+        scored = mdf.dropna(subset=["ret_d30"])
+        row = {"month": month, "n": int(len(mdf)), "measured": int(len(scored))}
+        if len(scored):
+            row["avg_d30"] = round(float(scored["ret_d30"].mean()), 2)
+            row["hit_d30"] = round(float((scored["ret_d30"] > 0).mean()) * 100, 1)
+            if scored["stop_hit_d30"].notna().any():
+                row["stop_hit"] = round(
+                    float(scored["stop_hit_d30"].dropna().mean()) * 100, 1)
+        # The trend gate landed mid-history; a month that straddles it is not
+        # comparable to one either side, so say so rather than quietly mixing.
+        gated = mdf["trend_pass"].notna()
+        row["gated"] = "all" if gated.all() else "none" if not gated.any() else "mixed"
+        out["by_month"].append(row)
+
+    # Two different things look identical in the db (ret_d30 IS NULL) and must
+    # not be conflated:
+    #   maturing  - younger than 30 days, so no 30-day number CAN exist yet.
+    #               This is the open question, and it has a date attached.
+    #   unmeasured- old enough to score but still blank, meaning backfill could
+    #               not price it (delisted, ticker change, fetch failure). This
+    #               is missing data, and silently counting it as "pending"
+    #               would mean waiting forever for a verdict that never lands.
+    blank = df[df["ret_d30"].isna()]
+    maturing = blank[blank["age"] < 30]
+    unmeasured = blank[(blank["age"] >= 30) & (blank["age"] <= 60)]
+    if len(maturing) or len(unmeasured):
+        out["pending"] = {"n": int(len(maturing)),
+                          "unmeasured": int(len(unmeasured))}
+        if len(maturing):
+            newest = maturing["scan_date"].max()
+            out["pending"]["newest"] = newest
+            # A signal is readable 30 days after it fired, so the whole batch
+            # is readable 30 days after the newest one in it.
+            out["pending"]["all_mature"] = (
+                datetime.fromisoformat(newest) + timedelta(days=30)
+            ).strftime("%Y-%m-%d")
+    return out
+
+
 if __name__ == "__main__":
     mk = sys.argv[1] if len(sys.argv) > 1 else "US"
     backfill(mk)
     report(mk)
+    print(f"{mk} cohorts: {cohorts(mk)}")

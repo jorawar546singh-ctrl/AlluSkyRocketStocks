@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from analyzer import report
+from analyzer import cohorts, report
 from core.config import DASHBOARD_JSON, MARKETS
 from core.datafeed import fetch_history
 from core.db import connect
@@ -216,7 +216,15 @@ def export():
                 "signals": signals,
                 "positions": positions,
                 "edge": report(key),
+                "cohorts": cohorts(key),
                 "regime": mkt_regime,
+                # Newest scan actually in the db for this market, so the
+                # dashboard can tell "no breakouts today" apart from "this
+                # market has not been scanned in four days". Taken from the
+                # db, not the retained signal list, which is filtered.
+                "last_scan": con.execute(
+                    "SELECT MAX(scan_date) FROM signals WHERE market=?", (key,)
+                ).fetchone()[0],
             }
     with open(DASHBOARD_JSON, "w") as f:
         json.dump(payload, f, separators=(",", ":"))
