@@ -215,6 +215,9 @@
          margin-bottom:10px;font-size:12.5px;line-height:1.5}
   .stale-warn{border:1px solid var(--amber);background:var(--amber-dim);color:var(--sec)}
   .stale-bad{border:1px solid var(--red);background:var(--red-dim);color:var(--sec)}
+  /* A quiet market is information, not a warning -- it must not look like an alarm. */
+  .stale-ok{border:1px solid var(--hair);background:var(--panel);color:var(--sec)}
+  .stale .funnel{font-family:var(--mono);font-size:11px;color:var(--sec);opacity:.85}
   .stale b{font-family:var(--mono);color:var(--ink);font-weight:600}
 
   /* ---------- month edge table ---------- */
@@ -901,20 +904,59 @@ function tradingDaysBetween(a,b){
   return n;
 }
 function renderStale(){
-  // A market that stopped scanning looks exactly like a market with no
-  // breakouts: a full table of old signals and a regime read. This is the
-  // difference between "quiet" and "broken".
+  // "No breakouts" and "the job died" produce identical signal tables, so this
+  // reads the RUN log, not the signal log. The first version of this badge got
+  // that wrong: it used the newest signal date, and told him India was broken
+  // through a week in which India ran perfectly and correctly found nothing.
   const el=document.getElementById('stale');
-  const last=mkt().last_scan, gen=dataDate();
-  if(!last||!gen){el.innerHTML='';return;}
-  const n=tradingDaysBetween(last,gen);
-  if(n<2){el.innerHTML='';return;}
-  const bad=n>=4;
-  el.innerHTML=`<div class="stale ${bad?'stale-bad':'stale-warn'}">
-    <span>⚠</span>
-    <span>Last ${mkt().label} scan was <b>${last}</b> — <b>${n} trading days</b> ago.
-    Everything below is from that run, not today. Check the workflow before trusting it.</span>
-  </div>`;
+  const h=mkt().health, gen=dataDate();
+  if(!gen){el.innerHTML='';return;}
+
+  // No run log yet (a db written before it existed). We cannot tell quiet from
+  // broken, so we say nothing rather than guess -- guessing is what broke this.
+  if(!h||!h.run_date){el.innerHTML='';return;}
+
+  const since=tradingDaysBetween(h.run_date,gen);
+  const box=(cls,icon,msg,funnel)=>{
+    el.innerHTML=`<div class="stale ${cls}"><span>${icon}</span><span>${msg}`+
+      (funnel?`<br><span class="funnel">${funnel}</span>`:'')+`</span></div>`;
+  };
+  const funnel=h.universe!=null
+    ? `scanned <b>${h.universe}</b> tickers · <b>${h.eligible??'—'}</b> passed the trend gate `+
+      `· <b>${h.breakouts??'—'}</b> broke out · <b>${h.saved??'—'}</b> new signal(s) saved`
+    : '';
+
+  if(h.status==='error')
+    return box('stale-bad','⚠',
+      `Last ${mkt().label} scan <b>failed</b> on <b>${h.run_date}</b>`+
+      (h.error?`: <b>${h.error}</b>`:'')+`. Nothing below has been updated since.`);
+
+  if(since>=2)
+    return box('stale-bad','⚠',
+      `${mkt().label} has not been scanned in <b>${since} trading days</b> — last run `+
+      `<b>${h.run_date}</b>. Everything below is from that run. Check the workflow.`);
+
+  if(h.fails_7d>=2)
+    return box('stale-warn','⚠',
+      `${mkt().label} scanned <b>${h.run_date}</b>, but <b>${h.fails_7d}</b> of the last `+
+      `<b>${h.runs_7d}</b> runs failed. The data is current but the job is unreliable.`,funnel);
+
+  if(h.status==='empty_universe')
+    return box('stale-warn','⚠',
+      `${mkt().label} scanned <b>${h.run_date}</b> but the universe came back <b>empty</b> — `+
+      `the screener returned no tickers, so nothing could be found. This is a data-source `+
+      `problem, not a quiet market.`);
+
+  // Ran fine, recently. Only worth a line if the table looks stale to the eye
+  // because nothing has fired for a while -- that is the case this exists for.
+  const lastSig=mkt().last_scan;
+  const quiet=lastSig?tradingDaysBetween(lastSig,gen):null;
+  if(quiet!=null&&quiet>=2)
+    return box('stale-ok','✓',
+      `${mkt().label} scanned <b>${h.run_date}</b> and found <b>no qualifying breakouts</b>. `+
+      `Last signal was <b>${lastSig}</b>, <b>${quiet} trading days</b> ago — the job is `+
+      `healthy, the market is quiet.`,funnel);
+  el.innerHTML='';
 }
 
 function renderRegime(){

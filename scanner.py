@@ -34,12 +34,49 @@ from datetime import datetime, timezone
 from core import universe as uni
 from core.config import MARKETS
 from core.datafeed import fetch_history
-from core.db import connect, upsert_signal
+from core.db import connect, record_run, upsert_signal
 from core.signals import darvas, regime, relative_strength, trend_filter
 
 
 def run(market_key: str, intraday: bool = False) -> list[dict]:
+    """Scan one market, recording the attempt whether or not it succeeds.
+
+    The recording is the point. A market with no breakouts writes no signal
+    rows, which used to be indistinguishable from a job that never ran --
+    so a healthy quiet market and a dead workflow looked identical from the
+    outside. Now every invocation leaves a row in `runs`.
+
+    Errors are recorded and then RE-RAISED: the workflow must still fail
+    loudly. Swallowing them here would trade one silent failure for another.
+    """
     cfg = MARKETS[market_key]
+    started = datetime.now(timezone.utc)
+    stats = {"universe": None, "fetched": None, "eligible": None,
+             "breakouts": None, "saved": None, "regime": None}
+
+    def _record(status: str, error: str | None) -> None:
+        record_run({
+            "market": cfg.key,
+            "run_ts": started.isoformat(timespec="seconds"),
+            "run_date": started.strftime("%Y-%m-%d"),
+            "source": "scanner_intraday" if intraday else "scanner",
+            "status": status,
+            "duration_s": round(
+                (datetime.now(timezone.utc) - started).total_seconds(), 1),
+            "error": error,
+            **stats,
+        })
+
+    try:
+        rows = _scan(cfg, intraday, stats)
+    except Exception as exc:                                   # noqa: BLE001
+        _record("error", f"{type(exc).__name__}: {exc}"[:400])
+        raise
+    _record("ok" if stats["universe"] else "empty_universe", None)
+    return rows
+
+
+def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
     mode = " [INTRADAY — provisional]" if intraday else ""
     print(f"=== AlluSkyRocketStocks scan: {cfg.label}{mode} ===")
 
@@ -62,6 +99,7 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
     bare = (uni.us_universe(cfg) if cfg.key == "US"
             else uni.ca_universe() if cfg.key == "CA"
             else uni.in_universe())
+    stats["universe"] = len(bare)
     if not bare:
         return []
     tickers = [b + cfg.ticker_suffix for b in bare]
@@ -74,6 +112,8 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
     # 0) Market regime — INFORMATION ONLY, gates nothing. Read off the same
     #    benchmark already fetched above for relative strength.
     mkt_regime = regime.evaluate(bench_df)
+    stats["fetched"] = len(histories)
+    stats["regime"] = mkt_regime.get("label")
     print(f"  market regime: {mkt_regime['label']} ({mkt_regime['detail']})")
 
     # 1) Trend gate — kills ineligible stocks before the trigger ever runs
@@ -82,6 +122,7 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
         tf = trend_filter.evaluate(df, cfg.trend_near_high_pct)
         if tf["pass"]:
             eligible[t] = tf
+    stats["eligible"] = len(eligible)
     print(f"  trend gate: {len(eligible)}/{len(histories)} eligible")
 
     # 2) Darvas trigger on eligible names only
@@ -95,6 +136,7 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
             hits[t] = d
         else:
             dropped_by_price += 1
+    stats["breakouts"] = len(hits)
     print(f"  darvas trigger: {len(hits)} breakouts"
           f"{f'  ({dropped_by_price} dropped outside ${cfg.min_price}-${cfg.max_price})' if dropped_by_price else ''}")
 
@@ -131,6 +173,7 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
             upsert_signal(con, row)
             rows.append(row)
 
+    stats["saved"] = len(rows)
     rows.sort(key=lambda x: (x["rs_pct"] or 0), reverse=True)
     for w in uni.WARNINGS:
         print(f"  WARNING: {w}")

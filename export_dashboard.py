@@ -167,6 +167,36 @@ def enrich_positions(positions: list[dict], cfg) -> None:
         p["stop_moved"] = bool(new_stop > (p.get("initial_stop") or 0))
 
 
+def _health(con, key: str) -> dict:
+    """Did the scanner actually run, and what did it see?
+
+    The distinction this exists to draw: a market with no breakouts writes no
+    signal rows, exactly like a market whose job died. Reading MAX(scan_date)
+    off signals conflates the two -- it answers "when did something last fire",
+    not "when did we last look". India ran clean for five trading days in
+    Sept 2026 finding nothing in a RISK-OFF tape, and a staleness warning
+    built on signal dates called it broken.
+
+    Returns {} when the runs table has no rows yet (any db written before the
+    run log existed), so the dashboard stays quiet rather than inventing an
+    alarm about history it cannot see.
+    """
+    last = con.execute(
+        "SELECT run_ts, run_date, status, universe, eligible, breakouts, saved, error "
+        "FROM runs WHERE market=? ORDER BY run_ts DESC LIMIT 1", (key,)).fetchone()
+    if last is None:
+        return {}
+    out = {k: last[k] for k in last.keys()}
+    # A single bad run is noise; a run of bad runs is a broken market.
+    out["fails_7d"] = con.execute(
+        "SELECT COUNT(*) FROM runs WHERE market=? AND status!='ok' "
+        "AND julianday('now') - julianday(run_ts) <= 7", (key,)).fetchone()[0]
+    out["runs_7d"] = con.execute(
+        "SELECT COUNT(*) FROM runs WHERE market=? "
+        "AND julianday('now') - julianday(run_ts) <= 7", (key,)).fetchone()[0]
+    return out
+
+
 def export():
     payload = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                "markets": {}}
@@ -218,13 +248,12 @@ def export():
                 "edge": report(key),
                 "cohorts": cohorts(key),
                 "regime": mkt_regime,
-                # Newest scan actually in the db for this market, so the
-                # dashboard can tell "no breakouts today" apart from "this
-                # market has not been scanned in four days". Taken from the
-                # db, not the retained signal list, which is filtered.
+                # Newest date a signal FIRED. Note this is not the same thing
+                # as the last time the scanner ran -- see health below.
                 "last_scan": con.execute(
                     "SELECT MAX(scan_date) FROM signals WHERE market=?", (key,)
                 ).fetchone()[0],
+                "health": _health(con, key),
             }
     with open(DASHBOARD_JSON, "w") as f:
         json.dump(payload, f, separators=(",", ":"))
