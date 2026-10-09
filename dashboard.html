@@ -17,6 +17,17 @@
     --violet:#B98CFF; --violet-dim:rgba(185,140,255,.14);
     --mono:'IBM Plex Mono',ui-monospace,monospace;
     --grot:'Space Grotesk',system-ui,sans-serif;
+    /* One easing for everything, so the page moves like a single object.
+       Durations stay short: this is a page you scan, not one you watch. */
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --fast:140ms; --mid:260ms; --slow:420ms;
+  }
+  /* The whole motion layer is opt-out in one place. Anything added later that
+     animates must sit behind .mo so this keeps working. */
+  @media (prefers-reduced-motion: reduce){
+    .mo *, .mo *::before, .mo *::after{
+      animation-duration:1ms !important; animation-iteration-count:1 !important;
+      transition-duration:1ms !important; scroll-behavior:auto !important}
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--ink);font-family:var(--grot);
@@ -87,6 +98,7 @@
   .b-new{color:var(--green);border:1px solid var(--green)}
   .b-dup{color:var(--sec);border:1px solid var(--hair);cursor:help}
   .b-live{color:var(--violet);border:1px solid var(--violet);background:var(--violet-dim);cursor:help}
+  .b-tip{color:var(--blue);border:1px solid var(--blue);background:var(--blue-dim);cursor:help}
   .b-TRENDING{background:var(--amber);color:#0B0B0D}
   .b-WATCHING{color:var(--blue);border:1px solid var(--blue);background:var(--blue-dim)}
   .b-FADING{color:var(--red);border:1px solid var(--red)}
@@ -261,9 +273,59 @@
     .hdr-right{width:100%;justify-content:space-between}
   }
   @media(prefers-reduced-motion:no-preference){.rsmeter i{transition:width .6s ease}}
+
+  /* ---------- motion ---------- */
+  @keyframes riseIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes popIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes pulseNew{0%,100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}
+                      35%{box-shadow:0 0 0 3px rgba(61,220,132,.22)}}
+  @keyframes flashUp{0%{background:rgba(61,220,132,.26)}100%{background:transparent}}
+  @keyframes flashDown{0%{background:rgba(255,92,92,.24)}100%{background:transparent}}
+  @keyframes drawLine{to{stroke-dashoffset:0}}
+
+  /* Rows fade up in sequence when a filter or tab changes -- the stagger is
+     the feedback that the filter applied, so it is capped at 16 rows:
+     past that it stops reading as response and starts reading as lag. */
+  .mo tbody tr.anim, .mo .card.anim{animation:riseIn var(--mid) var(--ease) both}
+  .mo .b-new{animation:pulseNew 1.6s var(--ease) 2}
+  .mo .detail.on{animation:popIn var(--mid) var(--ease)}
+  .mo .dback.on{animation:fadeIn var(--fast) var(--ease)}
+  .mo .rgm, .mo .stale, .mo .primary, .mo .empty{animation:riseIn var(--slow) var(--ease) both}
+
+  /* Moved since the last visit. The flash is the only motion on this page
+     that encodes a fact you cannot get any other way. */
+  .mo .chg-up{animation:flashUp 2.2s var(--ease) both}
+  .mo .chg-down{animation:flashDown 2.2s var(--ease) both}
+  .delta{font-family:var(--mono);font-size:10px;margin-left:6px;opacity:.9}
+  .mo .spark-path{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
+                  animation:drawLine var(--slow) var(--ease) forwards}
+
+  .btn,.toggle button,tbody tr,.card{transition:background var(--fast) var(--ease),
+       color var(--fast) var(--ease),border-color var(--fast) var(--ease)}
+
+  /* ---------- since-last-visit bar ---------- */
+  .since{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+         border:1px solid var(--hair);background:var(--panel);
+         padding:12px 16px;margin-bottom:10px;font-size:12.5px;color:var(--sec)}
+  .mo .since{animation:riseIn var(--slow) var(--ease) both}
+  .since b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  .since .up{color:var(--green)} .since .down{color:var(--red)}
+  .since button{background:none;border:1px solid var(--hair);color:var(--sec);
+       font-family:var(--mono);font-size:10px;letter-spacing:.12em;padding:6px 12px;
+       text-transform:uppercase;cursor:pointer;margin-left:auto}
+  .since button:hover{color:var(--ink);border-color:var(--sec)}
+  .since button.on{background:var(--amber);border-color:var(--amber);color:#0B0B0D;font-weight:600}
+
+  /* ---------- actionability ---------- */
+  .act{display:inline-block;width:7px;height:7px;border-radius:50%;
+       margin-right:9px;vertical-align:1px;cursor:help}
+  .act-go{background:var(--green);box-shadow:0 0 0 2px rgba(61,220,132,.18)}
+  .act-ext{background:var(--amber)}
+  .act-no{background:var(--hair)}
 </style>
 </head>
-<body>
+<body class="mo">
 <div class="wrap">
 
   <header>
@@ -278,6 +340,7 @@
     </div>
   </header>
 
+  <div id="since"></div>
   <div id="stale"></div>
   <div id="regime"></div>
   <div class="lbl">Primary candidate <span class="meta" id="pmeta"></span></div>
@@ -297,7 +360,7 @@
         <option value="risk_pct">Risk %</option>
         <option value="entry_risk_now">Risk now</option>
       </select>
-      <button class="btn" id="fDir" onclick="flipDir()">↓</button>
+      <button class="btn" id="fDir" onclick="flipDir()">↑</button>
     </div>
     <div class="grp" id="statusBtns">
       <button class="btn f-today" data-st="TODAY">Today 🎯</button>
@@ -350,12 +413,25 @@
 </div>
 
 <script>
-let DATA=null, MARKET='US', DIR=-1, STATUS='ALL', SELECTED=null;
+// DIR=1 on age sorts newest-first. The old default opened the page on
+// 170-day-old survivors, which is the opposite of what a decision needs:
+// fresh setups and today's NEW badges belong at the top. One click on the
+// Age header still flips it back.
+let DATA=null, MARKET='US', DIR=1, STATUS='ALL', SELECTED=null;
 // Month grouping is opt-in. Left always-on it would silently reorder the table
 // (months first, sort key second), and collapsing by default would hide the
 // oldest signals -- which under the two-tier retention rule are old precisely
 // BECAUSE they are still trending. So: off by default, nothing collapsed.
 let GROUP=false;
+// What changed since this browser last opened the dashboard. Kept per market
+// in localStorage -- this page is served from GitHub Pages, not an artifact,
+// so storage is available and private to the device.
+// This is the question the dashboard could not answer before: "I looked on
+// Tuesday, what moved?" NEW badges only ever meant "in today's scan".
+let CHANGES={fresh:new Set(), up:new Map(), down:new Map(), flipped:new Map()};
+let ONLY_CHANGED=false;
+const SEEN_KEY=m=>`asr.seen.${m}`;
+const MOVE_MIN=2;   // percentage points -- below this it is noise, not news
 const COLLAPSED=new Set();
 const WINNER_FLOOR=5;   // % -- Winners held 62% of all signals at >0; a tab
                         // that wide is a second All tab, not a shortlist.
@@ -392,10 +468,20 @@ async function load(){
     document.getElementById('stamp').textContent=
       'scan '+DATA.generated.replace('T',' ').slice(0,16)+' UTC';
     render();
+    // Written only after the diff has been rendered, so this visit becomes
+    // the baseline for the next one rather than erasing what we just showed.
+    saveSeen(MARKET,snapshot());
   }catch(e){
     document.getElementById('primary').innerHTML=
       '<div class="empty">data.json not found. Run the workflow once, or serve via http (not file://).</div>';
   }
+}
+// Tickers flagged by a tip source recently, for the TIP badge. Rebuilt per
+// market render; empty when nothing has been ingested.
+let TIPPED=new Set();
+function rebuildTipped(){
+  const m=mkt().mentions;
+  TIPPED=new Set((m&&m.recent)||[]);
 }
 function mkt(){
   return DATA.markets[MARKET] || {signals:[], positions:[], currency:'', label:MARKET, edge:null};
@@ -404,11 +490,12 @@ function cur(){return mkt().currency;}
 function riskClass(p){return p==null?'':p<=6?'risk-lo':p<=12?'risk-mid':'risk-hi';}
 
 function setMarket(m){
-  MARKET=m; SELECTED=null;
+  MARKET=m; SELECTED=null; ONLY_CHANGED=false;
   document.getElementById('tgUS').classList.toggle('on',m==='US');
   document.getElementById('tgIN').classList.toggle('on',m==='IN');
   document.getElementById('tgCA').classList.toggle('on',m==='CA');
   render();
+  saveSeen(MARKET,snapshot());
 }
 function flipDir(){DIR=-DIR;document.getElementById('fDir').textContent=DIR<0?'↓':'↑';renderTable();}
 function toggleChk(id){document.getElementById(id).classList.toggle('on');renderTable();}
@@ -416,7 +503,7 @@ function clearFilters(){
   ['fStreak','fAgeMin','fAgeMax','fGainMin','fGainMax'].forEach(i=>document.getElementById(i).value='');
   ['fVolT','fBoxT'].forEach(i=>document.getElementById(i).classList.remove('on'));
   STATUS='ALL'; syncStatusBtns(); document.getElementById('fSort').value='age_days';
-  DIR=-1; document.getElementById('fDir').textContent='↓'; renderTable();
+  DIR=1; document.getElementById('fDir').textContent='↑'; renderTable();
 }
 function syncStatusBtns(){
   document.querySelectorAll('#statusBtns .btn').forEach(b=>
@@ -458,6 +545,7 @@ function filtered(){
   if(!isNaN(g1)) rows=rows.filter(s=>(s.gain_pct??1e9)<=g1);
   if(volT) rows=rows.filter(s=>s.vol_today===true);
   if(boxT) rows=rows.filter(s=>s.box_today===true);
+  if(ONLY_CHANGED) rows=rows.filter(s=>changed(s.id));
   rows.sort((a,b)=>{
     const va=a[key]??-Infinity, vb=b[key]??-Infinity;
     return (va<vb?-1:va>vb?1:0)*DIR;
@@ -465,7 +553,70 @@ function filtered(){
   return rows;
 }
 
-function render(){renderStale();renderPrimary();renderTable();renderRegime();renderPositions();renderEdge();renderDetail();}
+function render(){
+  rebuildTipped(); computeChanges(); renderSince(); renderStale();
+  renderPrimary(); renderTable(); renderRegime(); renderPositions();
+  renderEdge(); renderDetail();
+}
+
+function loadSeen(m){
+  try{ return JSON.parse(localStorage.getItem(SEEN_KEY(m))||'null'); }
+  catch(e){ return null; }      // private mode / blocked storage: degrade quietly
+}
+function saveSeen(m,snap){
+  try{ localStorage.setItem(SEEN_KEY(m),JSON.stringify(snap)); }catch(e){}
+}
+function snapshot(){
+  const o={at:Date.now(),v:{}};
+  for(const s of mkt().signals) o.v[s.id]={g:s.gain_pct??null,st:s.status||null};
+  return o;
+}
+function computeChanges(){
+  // Compare the current payload against what this browser saw last time.
+  // Deliberately NOT "since the last scan" -- the useful frame is the
+  // viewer's own, because that is the gap they have to catch up on.
+  CHANGES={fresh:new Set(), up:new Map(), down:new Map(), flipped:new Map(), since:null};
+  const prev=loadSeen(MARKET);
+  if(!prev||!prev.v){ return; }        // first visit: nothing to diff against
+  CHANGES.since=prev.at;
+  for(const s of mkt().signals){
+    const was=prev.v[s.id];
+    if(!was){ CHANGES.fresh.add(s.id); continue; }
+    if(was.st&&s.status&&was.st!==s.status) CHANGES.flipped.set(s.id,was.st);
+    if(was.g!=null&&s.gain_pct!=null){
+      const d=s.gain_pct-was.g;
+      if(d>=MOVE_MIN) CHANGES.up.set(s.id,d);
+      else if(d<=-MOVE_MIN) CHANGES.down.set(s.id,d);
+    }
+  }
+}
+function changed(id){
+  return CHANGES.fresh.has(id)||CHANGES.up.has(id)||
+         CHANGES.down.has(id)||CHANGES.flipped.has(id);
+}
+function toggleChanged(){ ONLY_CHANGED=!ONLY_CHANGED; renderSince(); renderTable(); }
+function ago(ts){
+  const h=(Date.now()-ts)/36e5;
+  if(h<1) return 'less than an hour ago';
+  if(h<24) return `${Math.round(h)} hour${Math.round(h)===1?'':'s'} ago`;
+  const d=Math.round(h/24);
+  return `${d} day${d===1?'':'s'} ago`;
+}
+function renderSince(){
+  const el=document.getElementById('since');
+  const n=CHANGES.fresh.size, u=CHANGES.up.size, dn=CHANGES.down.size, f=CHANGES.flipped.size;
+  if(!CHANGES.since||(!n&&!u&&!dn&&!f)){ el.innerHTML=''; return; }
+  const bits=[];
+  if(n)  bits.push(`<b>${n}</b> new`);
+  if(u)  bits.push(`<b class="up">${u}</b> up ${MOVE_MIN}%+`);
+  if(dn) bits.push(`<b class="down">${dn}</b> down ${MOVE_MIN}%+`);
+  if(f)  bits.push(`<b>${f}</b> changed status`);
+  el.innerHTML=`<div class="since">
+    <span>Since your last visit, <span class="sub">${ago(CHANGES.since)}</span> — ${bits.join(' · ')}.</span>
+    <button class="${ONLY_CHANGED?'on':''}" onclick="toggleChanged()">
+      ${ONLY_CHANGED?'show all':'show only these'}</button>
+  </div>`;
+}
 
 function edgeVerdict(){
   // The measured verdict for THIS market, in the words of the rule already
@@ -556,6 +707,14 @@ function liveBadge(s){
   // provisional row is never mistaken for a confirmed one.
   return s.source==='scanner_intraday'
     ? '<span class="bdg b-live" title="Provisional: found mid-session, close not confirmed yet. The EOD scan will confirm it with the real closing price or remove it.">LIVE</span>'
+    : '';
+}
+function tipBadge(s){
+  // Marks a signal whose ticker came from a tip rather than the screener.
+  // It still passed the same gate and trigger -- this only says where the
+  // idea came from, so a run of tipped winners is visible as such.
+  return TIPPED.has(s.ticker)
+    ? '<span class="bdg b-tip" title="This ticker was flagged in a tip source (Discord / watchlist) in the last 14 days. It still had to pass the trend gate and Darvas trigger to appear here.">TIP</span>'
     : '';
 }
 function dupBadge(s,dups){
@@ -673,11 +832,67 @@ function renderTable(){
     }
     document.getElementById('tbody').innerHTML=tH;
     document.getElementById('cards').innerHTML=cH;
+    stagger();
     return;
   }
   document.getElementById('count').textContent=`showing ${rows.length} of ${total}`;
   document.getElementById('tbody').innerHTML=rows.map(s=>rowHTML(s,dups)).join('');
   document.getElementById('cards').innerHTML=rows.map(s=>cardHTML(s,dups)).join('');
+  stagger();
+}
+
+function stagger(){
+  // The stagger is feedback that a filter applied, so it is capped: past
+  // ~16 rows a cascade stops reading as response and starts reading as lag.
+  // Rows beyond the cap appear immediately rather than queueing behind it.
+  const MAX=16, STEP=22;
+  const items=[...document.querySelectorAll('#tbody tr:not(.mhdr)'),
+               ...document.querySelectorAll('#cards .card')];
+  items.forEach((el,i)=>{
+    if(i>=MAX) return;
+    el.classList.add('anim');
+    el.style.animationDelay=(i*STEP)+'ms';
+  });
+}
+
+const FRESH_DAYS=14;   // the Darvas box length -- past it the breakout is no
+                       // longer a new idea, whatever the stop looks like
+
+function actDot(s){
+  // Answers the question the table could not answer at a glance: is this a
+  // setup I could act on today?
+  //
+  // The obvious definition -- clean stop + above the box -- came out green on
+  // 46% of rows, median age 77 days, because the retention rule keeps old
+  // winners and an old winner still technically has a workable stop. A colour
+  // that fires on half the page guides nothing. Adding freshness drops it to
+  // about 1%, which is the honest rate: a fresh, clean, above-the-box setup is
+  // rare, and saying so is the entire point of the marker.
+  //
+  // Amber keeps the mechanical reading for everything else -- what matters for
+  // a position already held, rather than for a new entry.
+  const fresh=(s.age_days??999)<=FRESH_DAYS;
+  const sound=s.clean_entry===true && s.box_today===true;
+  if(sound && fresh)
+    return `<span class="act act-go" title="Live setup: broke out within ${FRESH_DAYS} days, still above the box, and the box is tight enough for a sane stop. A new-entry candidate."></span>`;
+  if(sound)
+    return '<span class="act act-ext" title="Structurally fine but no longer new: above the box with a workable stop, but the breakout is older than the box length. Relevant if you hold it, not a fresh entry."></span>';
+  return '<span class="act act-no" title="No clean entry: the box is too wide for a sane stop, or price has fallen back inside it."></span>';
+}
+function deltaTag(s){
+  // Only rendered when something actually moved since the last visit, so an
+  // unchanged row stays visually silent.
+  const u=CHANGES.up.get(s.id), d=CHANGES.down.get(s.id), f=CHANGES.flipped.get(s.id);
+  let out='';
+  if(u!=null) out+=`<span class="delta up" title="Moved up since your last visit">\u25b2${fmt(u,1)}</span>`;
+  if(d!=null) out+=`<span class="delta down" title="Moved down since your last visit">\u25bc${fmt(Math.abs(d),1)}</span>`;
+  if(f) out+=`<span class="delta sub" title="Status changed since your last visit">was ${f}</span>`;
+  return out;
+}
+function chgClass(s){
+  if(CHANGES.up.has(s.id)) return ' chg-up';
+  if(CHANGES.down.has(s.id)) return ' chg-down';
+  return '';
 }
 
 function rowHTML(s,dups){
@@ -685,11 +900,11 @@ function rowHTML(s,dups){
     const fresh=s.scan_date===dataDate();
     const g=s.gain_pct;
     const limit=s.suggested_stop?(s.suggested_stop*0.997):null;
-    return `<tr class="${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
-      <td class="tick-cell">${s.ticker}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
+    return `<tr class="${SELECTED===s.id?'sel':''}${chgClass(s)}" onclick="select(${s.id})">
+      <td class="tick-cell">${actDot(s)}${s.ticker}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
       <td>${cur()}${fmt(s.price)} <span class="sub">· ${s.scan_date.slice(5)}</span></td>
       <td>${s.now_price!=null?cur()+fmt(s.now_price):'<span class="sub">—</span>'}</td>
-      <td class="${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'<span class="sub">—</span>'}</td>
+      <td class="${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'<span class="sub">—</span>'}${deltaTag(s)}</td>
       <td>${s.age_days!=null?s.age_days+'d':'—'}</td>
       <td>${s.streak!=null?`<b>${s.streak}</b> <span class="sub">(peak ${s.peak_streak})</span>`:'<span class="sub">—</span>'}</td>
       <td>${s.rs_pct!=null?fmt(s.rs_pct,0):'<span class="sub">—</span>'}</td>
@@ -708,9 +923,9 @@ function cardHTML(s,dups){
   {
     const fresh=s.scan_date===dataDate();
     const g=s.gain_pct;
-    return `<div class="card ${SELECTED===s.id?'sel':''}" onclick="select(${s.id})">
-      <div class="top"><span class="tk">${s.ticker}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
-        <span class="g ${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'—'}</span></div>
+    return `<div class="card ${SELECTED===s.id?'sel':''}${chgClass(s)}" onclick="select(${s.id})">
+      <div class="top"><span class="tk">${actDot(s)}${s.ticker}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
+        <span class="g ${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'—'}${deltaTag(s)}</span></div>
       <div class="rows">
         <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
         <span>age <b>${s.age_days!=null?s.age_days+'d':'—'}</b> · streak <b>${s.streak??'—'}</b></span>
@@ -773,9 +988,15 @@ function spark(s){
            `<text x="${(W-P-3).toFixed(1)}" y="${o.ly.toFixed(1)}" text-anchor="end" class="slt ${o.cls}">${txt}</text>`;
   }).join('');
   const up=v[v.length-1]>=v[0];
+  // Rough path length for the draw-in: the viewBox is not square and the line
+  // is mostly horizontal, so width plus total vertical travel is close enough
+  // to overshoot slightly, which is what a dash-offset animation needs.
+  let travel=0;
+  for(let i=1;i<v.length;i++) travel+=Math.abs(Y(v[i])-Y(v[i-1]));
+  const len=Math.ceil(W+travel+20);
   return `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none">
     ${refLines}
-    <path d="${path}" class="sline ${up?'up':'down'}"/>
+    <path d="${path}" class="sline spark-path ${up?'up':'down'}" style="--len:${len}"/>
     <circle cx="${X(v.length-1).toFixed(1)}" cy="${Y(v[v.length-1]).toFixed(1)}" r="3" class="sdot ${up?'up':'down'}"/>
     ${refLabels}
   </svg>`;
@@ -1012,7 +1233,45 @@ function renderEdge(){
     ${e.stop_hit_rate!=null?c(e.stop_hit_rate+'%','stops hit · 30d',e.stop_hit_rate>40?'down':''):''}
   </div>
   <div class="note">Positive 30-day expectancy after 50+ signals = edge. Anything else = keep paper trading.</div>
-  ${monthEdgeHTML()}`;
+  ${monthEdgeHTML()}
+  ${tipSourceHTML()}`;
+}
+
+function tipSourceHTML(){
+  // Deliberately its own block, below the signal edge report and never folded
+  // into it. The signal report answers "do my rules work". This answers "is
+  // this channel worth listening to" -- measured from the price when the tip
+  // landed, because that is when a follower would buy.
+  const m=mkt().mentions;
+  if(!m||!m.n_mentions) return '';
+  const srcs=Object.entries(m.by_source||{});
+  if(!srcs.length)
+    return `<div class="note" style="margin-top:22px"><b class="acc">${m.n_mentions}</b> `+
+           `tip(s) recorded, none old enough to score yet. A tip needs 30 days before `+
+           `it says anything.</div>`;
+  const rows=srcs.map(([name,s])=>{
+    if(!s.measured) return `<tr class="pend"><td>${name}</td><td>${s.n}</td>`+
+      `<td colspan="4">still maturing — no 30-day number yet</td></tr>`;
+    const a=s.avg_d30;
+    // Same honesty test as the market verdict: positive is not the same as real.
+    const t=(s.sd&&s.sd>0)?a/(s.sd/Math.sqrt(s.measured)):null;
+    const verdict = s.measured<30 ? '<span class="sub">too few to judge</span>'
+      : a<=0 ? '<span class="down">no edge</span>'
+      : (t!=null&&t<2) ? '<span class="acc">inside the noise</span>'
+      : '<span class="up">beats zero</span>';
+    return `<tr>
+      <td>${name}</td>
+      <td>${s.measured}${s.measured<s.n?`<span class="sub"> / ${s.n}</span>`:''}</td>
+      <td class="${a>0?'up':a<0?'down':''}">${(a>0?'+':'')+fmt(a,1)}%</td>
+      <td>${fmt(s.hit_d30,0)}%</td>
+      <td>${s.avg_max_gain!=null?'+'+fmt(s.avg_max_gain,1)+'%':'—'}</td>
+      <td>${verdict}</td></tr>`;
+  }).join('');
+  return `<div class="lbl" style="margin-top:34px">Tip sources
+      <span class="meta">measured from the price when the tip landed — not merged into the edge report above</span></div>
+    <div class="mwrap"><table class="mtbl">
+      <thead><tr><th>Source</th><th>Measured</th><th>Avg 30d</th><th>Hit</th><th>Avg peak</th><th>Verdict</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
 }
 
 function monthEdgeHTML(){

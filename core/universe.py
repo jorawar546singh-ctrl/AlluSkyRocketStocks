@@ -127,6 +127,34 @@ def _price_filter(cfg) -> str:
     return ",".join(parts)
 
 
+MENTION_DAYS = 14   # a tip older than this is not a fresh idea any more
+
+
+def mentioned_recently(market_key: str, days: int = MENTION_DAYS) -> list[str]:
+    """Tickers someone flagged lately (Discord, manual list).
+
+    These are ADDED to the universe, not substituted for it, and they get no
+    special treatment once there -- same trend gate, same Darvas trigger, same
+    price bounds. A tip earns a signal by passing the screen like anything
+    else. The point is only that a stock nobody screened for still gets looked
+    at when someone points at it.
+
+    Imported lazily so a db without the mentions table (or a fresh checkout)
+    cannot break the scan.
+    """
+    try:
+        from core.db import connect
+        with connect() as con:
+            rows = con.execute(
+                "SELECT DISTINCT ticker FROM mentions WHERE market=? "
+                "AND julianday('now') - julianday(mention_date) <= ?",
+                (market_key, days)).fetchall()
+        return [r["ticker"] for r in rows]
+    except Exception as exc:                                   # noqa: BLE001
+        _warn(f"could not read mentions ({exc})")
+        return []
+
+
 def us_universe(cfg) -> list[str]:
     tickers: list[str] = []
     pf = _price_filter(cfg)

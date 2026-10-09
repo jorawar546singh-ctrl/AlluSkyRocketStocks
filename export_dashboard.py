@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from analyzer import cohorts, report
+from analyzer import cohorts, mention_report, report
 from core.config import DASHBOARD_JSON, MARKETS
 from core.datafeed import fetch_history
 from core.db import connect
@@ -247,6 +247,7 @@ def export():
                 "positions": positions,
                 "edge": report(key),
                 "cohorts": cohorts(key),
+                "mentions": mention_report(key),
                 "regime": mkt_regime,
                 # Newest date a signal FIRED. Note this is not the same thing
                 # as the last time the scanner ran -- see health below.

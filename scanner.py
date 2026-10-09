@@ -99,6 +99,16 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
     bare = (uni.us_universe(cfg) if cfg.key == "US"
             else uni.ca_universe() if cfg.key == "CA"
             else uni.in_universe())
+    # Tips from Discord / the manual watchlist join the universe -- they do not
+    # bypass anything downstream, they just get looked at. A screener that only
+    # ever sees what the screener found cannot act on an idea from outside it.
+    mentioned = uni.mentioned_recently(cfg.key)
+    extra = [t for t in mentioned if t not in set(bare)]
+    if extra:
+        bare = list(bare) + extra
+        print(f"  universe: +{len(extra)} from mentions ({', '.join(extra[:8])}"
+              f"{'…' if len(extra) > 8 else ''})")
+    stats["mentions_added"] = len(extra)
     stats["universe"] = len(bare)
     if not bare:
         return []

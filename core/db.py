@@ -91,12 +91,69 @@ CREATE TABLE IF NOT EXISTS runs (
     saved       INTEGER,                 -- new signal rows written (cooldown drops some)
     regime      TEXT,                    -- regime label at run time
     duration_s  REAL,
-    error       TEXT
+    error       TEXT,
+    mentions_added INTEGER                -- tickers the universe gained from tips
+);
+
+-- Tickers somebody else pointed at: a Discord channel, a manual watchlist.
+--
+-- Kept separate from `signals` on purpose. A signal is something this system
+-- found and stands behind; a mention is somebody's tip. Mixing them would
+-- contaminate the edge report that exists to answer "do MY rules work".
+-- Measured on its own terms, a mention answers a different and equally useful
+-- question: is the channel worth listening to at all?
+--
+-- price_at_mention is the anchor for that measurement -- outcomes run from the
+-- moment the tip appeared, not from any later breakout.
+CREATE TABLE IF NOT EXISTS mentions (
+    id            INTEGER PRIMARY KEY,
+    market        TEXT NOT NULL,
+    ticker        TEXT NOT NULL,           -- bare symbol, no suffix
+    mention_ts    TEXT NOT NULL,           -- ISO timestamp of the message
+    mention_date  TEXT NOT NULL,           -- YYYY-MM-DD
+    source        TEXT NOT NULL,           -- 'discord' | 'manual'
+    channel       TEXT,                    -- channel id or file name
+    message_id    TEXT,                    -- dedup key; NULL for manual entries
+    how           TEXT,                    -- 'cashtag' | 'bare'
+    context       TEXT,                    -- trimmed message text, for eyeballing
+    price_at_mention REAL,
+    UNIQUE (source, message_id, ticker)
+);
+
+CREATE TABLE IF NOT EXISTS mention_outcomes (
+    mention_id    INTEGER PRIMARY KEY REFERENCES mentions(id),
+    ret_d7        REAL,
+    ret_d14       REAL,
+    ret_d30       REAL,
+    max_gain_d30  REAL,
+    max_dd_d30    REAL,
+    computed_at   TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_signals_market_date ON signals (market, scan_date);
 CREATE INDEX IF NOT EXISTS idx_runs_market_ts ON runs (market, run_ts);
+CREATE INDEX IF NOT EXISTS idx_mentions_market_date ON mentions (market, mention_date);
 """
+
+
+# Columns added to tables that already exist in the wild.
+#
+# CREATE TABLE IF NOT EXISTS silently does nothing when the table is already
+# there, so it can create a table but never widen one. Anything added to an
+# existing table after its first deploy has to come through here.
+# (table, column, type) -- applied in order, skipped when already present.
+_ADDED_COLUMNS = [
+    ("runs", "mentions_added", "INTEGER"),
+]
+
+
+def _migrate(con) -> None:
+    for table, column, coltype in _ADDED_COLUMNS:
+        have = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
+        if not have:          # table itself absent -- SCHEMA will have made it
+            continue
+        if column not in have:
+            con.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
 
 
 @contextmanager
@@ -105,6 +162,7 @@ def connect(path: str = DB_PATH):
     con = sqlite3.connect(path)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
+    _migrate(con)
     try:
         yield con
         con.commit()

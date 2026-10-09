@@ -59,6 +59,20 @@ jobs:
             fi
           fi
 
+      # Tips land BEFORE the scan so a ticker mentioned overnight is in the
+      # universe this run rather than next. Non-fatal on purpose: a Discord
+      # outage must not stop the scanner from doing its own job.
+      - name: Ingest mentions
+        if: ${{ vars.DISCORD_CHANNEL_ID != '' }}
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          for m in ${{ steps.mkt.outputs.markets }}; do
+            python ingest_mentions.py discord "$m" \
+              --channel "${{ vars.DISCORD_CHANNEL_ID }}" --hours 24 \
+              || echo "mention ingest failed for $m (non-fatal)"
+          done
+
       - name: Scan
         run: |
           for m in ${{ steps.mkt.outputs.markets }}; do

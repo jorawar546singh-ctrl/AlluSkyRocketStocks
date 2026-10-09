@@ -134,6 +134,105 @@ def report(market_key: str) -> dict:
     return out
 
 
+def backfill_mentions(market_key: str) -> None:
+    """Forward returns for tickers somebody else flagged, measured from the tip.
+
+    Scored from price_at_mention, NOT from any later breakout price, because
+    the question is "was following this channel worth it", and a follower buys
+    when the tip lands. Anchoring to a breakout would quietly measure the
+    Darvas rules again and flatter the channel.
+    """
+    cfg = MARKETS[market_key]
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=MIN_AGE_DAYS)).strftime("%Y-%m-%d")
+    with connect() as con:
+        rows = con.execute(
+            "SELECT m.* FROM mentions m LEFT JOIN mention_outcomes o "
+            "ON o.mention_id = m.id WHERE m.market=? AND m.mention_date <= ? "
+            "AND (o.mention_id IS NULL OR (o.ret_d30 IS NULL AND "
+            "     julianday('now') - julianday(m.mention_date) <= 60))",
+            (market_key, cutoff)).fetchall()
+    if not rows:
+        print(f"{market_key}: no mentions need outcome backfill")
+        return
+
+    tickers = sorted({r["ticker"] + cfg.ticker_suffix for r in rows})
+    print(f"{market_key}: backfilling outcomes for {len(rows)} mention(s) / "
+          f"{len(tickers)} ticker(s)")
+    histories = fetch_history(tickers, period="1y")
+
+    done = 0
+    with connect() as con:
+        for r in rows:
+            df = histories.get(r["ticker"] + cfg.ticker_suffix)
+            if df is None or df.empty:
+                continue
+            base = r["price_at_mention"]
+            if not base:
+                continue
+            after = df[df.index >= pd.Timestamp(r["mention_date"], tz=df.index.tz)]
+            if after.empty:
+                continue
+
+            def ret(days):
+                w = after.head(days)
+                if len(w) < min(days, 3):      # too thin to call
+                    return None
+                return round((w["Close"].iloc[-1] / base - 1) * 100, 2)
+
+            w30 = after.head(30)
+            con.execute(
+                "INSERT INTO mention_outcomes (mention_id,ret_d7,ret_d14,ret_d30,"
+                "max_gain_d30,max_dd_d30,computed_at) VALUES (?,?,?,?,?,?,?) "
+                "ON CONFLICT(mention_id) DO UPDATE SET ret_d7=excluded.ret_d7,"
+                "ret_d14=excluded.ret_d14,ret_d30=excluded.ret_d30,"
+                "max_gain_d30=excluded.max_gain_d30,max_dd_d30=excluded.max_dd_d30,"
+                "computed_at=excluded.computed_at",
+                (r["id"], ret(7), ret(14), ret(30),
+                 round((w30["High"].max() / base - 1) * 100, 2) if len(w30) else None,
+                 round((w30["Low"].min() / base - 1) * 100, 2) if len(w30) else None,
+                 datetime.now(timezone.utc).isoformat(timespec="seconds")))
+            done += 1
+    print(f"{market_key}: scored {done} mention(s)")
+
+
+def mention_report(market_key: str) -> dict:
+    """Is the tip source actually any good?
+
+    Reported per source and never merged into the signal edge report. The two
+    answer different questions -- "do my rules work" vs "is this channel worth
+    following" -- and averaging them together would destroy both.
+    """
+    with connect() as con:
+        df = pd.read_sql_query(
+            "SELECT m.source, m.ticker, m.mention_date, o.ret_d7, o.ret_d14, "
+            "o.ret_d30, o.max_gain_d30, o.max_dd_d30 FROM mentions m "
+            "JOIN mention_outcomes o ON o.mention_id = m.id WHERE m.market=?",
+            con, params=(market_key,))
+        total = con.execute("SELECT COUNT(*) FROM mentions WHERE market=?",
+                            (market_key,)).fetchone()[0]
+        # Same window the scanner uses to pull tips into the universe, so the
+        # TIP badge marks exactly the tickers a tip put there.
+        recent = [r[0] for r in con.execute(
+            "SELECT DISTINCT ticker FROM mentions WHERE market=? "
+            "AND julianday('now') - julianday(mention_date) <= 14",
+            (market_key,))]
+    out = {"n_mentions": int(total), "recent": recent, "by_source": {}}
+    if df.empty:
+        return out
+
+    for source, sdf in df.groupby("source"):
+        scored = sdf.dropna(subset=["ret_d30"])
+        row = {"n": int(len(sdf)), "measured": int(len(scored))}
+        if len(scored):
+            row["avg_d30"] = round(float(scored["ret_d30"].mean()), 2)
+            row["hit_d30"] = round(float((scored["ret_d30"] > 0).mean()) * 100, 1)
+            row["sd"] = round(float(scored["ret_d30"].std()), 2) if len(scored) > 1 else None
+            row["avg_max_gain"] = round(float(scored["max_gain_d30"].mean()), 2)
+            row["avg_max_dd"] = round(float(scored["max_dd_d30"].mean()), 2)
+        out["by_source"][source] = row
+    return out
+
+
 def cohorts(market_key: str) -> dict:
     """Month-by-month measured outcomes, plus what is still maturing.
 
@@ -204,4 +303,10 @@ if __name__ == "__main__":
     mk = sys.argv[1] if len(sys.argv) > 1 else "US"
     backfill(mk)
     report(mk)
+    # Tips are scored on their own clock and reported separately — see
+    # mention_report's docstring for why these never merge.
+    backfill_mentions(mk)
+    mr = mention_report(mk)
+    if mr["n_mentions"]:
+        print(f"{mk} mention report: {mr}")
     print(f"{mk} cohorts: {cohorts(mk)}")
