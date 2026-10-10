@@ -99,6 +99,7 @@
   .b-dup{color:var(--sec);border:1px solid var(--hair);cursor:help}
   .b-live{color:var(--violet);border:1px solid var(--violet);background:var(--violet-dim);cursor:help}
   .b-tip{color:var(--blue);border:1px solid var(--blue);background:var(--blue-dim);cursor:help}
+  .b-wait{color:var(--amber);border:1px solid var(--amber);cursor:help}
   .b-TRENDING{background:var(--amber);color:#0B0B0D}
   .b-WATCHING{color:var(--blue);border:1px solid var(--blue);background:var(--blue-dim)}
   .b-FADING{color:var(--red);border:1px solid var(--red)}
@@ -709,6 +710,15 @@ function liveBadge(s){
     ? '<span class="bdg b-live" title="Provisional: found mid-session, close not confirmed yet. The EOD scan will confirm it with the real closing price or remove it.">LIVE</span>'
     : '';
 }
+function waitBadge(s){
+  // The signal fired but no daily bar covers it yet (an intraday flag before
+  // the close, or a name whose data is lagging). Saying so is the honest
+  // answer; the old code filled the hole with a gain measured against the
+  // PREVIOUS bar, which inverted a ~500% move into -83%.
+  return s.awaiting_close
+    ? `<span class="bdg b-wait" title="Flagged intraday; no daily close covers this signal yet${s.last_bar?` (latest bar ${s.last_bar})`:''}. Gain and status stay blank until one does \u2014 measuring against an earlier bar would report the move backwards.">AWAITING CLOSE</span>`
+    : '';
+}
 function tipBadge(s){
   // Marks a signal whose ticker came from a tip rather than the screener.
   // It still passed the same gate and trigger -- this only says where the
@@ -901,10 +911,12 @@ function rowHTML(s,dups){
     const g=s.gain_pct;
     const limit=s.suggested_stop?(s.suggested_stop*0.997):null;
     return `<tr class="${SELECTED===s.id?'sel':''}${chgClass(s)}" onclick="select(${s.id})">
-      <td class="tick-cell">${actDot(s)}${s.ticker}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
+      <td class="tick-cell">${actDot(s)}${s.ticker}${waitBadge(s)}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
       <td>${cur()}${fmt(s.price)} <span class="sub">· ${s.scan_date.slice(5)}</span></td>
       <td>${s.now_price!=null?cur()+fmt(s.now_price):'<span class="sub">—</span>'}</td>
-      <td class="${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'<span class="sub">—</span>'}${deltaTag(s)}</td>
+      <td class="${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%'
+          :s.awaiting_close?'<span class="sub" style="font-size:11px">awaiting close</span>'
+          :'<span class="sub">—</span>'}${deltaTag(s)}</td>
       <td>${s.age_days!=null?s.age_days+'d':'—'}</td>
       <td>${s.streak!=null?`<b>${s.streak}</b> <span class="sub">(peak ${s.peak_streak})</span>`:'<span class="sub">—</span>'}</td>
       <td>${s.rs_pct!=null?fmt(s.rs_pct,0):'<span class="sub">—</span>'}</td>
@@ -924,8 +936,9 @@ function cardHTML(s,dups){
     const fresh=s.scan_date===dataDate();
     const g=s.gain_pct;
     return `<div class="card ${SELECTED===s.id?'sel':''}${chgClass(s)}" onclick="select(${s.id})">
-      <div class="top"><span class="tk">${actDot(s)}${s.ticker}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
-        <span class="g ${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%':'—'}${deltaTag(s)}</span></div>
+      <div class="top"><span class="tk">${actDot(s)}${s.ticker}${waitBadge(s)}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</span>
+        <span class="g ${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%'
+          :s.awaiting_close?'<span class="sub" style="font-size:12px">awaiting close</span>':'—'}${deltaTag(s)}</span></div>
       <div class="rows">
         <span>${cur()}${fmt(s.price)} → <b>${s.now_price!=null?cur()+fmt(s.now_price):'—'}</b></span>
         <span>age <b>${s.age_days!=null?s.age_days+'d':'—'}</b> · streak <b>${s.streak??'—'}</b></span>

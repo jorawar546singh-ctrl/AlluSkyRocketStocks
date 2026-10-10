@@ -75,7 +75,8 @@ def enrich(signals: list[dict], cfg) -> None:
                   "streak": None, "peak_streak": None,
                   "vol_today": None, "box_today": None, "status": None,
                   "box_bottom_now": None, "box_top_now": None, "box_pos": None,
-                  "clean_entry": None})
+                  "clean_entry": None, "awaiting_close": False,
+                  "last_bar": None, "spark": []})
         s["age_days"] = (today - datetime.strptime(s["scan_date"], "%Y-%m-%d").date()).days
         df = hist.get(s["ticker"] + cfg.ticker_suffix)
         if df is None or not s.get("price") or not s.get("box_top"):
@@ -83,7 +84,27 @@ def enrich(signals: list[dict], cfg) -> None:
         df = df.copy()
         df.index = pd.to_datetime(df.index).tz_localize(None)
 
-        now = float(df["Close"].dropna().iloc[-1])
+        # A gain is only meaningful against a bar at or after the signal.
+        # Intraday signals routinely flag before that day's daily bar exists,
+        # and a halted or thinly-traded name can lag for days. Comparing the
+        # signal price to an EARLIER bar does not understate the move, it
+        # inverts it: WFF flagged at $12.29 intraday against a $2.05 prior
+        # close read as -83% when the stock was actually up ~500%.
+        closes = df["Close"].dropna()
+        if closes.empty:
+            continue
+        last_bar = closes.index[-1].date()
+        sig_date = datetime.strptime(s["scan_date"], "%Y-%m-%d").date()
+        if last_bar < sig_date:
+            # Everything downstream (gain, status, box_today, vol_today) would
+            # be derived from a pre-signal bar, so leave them null and say why.
+            s["awaiting_close"] = True
+            s["last_bar"] = last_bar.isoformat()
+            s["spark"] = []
+            s["max_gain_pct"] = s["max_dd_pct"] = None
+            continue
+
+        now = float(closes.iloc[-1])
         s["now_price"] = round(now, 2)
         s["gain_pct"] = round((now - s["price"]) / s["price"] * 100, 2)
 
@@ -130,9 +151,16 @@ def enrich(signals: list[dict], cfg) -> None:
             s["box_pos"] = s["entry_risk_now"] = None
             s["clean_entry"] = None
 
-        if (not s["box_today"]) or s["gain_pct"] <= -5:
+        # Guarded because gain_pct can legitimately be None. The old form
+        # compared None with <= and, where it did get a number, inherited
+        # whatever a stale bar implied -- which is how WFF came to be labelled
+        # FADING on the day it ran up ~500%.
+        g = s["gain_pct"]
+        if g is None:
+            s["status"] = None
+        elif (not s["box_today"]) or g <= -5:
             s["status"] = "FADING"
-        elif cur >= 2 or s["gain_pct"] >= 5:
+        elif cur >= 2 or g >= 5:
             s["status"] = "TRENDING"
         else:
             s["status"] = "WATCHING"

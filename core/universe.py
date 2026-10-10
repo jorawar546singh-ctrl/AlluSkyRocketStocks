@@ -18,11 +18,13 @@ HEADERS = {
                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
-MAX_CANDIDATES = 150  # raised from 80 (2026-07-28): Finviz alone was already
-# hitting 120 after the pagination fix, meaning the old 80 cap was actively
-# discarding real candidates every day. Now paired with the relative-volume
-# sort fix, so if this cap still binds, it drops the weakest movers, not an
-# alphabetical or arbitrary slice.
+MAX_CANDIDATES = 400  # raised from 150 (2026-10-10): the runs table showed the
+# US universe coming back at exactly 150 on 18 of 19 runs -- the cap was
+# binding EVERY day, so anything ranked 151st or lower by relative volume was
+# invisible to the scanner. India already scans 500 tickers in ~107s and
+# Canada 220 in ~49s, so 400 is well inside proven runtime.
+# (Earlier history: 80 -> 150 on 2026-07-28, after the pagination fix showed
+# Finviz alone was already returning 120.)
 NIFTY_500_URL = "https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv"
 NIFTY_STATIC = os.path.join("data", "nifty500.csv")
 TSX_WIKI_URL = "https://en.wikipedia.org/wiki/S%26P/TSX_Composite_Index"
@@ -70,7 +72,9 @@ def _finviz_csv(filt: str) -> list[str]:
     return syms
 
 
-def _finviz_html(filt: str, max_pages: int = 12) -> list[str]:
+def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500 rows,
+    # enough to fill MAX_CANDIDATES=400. Raising the cap without raising this
+    # would have changed nothing: 12 pages tops out at 240.
     """Fallback: scrape the screener HTML. Finviz shows 20 rows per page
     (offset param r=1, r=21, r=41, ...) with nothing on the page itself
     indicating how many pages exist - so without pagination this silently
