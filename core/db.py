@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS signals (
     legacy_score  INTEGER,
     legacy_grade  TEXT,
     legacy_tier   TEXT,
+    sector        TEXT,                      -- from the universe page; NULL on
+                                             -- older rows and when the source
+                                             -- page did not carry one
     source        TEXT DEFAULT 'scanner',    -- 'scanner' | 'migration_csv' | 'migration_history'
     UNIQUE (market, ticker, scan_date)
 );
@@ -144,6 +147,7 @@ CREATE INDEX IF NOT EXISTS idx_mentions_market_date ON mentions (market, mention
 # (table, column, type) -- applied in order, skipped when already present.
 _ADDED_COLUMNS = [
     ("runs", "mentions_added", "INTEGER"),
+    ("signals", "sector", "TEXT"),
 ]
 
 

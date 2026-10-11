@@ -178,6 +178,9 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
                 "trend_pass": 1,
                 "trend_detail": tf["detail"],
                 "dist_52w_high": tf["dist_52w_high"],
+                # Read off the universe page the scan already fetched. None
+                # when that page carried no sector for this name.
+                "sector": uni.SECTORS.get(bare_t),
                 "source": "scanner_intraday" if intraday else "scanner",
             }
             upsert_signal(con, row)

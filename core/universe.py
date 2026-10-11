@@ -32,6 +32,14 @@ TSX_STATIC = os.path.join("data", "tsx_composite.csv")
 
 WARNINGS: list[str] = []   # scanner.py appends these to the digest
 
+# {bare ticker -> sector}, filled by whichever builder ran. Module-level for
+# the same reason WARNINGS is: it keeps the builders' signatures alone.
+# Sector is read from pages the scan ALREADY downloads (the Finviz Overview
+# table, the NSE list's Industry column, the TSX Wikipedia table), so it costs
+# no extra request. Every path fails soft to absent -- a missing sector must
+# never cost a signal.
+SECTORS: dict[str, str] = {}
+
 
 def _warn(msg: str):
     print(f"  !! {msg}")
@@ -72,6 +80,34 @@ def _finviz_csv(filt: str) -> list[str]:
     return syms
 
 
+def _finviz_sector(anchor, sym: str) -> None:
+    """Read Sector out of the row this ticker link sits in.
+
+    v=111 is Finviz's Overview view, whose columns are
+        No. | Ticker | Company | Sector | Industry | Country | Market Cap | ...
+    so the sector is the 4th cell. The page is already being downloaded for
+    the ticker list; this just stops throwing the rest of the row away.
+
+    Positional, therefore brittle to a Finviz layout change -- so it is
+    wrapped and silent. A wrong or missing sector is a cosmetic loss; an
+    exception here would cost the whole universe.
+    """
+    try:
+        tr = anchor.find_parent("tr")
+        if tr is None:
+            return
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+        if len(cells) < 5:
+            return
+        sector = cells[3]
+        # Guard against a column shift: a real sector is a short phrase, not
+        # a number, a price or a company name running to half a line.
+        if sector and 2 < len(sector) <= 40 and not any(ch.isdigit() for ch in sector):
+            SECTORS[sym] = sector
+    except Exception:                                       # noqa: BLE001
+        pass
+
+
 def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500 rows,
     # enough to fill MAX_CANDIDATES=400. Raising the cap without raising this
     # would have changed nothing: 12 pages tops out at 240.
@@ -99,6 +135,7 @@ def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500
             if m and a.get_text(strip=True) == m.group(1):
                 if m.group(1) not in page_syms:
                     page_syms.append(m.group(1))
+                    _finviz_sector(a, m.group(1))
         new = [s for s in page_syms if s not in syms]
         if not new:
             break
@@ -196,12 +233,33 @@ def us_universe(cfg) -> list[str]:
     return tickers[:MAX_CANDIDATES]
 
 
+def _sectors_from_frame(df, sym_col: str, sector_col: str) -> None:
+    """Fill SECTORS from a dataframe that already has a sector-ish column.
+
+    Used for the NSE list ("Industry") and the TSX Wikipedia table
+    ("Sector"). Silent when the column is absent -- these are third-party
+    files whose headers change without notice, and a sector is never worth
+    failing a scan over.
+    """
+    try:
+        if sector_col not in df.columns or sym_col not in df.columns:
+            return
+        for sym, sec in zip(df[sym_col], df[sector_col]):
+            sym = str(sym).strip()
+            sec = str(sec).strip()
+            if sym and sec and sec.lower() not in ("nan", "", "-"):
+                SECTORS[sym] = sec
+    except Exception:                                       # noqa: BLE001
+        pass
+
+
 def in_universe() -> list[str]:
     try:
         r = requests.get(NIFTY_500_URL, headers=HEADERS, timeout=20)
         r.raise_for_status()
         df = pd.read_csv(io.StringIO(r.text))
         syms = [s.strip() for s in df["Symbol"].dropna().tolist() if not s.strip().upper().startswith("DUMMY")]
+        _sectors_from_frame(df, "Symbol", "Industry")
         if len(syms) > 400:
             print(f"  universe: live NSE archives ({len(syms)})")
             return syms
@@ -212,6 +270,7 @@ def in_universe() -> list[str]:
     if os.path.exists(NIFTY_STATIC):
         df = pd.read_csv(NIFTY_STATIC)
         syms = [s.strip() for s in df["Symbol"].dropna().tolist() if not s.strip().upper().startswith("DUMMY")]
+        _sectors_from_frame(df, "Symbol", "Industry")
         print(f"  universe: bundled CSV fallback ({len(syms)})")
         return syms
 
@@ -237,6 +296,15 @@ def ca_universe() -> list[str]:
             syms = [str(s).strip().replace(".", "-")
                     for s in tbl["Ticker"].dropna().tolist()]
             syms = [s for s in syms if s and s.upper() != "NAN"]
+            # Wikipedia has titled this column "Sector" and "GICS Sector" at
+            # different times; try both, and carry the same dot->dash fix the
+            # tickers get so the keys match.
+            for col in ("Sector", "GICS Sector", "GICS sector"):
+                if col in tbl.columns:
+                    t2 = tbl.copy()
+                    t2["Ticker"] = t2["Ticker"].astype(str).str.strip().str.replace(".", "-", regex=False)
+                    _sectors_from_frame(t2, "Ticker", col)
+                    break
             if len(syms) > 150:
                 print(f"  universe: live TSX Composite (Wikipedia) ({len(syms)})")
                 return syms

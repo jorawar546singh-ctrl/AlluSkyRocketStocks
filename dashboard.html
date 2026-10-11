@@ -86,6 +86,7 @@
   .btn.on.f-today{background:var(--violet);border-color:var(--violet)}
   .btn.on.f-live{background:var(--violet);border-color:var(--violet)}
   .btn.on.f-chk{background:var(--panel2);color:var(--green);border-color:var(--green)}
+  .btn.on.f-more{background:var(--panel2);color:var(--ink);border-color:var(--sec)}
   /* Losers is an outline, not a solid: FADING already owns solid red, and these
      two tabs mean different things (FADING is a subset of what is losing). */
   .btn.on.f-lose{background:var(--red-dim);border-color:var(--red);color:var(--red)}
@@ -318,6 +319,29 @@
   .since button:hover{color:var(--ink);border-color:var(--sec)}
   .since button.on{background:var(--amber);border-color:var(--amber);color:#0B0B0D;font-weight:600}
 
+  /* ---------- view tabs ---------- */
+  .vtabs{display:flex;gap:4px;margin:26px 0 4px;border-bottom:1px solid var(--hair)}
+  .vtabs button{background:none;border:none;border-bottom:2px solid transparent;
+       color:var(--sec);font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+       text-transform:uppercase;padding:10px 18px;cursor:pointer;margin-bottom:-1px}
+  .vtabs button:hover{color:var(--ink)}
+  .vtabs button.on{color:var(--ink);border-bottom-color:var(--amber)}
+  .vtabs .vcount{font-size:10px;color:var(--sec);margin-left:7px;letter-spacing:.06em}
+  .view{display:none} .view.on{display:block}
+  .mo .view.on{animation:fadeIn var(--mid) var(--ease)}
+
+  /* ---------- sector ---------- */
+  .sect{display:block;font-family:var(--grot);font-size:10.5px;color:var(--sec);
+        letter-spacing:.04em;margin-top:2px;font-weight:400}
+  .conc{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;
+        margin-bottom:10px;border:1px solid var(--amber);background:var(--amber-dim);
+        font-size:12.5px;color:var(--sec)}
+  .conc b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  .mo .conc{animation:riseIn var(--slow) var(--ease) both}
+
+  /* ---------- collapsed filters ---------- */
+  .more{display:none} .more.on{display:flex}
+
   /* ---------- actionability ---------- */
   .act{display:inline-block;width:7px;height:7px;border-radius:50%;
        margin-right:9px;vertical-align:1px;cursor:help}
@@ -341,8 +365,15 @@
     </div>
   </header>
 
+  <div class="vtabs">
+    <button id="vToday" class="on" onclick="setView('today')">Today</button>
+    <button id="vPerf" onclick="setView('perf')">Performance</button>
+  </div>
+
+  <div class="view on" id="viewToday">
   <div id="since"></div>
   <div id="stale"></div>
+  <div id="conc"></div>
   <div id="regime"></div>
   <div class="lbl">Primary candidate <span class="meta" id="pmeta"></span></div>
   <div id="primary"></div>
@@ -375,6 +406,13 @@
     </div>
   </div>
   <div class="fbar">
+    <button class="btn f-more" id="fMore" onclick="toggleMore()">More filters</button>
+    <button class="btn f-grp" id="fGroupM" onclick="setGroup('month')">Group: month</button>
+    <button class="btn f-grp" id="fGroupS" onclick="setGroup('sector')">Group: sector</button>
+    <button class="btn" onclick="clearFilters()">Clear</button>
+    <div class="showing" id="count"></div>
+  </div>
+  <div class="fbar more" id="moreBar">
     <div class="grp"><label>Streak ≥</label><input type="number" id="fStreak" min="0" placeholder="0"></div>
     <div class="grp"><label>Age</label>
       <input type="number" id="fAgeMin" min="0" placeholder="min" style="width:64px">
@@ -388,9 +426,6 @@
       <label>%</label></div>
     <button class="btn f-chk" id="fVolT" onclick="toggleChk('fVolT')">Vol ✓ today</button>
     <button class="btn f-chk" id="fBoxT" onclick="toggleChk('fBoxT')">Box ✓ today</button>
-    <button class="btn f-grp" id="fGroup" onclick="toggleGroup()">Group by month</button>
-    <button class="btn" onclick="clearFilters()">Clear</button>
-    <div class="showing" id="count"></div>
   </div>
 
   <table>
@@ -403,9 +438,12 @@
 
   <div class="lbl">Open positions</div>
   <div class="strip" id="positions"></div>
+  </div><!-- /viewToday -->
 
+  <div class="view" id="viewPerf">
   <div class="lbl">Edge report <span class="meta">measured outcomes, not opinions</span></div>
   <div id="edge"></div>
+  </div><!-- /viewPerf -->
 
   <footer>
     <div>Darvas trigger · trend-gated · RS-ranked · 2% risk rule</div>
@@ -423,7 +461,12 @@ let DATA=null, MARKET='US', DIR=1, STATUS='ALL', SELECTED=null;
 // (months first, sort key second), and collapsing by default would hide the
 // oldest signals -- which under the two-tier retention rule are old precisely
 // BECAUSE they are still trending. So: off by default, nothing collapsed.
-let GROUP=false;
+// 'today' is the decision view; 'perf' is the monthly read. Split because
+// the edge report, month cohorts and tip sources are things you study, and
+// they were sitting under a table you scan.
+let VIEW='today';
+// null | 'month' | 'sector' -- was a month-only boolean.
+let GROUP=null;
 // What changed since this browser last opened the dashboard. Kept per market
 // in localStorage -- this page is served from GitHub Pages, not an artifact,
 // so storage is available and private to the device.
@@ -555,7 +598,7 @@ function filtered(){
 }
 
 function render(){
-  rebuildTipped(); computeChanges(); renderSince(); renderStale();
+  rebuildTipped(); computeChanges(); renderSince(); renderStale(); renderConcentration();
   renderPrimary(); renderTable(); renderRegime(); renderPositions();
   renderEdge(); renderDetail();
 }
@@ -737,15 +780,83 @@ function monthLabel(m){
   const p=m.split('-');
   return (MONTH_ABBR[parseInt(p[1],10)-1]||m)+' '+p[0];
 }
-function toggleGroup(){
-  GROUP=!GROUP;
-  document.getElementById('fGroup').classList.toggle('on',GROUP);
+function setView(v){
+  VIEW=v;
+  document.getElementById('vToday').classList.toggle('on',v==='today');
+  document.getElementById('vPerf').classList.toggle('on',v==='perf');
+  document.getElementById('viewToday').classList.toggle('on',v==='today');
+  document.getElementById('viewPerf').classList.toggle('on',v==='perf');
+}
+function toggleMore(){
+  const b=document.getElementById('moreBar');
+  const on=b.classList.toggle('on');
+  document.getElementById('fMore').classList.toggle('on',on);
+}
+function setGroup(g){
+  GROUP = GROUP===g ? null : g;
+  document.getElementById('fGroupM').classList.toggle('on',GROUP==='month');
+  document.getElementById('fGroupS').classList.toggle('on',GROUP==='sector');
   renderTable();
 }
 function toggleMonth(m){
   COLLAPSED.has(m)?COLLAPSED.delete(m):COLLAPSED.add(m);
   renderTable();
 }
+function sectorOf(s){ return s.sector || 'Unknown sector'; }
+
+function groupBySector(rows){
+  // Biggest sector first. The point of this view is noticing that today's
+  // signals are one theme wearing several tickers, so the crowd goes on top.
+  const map=new Map();
+  for(const s of rows){
+    const k=sectorOf(s);
+    if(!map.has(k)) map.set(k,[]);
+    map.get(k).push(s);
+  }
+  return [...map.entries()].sort((a,b)=>
+    b[1].length-a[1].length || (a[0]<b[0]?-1:1));
+}
+function sectorHeadInner(name,list){
+  const open=!COLLAPSED.has(name);
+  const g=list.map(s=>s.gain_pct).filter(v=>v!=null);
+  const avg=g.length?g.reduce((a,b)=>a+b,0)/g.length:null;
+  const cls=avg==null?'':avg>0?'up':'down';
+  return `<span class="mchev">${open?'▾':'▸'}</span>`+
+    `<span class="mname">${name}</span>`+
+    `<span class="mstat">${list.length} signal${list.length===1?'':'s'}</span>`+
+    (avg!=null?`<span class="mstat ${cls}">avg ${(avg>0?'+':'')+fmt(avg,1)}%</span>`:'');
+}
+function sectorKey(name){ return name.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function sectorHeadRow(name,list,cols){
+  return `<tr class="mhdr" onclick="toggleMonth('${sectorKey(name)}')">`+
+         `<td colspan="${cols}">${sectorHeadInner(name,list)}</td></tr>`;
+}
+function sectorHeadCard(name,list){
+  return `<div class="mcard" onclick="toggleMonth('${sectorKey(name)}')">`+
+         `${sectorHeadInner(name,list)}</div>`;
+}
+
+function renderConcentration(){
+  // Several signals in one sector is one bet, not several -- and it is how a
+  // 2% risk rule quietly becomes a 10% one. Nothing else on the page says so.
+  // Only fires on today's scan, needs at least 3 classified signals, and
+  // needs one sector to hold at least half of them: below that it is just
+  // the shape of the market, not a warning.
+  const el=document.getElementById('conc');
+  if(!el) return;
+  const t=dataDate();
+  const fresh=mkt().signals.filter(s=>s.scan_date===t);
+  const known=fresh.filter(s=>s.sector);
+  if(known.length<3){ el.innerHTML=''; return; }
+  const by=new Map();
+  for(const s of known) by.set(s.sector,(by.get(s.sector)||0)+1);
+  const [top,n]=[...by.entries()].sort((a,b)=>b[1]-a[1])[0];
+  if(n<3 || n/known.length<0.5){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="conc"><span>⚠</span><span>
+    <b>${n} of ${known.length}</b> signals in today's scan are <b>${top}</b>.
+    That is one bet across ${n} tickers, not ${n} ideas — size it as one.</span></div>`;
+}
+
 function groupByMonth(rows){
   // Months newest-first always; the chosen sort key still orders rows WITHIN
   // each month, and the filters have already run -- so the per-month stats
@@ -828,13 +939,16 @@ function renderTable(){
     `${total} tracked · ${trend} trending · ${fade} fading`;
   const dups=dupInfo();
   if(GROUP){
-    const groups=groupByMonth(rows), edge=retentionEdge();
+    const bySector=GROUP==='sector';
+    const groups=bySector?groupBySector(rows):groupByMonth(rows);
+    const edge=bySector?null:retentionEdge();
+    const unit=bySector?'sector':'month';
     document.getElementById('count').textContent=
-      `showing ${rows.length} of ${total} · ${groups.length} month${groups.length===1?'':'s'}`;
+      `showing ${rows.length} of ${total} · ${groups.length} ${unit}${groups.length===1?'':'s'}`;
     let tH='', cH='';
     for(const g of groups){
-      tH+=monthHeadRow(g[0],g[1],COLS.length,edge);
-      cH+=monthHeadCard(g[0],g[1],edge);
+      tH+=bySector?sectorHeadRow(g[0],g[1],COLS.length):monthHeadRow(g[0],g[1],COLS.length,edge);
+      cH+=bySector?sectorHeadCard(g[0],g[1]):monthHeadCard(g[0],g[1],edge);
       if(!COLLAPSED.has(g[0])){
         tH+=g[1].map(s=>rowHTML(s,dups)).join('');
         cH+=g[1].map(s=>cardHTML(s,dups)).join('');
@@ -911,7 +1025,7 @@ function rowHTML(s,dups){
     const g=s.gain_pct;
     const limit=s.suggested_stop?(s.suggested_stop*0.997):null;
     return `<tr class="${SELECTED===s.id?'sel':''}${chgClass(s)}" onclick="select(${s.id})">
-      <td class="tick-cell">${actDot(s)}${s.ticker}${waitBadge(s)}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}</td>
+      <td class="tick-cell">${actDot(s)}${s.ticker}${waitBadge(s)}${tipBadge(s)}${liveBadge(s)}${dupBadge(s,dups)}${fresh?'<span class="bdg b-new">NEW</span>':''}${s.status?`<span class="bdg b-${s.status}">${s.status}</span>`:''}${s.sector?`<span class="sect">${s.sector}</span>`:''}</td>
       <td>${cur()}${fmt(s.price)} <span class="sub">· ${s.scan_date.slice(5)}</span></td>
       <td>${s.now_price!=null?cur()+fmt(s.now_price):'<span class="sub">—</span>'}</td>
       <td class="${g>0?'up':g<0?'down':''}">${g!=null?(g>0?'+':'')+fmt(g,1)+'%'
