@@ -28,11 +28,21 @@ def backfill(market_key: str):
     cutoff = (datetime.now(timezone.utc) - timedelta(days=MIN_AGE_DAYS)).strftime("%Y-%m-%d")
 
     with connect() as con:
+        # A signal is revisited whenever a horizon it is now old enough for
+        # is still blank. The old form stopped once ret_d30 was written, so
+        # nothing was ever scored past 30 days -- the reason the long-hold
+        # question could not be answered. The 1y fetch below bounds d180.
         rows = con.execute(
             "SELECT s.* FROM signals s LEFT JOIN outcomes o ON o.signal_id = s.id "
-            "WHERE s.market=? AND s.scan_date <= ? "
-            "AND (o.signal_id IS NULL OR (o.ret_d30 IS NULL AND "
-            "     julianday('now') - julianday(s.scan_date) <= 60))",
+            "WHERE s.market=? AND s.scan_date <= ? AND ("
+            "  o.signal_id IS NULL"
+            "  OR (o.ret_d7   IS NULL AND julianday('now')-julianday(s.scan_date) >=   7)"
+            "  OR (o.ret_d14  IS NULL AND julianday('now')-julianday(s.scan_date) >=  14)"
+            "  OR (o.ret_d30  IS NULL AND julianday('now')-julianday(s.scan_date) >=  30)"
+            "  OR (o.ret_d60  IS NULL AND julianday('now')-julianday(s.scan_date) >=  60)"
+            "  OR (o.ret_d90  IS NULL AND julianday('now')-julianday(s.scan_date) >=  90)"
+            "  OR (o.ret_d180 IS NULL AND julianday('now')-julianday(s.scan_date) >= 180)"
+            ") AND julianday('now')-julianday(s.scan_date) <= 400",
             (market_key, cutoff),
         ).fetchall()
     if not rows:
@@ -70,23 +80,37 @@ def backfill(market_key: str):
             max_dd = round((float(w30["Low"].min()) - entry) / entry * 100, 2) if len(w30) else None
             stop_hit = (int(float(w30["Low"].min()) <= r["suggested_stop"])
                         if len(w30) and r["suggested_stop"] else None)
+            # Same two statistics over the long window, so a months-long hold
+            # can be judged on its own peak and drawdown rather than the
+            # first month's.
+            w180 = window[window.index <= pd.Timestamp(r["scan_date"]) + pd.Timedelta(days=180)]
+            mg180 = round((float(w180["High"].max()) - entry) / entry * 100, 2) if len(w180) else None
+            md180 = round((float(w180["Low"].min()) - entry) / entry * 100, 2) if len(w180) else None
 
             con.execute(
-                "INSERT INTO outcomes (signal_id,ret_d7,ret_d14,ret_d30,max_gain_d30,"
-                "max_dd_d30,stop_hit_d30,computed_at) VALUES (?,?,?,?,?,?,?,?) "
+                "INSERT INTO outcomes (signal_id,ret_d7,ret_d14,ret_d30,ret_d60,ret_d90,"
+                "ret_d180,max_gain_d30,max_dd_d30,stop_hit_d30,max_gain_d180,max_dd_d180,"
+                "computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(signal_id) DO UPDATE SET ret_d7=excluded.ret_d7,"
                 "ret_d14=excluded.ret_d14, ret_d30=excluded.ret_d30,"
+                "ret_d60=excluded.ret_d60, ret_d90=excluded.ret_d90,"
+                "ret_d180=excluded.ret_d180,"
                 "max_gain_d30=excluded.max_gain_d30, max_dd_d30=excluded.max_dd_d30,"
-                "stop_hit_d30=excluded.stop_hit_d30, computed_at=excluded.computed_at",
-                (r["id"], ret_at(7), ret_at(14), ret_at(30), max_gain, max_dd, stop_hit, now),
+                "stop_hit_d30=excluded.stop_hit_d30,"
+                "max_gain_d180=excluded.max_gain_d180, max_dd_d180=excluded.max_dd_d180,"
+                "computed_at=excluded.computed_at",
+                (r["id"], ret_at(7), ret_at(14), ret_at(30), ret_at(60), ret_at(90),
+                 ret_at(180), max_gain, max_dd, stop_hit, mg180, md180, now),
             )
 
 
 def report(market_key: str) -> dict:
     with connect() as con:
         df = pd.read_sql_query(
-            "SELECT s.*, o.ret_d7, o.ret_d14, o.ret_d30, o.max_gain_d30, o.max_dd_d30, "
-            "o.stop_hit_d30 FROM signals s JOIN outcomes o ON o.signal_id = s.id "
+            "SELECT s.*, o.ret_d7, o.ret_d14, o.ret_d30, o.ret_d60, o.ret_d90, "
+            "o.ret_d180, o.max_gain_d30, o.max_dd_d30, o.stop_hit_d30, "
+            "o.max_gain_d180, o.max_dd_d180 "
+            "FROM signals s JOIN outcomes o ON o.signal_id = s.id "
             "WHERE s.market = ?", con, params=(market_key,))
     if df.empty:
         print(f"{market_key}: no measured outcomes yet")
@@ -108,6 +132,8 @@ def report(market_key: str) -> dict:
     out = {
         "n_signals": int(len(df)),
         "d7": stats("ret_d7"), "d14": stats("ret_d14"), "d30": stats("ret_d30"),
+        # The horizons that match how this method is actually traded.
+        "d60": stats("ret_d60"), "d90": stats("ret_d90"), "d180": stats("ret_d180"),
         "expectancy_d30": stats("ret_d30")["avg"] if stats("ret_d30") else None,
         "stop_hit_rate": round(df["stop_hit_d30"].dropna().mean() * 100, 1)
                          if df["stop_hit_d30"].notna().any() else None,

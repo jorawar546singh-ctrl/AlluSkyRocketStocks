@@ -668,26 +668,35 @@ function edgeVerdict(){
   // signals = edge, anything else = keep paper trading. Rendered next to the
   // candidate because that is where the decision actually gets made -- at the
   // bottom of the page it was true and ignored.
-  const d=(mkt().edge||{}).d30;
+  // Judged on the LONGEST horizon with enough signals to mean anything, not
+  // always 30 days. This method rides winners for months: within 30 days only
+  // ~5% of signals ever reach +50%, so a 30-day verdict was answering a
+  // question nobody was asking. Walks down until one has 50+ outcomes.
+  const E=mkt().edge||{};
+  let d=null, horizon='30d';
+  for(const h of [['d180','180d'],['d90','90d'],['d60','60d'],['d30','30d']]){
+    if(E[h[0]] && E[h[0]].n>=50){ d=E[h[0]]; horizon=h[1]; break; }
+  }
+  if(!d) d=E.d30;
   if(!d||!d.n) return {kind:'unproven',tag:'UNPROVEN',
-    html:'No 30-day outcomes measured for this market yet. <b>Paper only</b> until there are.'};
+    html:'No measured outcomes for this market yet. <b>Paper only</b> until there are.'};
   if(d.n<50) return {kind:'unproven',tag:'UNPROVEN',
     html:`Only <b>${d.n}</b> measured outcomes here. The bar is 50+ before the number means `+
          `anything, so this is <b>paper only</b> for now.`};
   if(d.avg<=0) return {kind:'paper',tag:'PAPER<br>ONLY',
-    html:`This market averages <b>${fmt(d.avg,1)}%</b> over 30 days across <b>${d.n}</b> `+
+    html:`This market averages <b>${fmt(d.avg,1)}%</b> over <b>${horizon}</b> across <b>${d.n}</b> `+
          `measured signals, hit rate <b>${fmt(d.hit_rate,0)}%</b>. The breakout below is real; `+
          `the expectancy behind it is not. Your own rule says <b>paper</b> until this turns positive.`};
   // Positive is not the same as real. t = avg / (sd/sqrt(n)): below about 2,
   // the average is inside the noise and could just as easily be zero.
   const t=(d.sd&&d.sd>0)?d.avg/(d.sd/Math.sqrt(d.n)):null;
   if(t!=null&&t<2) return {kind:'unproven',tag:'EDGE<br>THIN',
-    html:`This market averages <b>+${fmt(d.avg,1)}%</b> over 30 days across <b>${d.n}</b> `+
+    html:`This market averages <b>+${fmt(d.avg,1)}%</b> over <b>${horizon}</b> across <b>${d.n}</b> `+
          `measured signals, hit rate <b>${fmt(d.hit_rate,0)}%</b> — but the spread is `+
          `<b>${fmt(d.sd,0)}%</b>, so that average sits <b>${fmt(t,1)}</b> standard errors from `+
          `zero. Positive, not yet distinguishable from luck. <b>Paper</b> until it separates.`};
   return {kind:'live',tag:'EDGE<br>POSITIVE',
-    html:`This market averages <b>+${fmt(d.avg,1)}%</b> over 30 days across <b>${d.n}</b> `+
+    html:`This market averages <b>+${fmt(d.avg,1)}%</b> over <b>${horizon}</b> across <b>${d.n}</b> `+
          `measured signals, hit rate <b>${fmt(d.hit_rate,0)}%</b>`+
          (t!=null?`, <b>${fmt(t,1)}</b> standard errors above zero`:'')+`.`};
 }
@@ -1351,13 +1360,17 @@ function renderEdge(){
     el.innerHTML='<div class="empty">No measured outcomes yet. The analyzer backfills 7/14/30-day returns as signals age — the edge report builds itself from here.</div>';return;
   }
   const c=(v,s,cls='')=>`<div class="cell"><b class="num ${cls}">${v}</b><span>${s}</span></div>`;
+  // Every horizon, because the answer genuinely differs by holding period and
+  // a 30-day-only report hid that for months.
+  const hz=[['d7','7d'],['d30','30d'],['d60','60d'],['d90','90d'],['d180','180d']];
+  const cells=hz.filter(h=>e[h[0]]&&e[h[0]].n).map(h=>
+    c((e[h[0]].avg>0?'+':'')+fmt(e[h[0]].avg,1)+'%',
+      `avg \u00b7 ${h[1]} (n=${e[h[0]].n})`, e[h[0]].avg>0?'up':'down')).join('');
   el.innerHTML=`<div class="edge">
     ${c(e.n_signals,'signals measured')}
-    ${e.d7 ?c(e.d7.hit_rate+'%','hit rate · 7d',e.d7.hit_rate>=50?'up':'down'):''}
-    ${e.d30?c(e.d30.hit_rate+'%','hit rate · 30d',e.d30.hit_rate>=50?'up':'down'):''}
-    ${e.d30?c((e.d30.avg>0?'+':'')+fmt(e.d30.avg,1)+'%','avg return · 30d',e.d30.avg>0?'up':'down'):''}
-    ${e.d30?c((e.d30.median>0?'+':'')+fmt(e.d30.median,1)+'%','median · 30d',e.d30.median>0?'up':'down'):''}
-    ${e.stop_hit_rate!=null?c(e.stop_hit_rate+'%','stops hit · 30d',e.stop_hit_rate>40?'down':''):''}
+    ${cells}
+    ${e.d30?c(e.d30.hit_rate+'%','hit rate \u00b7 30d',e.d30.hit_rate>=50?'up':'down'):''}
+    ${e.stop_hit_rate!=null?c(e.stop_hit_rate+'%','stops hit \u00b7 30d',e.stop_hit_rate>40?'down':''):''}
   </div>
   <div class="note">Positive 30-day expectancy after 50+ signals = edge. Anything else = keep paper trading.</div>
   ${monthEdgeHTML()}

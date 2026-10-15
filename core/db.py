@@ -51,6 +51,13 @@ CREATE TABLE IF NOT EXISTS outcomes (
     ret_d7        REAL,    -- % return 7 calendar days after signal
     ret_d14       REAL,
     ret_d30       REAL,
+    -- Darvas is a months-long method. Stopping at 30 days measured a swing
+    -- trade and missed every multi-month runner the dashboard was showing.
+    ret_d60       REAL,
+    ret_d90       REAL,
+    ret_d180      REAL,
+    max_gain_d180 REAL,    -- best point over the long window
+    max_dd_d180   REAL,
     max_gain_d30  REAL,    -- best intraday-high gain within 30d
     max_dd_d30    REAL,    -- worst intraday-low drawdown within 30d
     stop_hit_d30  INTEGER, -- 1 if low breached suggested_stop within 30d
@@ -148,6 +155,11 @@ CREATE INDEX IF NOT EXISTS idx_mentions_market_date ON mentions (market, mention
 _ADDED_COLUMNS = [
     ("runs", "mentions_added", "INTEGER"),
     ("signals", "sector", "TEXT"),
+    ("outcomes", "ret_d60", "REAL"),
+    ("outcomes", "ret_d90", "REAL"),
+    ("outcomes", "ret_d180", "REAL"),
+    ("outcomes", "max_gain_d180", "REAL"),
+    ("outcomes", "max_dd_d180", "REAL"),
 ]
 
 

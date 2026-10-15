@@ -37,7 +37,13 @@ RECENT_DAYS = 30
 # Bounding at 180d keeps the daily price-fetch cost sane (Darvas-style
 # breakouts rarely stay meaningfully "trending" for six months, and the
 # spark/box-today math wasn't validated much past that either).
-EXTENDED_DAYS = 180
+# Was 180. The April cohort hit that wall in Oct 2026 with seven names up
+# 50%+ still TRENDING — TEAM +130% and CORT +126% among them — and the
+# dashboard would have deleted them for being old. Darvas held winners for
+# over a year; a tracker for that method must not have a six-month memory.
+# Cost is bounded by the TRENDING test below, not by this number: a faded
+# signal is still dropped at 30 days.
+EXTENDED_DAYS = 730
 
 
 def _streaks(closes: pd.Series, breakout_price: float) -> tuple[int, int]:
