@@ -26,7 +26,7 @@ on:
         description: "which job to run"
         type: choice
         default: stop_study
-        options: [stop_study, backfill_company, both]
+        options: [stop_study, backfill_company, both, recompute]
       market:
         description: "market key for the backfill"
         default: US
@@ -86,11 +86,23 @@ jobs:
             # anything a previous attempt produced.
             git reset --hard -q origin/main
 
-            if [ "$TASK" = "stop_study" ] || [ "$TASK" = "both" ]; then
+            if [ "$TASK" = "recompute" ]; then
+              # Closes are sticky on purpose: _apply_lifecycle skips a signal
+              # that already carries a close_reason, so a corrected walk would
+              # never revisit verdicts an earlier one wrote. Clearing them is
+              # what lets the fixed logic re-decide. The export must then run
+              # BEFORE the study, because the study reads closed signals and
+              # there are none until the export re-creates them.
+              python reset_closes.py
+              python export_dashboard.py
               python run_stop_study.py
-            fi
-            if [ "$TASK" = "backfill_company" ] || [ "$TASK" = "both" ]; then
-              python backfill_company.py --market "$MARKET" --limit "$LIMIT"
+            else
+              if [ "$TASK" = "stop_study" ] || [ "$TASK" = "both" ]; then
+                python run_stop_study.py
+              fi
+              if [ "$TASK" = "backfill_company" ] || [ "$TASK" = "both" ]; then
+                python backfill_company.py --market "$MARKET" --limit "$LIMIT"
+              fi
             fi
             # The study lands in the db; the export is what copies it into
             # data.json for the dashboard, and what writes history.json.

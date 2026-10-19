@@ -97,7 +97,23 @@ def walk(df: pd.DataFrame, scan_date: str, entry: float, stop: float | None,
     # first bar at or after it may be days later over a long weekend or a halt.
     first_bar = d.index.min()
     out["walk_complete"] = bool(first_bar is not None and first_bar <= sig + pd.Timedelta(days=5))
-    d = d[d.index >= sig]
+    # Strictly AFTER the signal day, not from it.
+    #
+    # A Darvas signal fires intraday when price breaks ABOVE the box top, and
+    # the entry is that breakout price. But the same daily bar usually OPENED
+    # inside or below the box -- which is exactly where the stop sits. Starting
+    # the walk at the signal day therefore reads that bar's low, which occurred
+    # BEFORE the entry, as an immediate stop-out at a price the position was
+    # never in. It is not a rare edge case: it marked 54% of every stop-out in
+    # the database, and it is near-guaranteed by the shape of a breakout.
+    # WFF was the extreme -- entry 12.29, stop 2.83, "stopped out" the same day
+    # for -77%, from a low printed before the breakout it was signalled on.
+    #
+    # Daily bars cannot say what the range was after an intraday entry, so the
+    # signal day is skipped entirely for both the stop and the target. That is
+    # mildly optimistic -- a genuine same-day reversal is missed -- but it is
+    # the standard treatment and far less wrong than inventing exits.
+    d = d[d.index > sig]
     if d.empty:
         return out
 
