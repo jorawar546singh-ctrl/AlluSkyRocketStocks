@@ -55,33 +55,60 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Stop study
-        if: ${{ github.event_name == 'schedule'
-                || inputs.task == 'stop_study' || inputs.task == 'both' }}
-        run: python run_stop_study.py
-
-      - name: Backfill company data
-        if: ${{ inputs.task == 'backfill_company' || inputs.task == 'both' }}
-        run: |
-          python backfill_company.py \
-            --market "${{ inputs.market }}" \
-            --limit "${{ inputs.limit }}"
-
-      # The study lands in the db; the export is what copies it into data.json
-      # for the dashboard to read. Without this the Performance tab would not
-      # see a study until the next scan happened to run.
-      - name: Export dashboard payload
-        run: python export_dashboard.py
-
-      - name: Commit results
+      # Work and publish in ONE step, retrying on a fresh base.
+      #
+      # data/asr.db is a binary SQLite file: git cannot merge it, ever. An
+      # earlier version of this job ran `git pull --rebase` before pushing,
+      # which meant that the moment any other run committed, the rebase hit an
+      # unmergeable conflict and the whole job died with its work discarded.
+      # Resolving that conflict is not possible either -- neither side's
+      # database is a superset of the other, so picking one silently drops the
+      # other's rows.
+      #
+      # So no merge ever happens here. If origin moved while we worked, we
+      # throw our result away, reset onto the newer database, and redo the
+      # work on top of it. Both jobs are idempotent -- the backfill only fills
+      # NULL columns and the stop study recomputes from scratch -- so redoing
+      # them against a newer db produces exactly the right combined result.
+      - name: Run maintenance and publish
+        env:
+          TASK:   ${{ inputs.task || 'stop_study' }}
+          MARKET: ${{ inputs.market || 'US' }}
+          LIMIT:  ${{ inputs.limit || '0' }}
         run: |
           git config user.name  "asr-bot"
           git config user.email "actions@github.com"
-          git add data/asr.db data.json history.json
-          if ! git diff --cached --quiet; then
-            git commit -m "maintenance $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git pull --rebase --autostash
-            git push
-          else
-            echo "No changes."
-          fi
+
+          for attempt in 1 2 3; do
+            echo "::group::attempt $attempt"
+            git fetch -q origin
+            # Always build on the newest committed database, discarding
+            # anything a previous attempt produced.
+            git reset --hard -q origin/main
+
+            if [ "$TASK" = "stop_study" ] || [ "$TASK" = "both" ]; then
+              python run_stop_study.py
+            fi
+            if [ "$TASK" = "backfill_company" ] || [ "$TASK" = "both" ]; then
+              python backfill_company.py --market "$MARKET" --limit "$LIMIT"
+            fi
+            # The study lands in the db; the export is what copies it into
+            # data.json for the dashboard, and what writes history.json.
+            python export_dashboard.py
+
+            git add data/asr.db data.json history.json
+            if git diff --cached --quiet; then
+              echo "No changes."; echo "::endgroup::"; exit 0
+            fi
+            git commit -q -m "maintenance $(date -u +'%Y-%m-%d %H:%M UTC')"
+
+            if git push -q origin HEAD:main; then
+              echo "pushed $(git rev-parse --short HEAD)"
+              echo "::endgroup::"; exit 0
+            fi
+            echo "push rejected — origin advanced while this ran; redoing on the new base"
+            echo "::endgroup::"
+          done
+
+          echo "::error::could not publish after 3 attempts; re-run when no scan is in flight"
+          exit 1
