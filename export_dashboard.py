@@ -30,6 +30,7 @@ from core.company import days_to_earnings
 from core.config import DASHBOARD_JSON, MARKETS
 from core.daily import buyout_heuristic, daily_stats
 from core.lifecycle import decide_close, walk
+from core.stop_study import load as load_stop_study
 from core.datafeed import fetch_history
 from core.db import connect
 from core.datafeed import fetch_history as _fetch_bench
@@ -414,6 +415,10 @@ def export():
                 "cohorts": cohorts(key),
                 "mentions": mention_report(key),
                 "regime": mkt_regime,
+                # Computed weekly by run_stop_study.py, not here: it needs
+                # price history for closed signals, which this export
+                # deliberately no longer downloads. None until it first runs.
+                "stop_study": load_stop_study(con, key),
                 # Newest date a signal FIRED. Note this is not the same thing
                 # as the last time the scanner ran -- see health below.
                 "last_scan": con.execute(

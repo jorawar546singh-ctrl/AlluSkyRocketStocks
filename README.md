@@ -39,7 +39,10 @@ the system is collecting evidence, not bragging rights.
 | `data.json` | signals still **open** — what you decide from today | bounded |
 | `history.json` | signals **closed** — what the system has actually produced | forever |
 
-Both carry a top-level `generated` (UTC ISO-8601), rewritten on every run.
+Both carry a top-level `generated` (UTC ISO-8601), rewritten on every run, and
+both are committed by the workflow so they publish side by side at the same
+Pages path. The dashboard fetches `history.json` separately and tolerates it
+being absent, so the Today view works before the first export writes it.
 All field names are `snake_case`.
 
 Signals are **never deleted**. The old rule dropped a signal once it stopped
@@ -151,6 +154,84 @@ a guess. A stock can print this shape with no deal behind it.
 `market`, `ticker`, `box_top`, `box_bottom`, `formed_date`,
 `broken_date` (null while intact), unique on `(market, ticker, formed_date)`.
 A box is marked broken when a close exceeds `box_top`.
+
+## The Closed tab
+Third view on the dashboard, and the only panel on the page that **cannot be
+survivor-biased**. Every other number is computed over signals still in
+`data.json`, and until the close lifecycle shipped the retention rule dropped a
+signal once it stopped trending — so the set grading the strategy was the set
+that had survived it.
+
+Shows, for the selected market (US by default, since the page opens there):
+`hit10_before_stop` rate, average and median `final_return_pct`, average
+`peak_gain_pct` against average `max_dd_pct`, a breakdown by `close_reason`,
+and the most recent closes.
+
+**Found vs kept** is the panel worth reading first: average `peak_gain_pct`
+(what the method found) next to average `final_return_pct` (what the exit
+kept), and the gap between them in percentage points. It also counts signals
+whose peak cleared +10% and which still closed negative — an exit problem
+stated as plainly as the data allows.
+
+Read that gap honestly: the peak often lands *after* the exit, so closing it
+would have required a different stop rather than better timing, and a wider
+stop pays for that upside with deeper losses on everything that never
+recovers. The stop study prices that trade-off.
+
+The verdict line applies the same test as the tip-source table —
+`t = avg/(sd/√n)`, below 2 means the average is inside the noise whatever its
+sign — because a positive average over few closes is not an edge.
+
+## Stop study
+`run_stop_study.py` → `studies` table → `data.json` → Performance tab.
+
+Replays every closed signal's actual bars against five stop levels: 5%, 7% and
+10% below entry, just under the box bottom (the live rule), and the stop as
+actually signalled. For each it reports the share that reached +10% **before**
+the stop was touched, the share stopped out, and the average and median return.
+
+Exit rule used for the return matches how the system now behaves: exit at the
+stop if touched, otherwise hold to the end of the window. Reaching +10% does
+not exit.
+
+The hit rate is reported **with** the average return and never alone, because
+on its own it argues for an ever-wider stop: more room means more signals reach
++10% before being taken out, while every trade that never recovers loses more.
+In testing a 10% stop beat a 7% stop on hit rate and lost to it on average
+return. The dashboard marks a best row only when that row's average return is
+actually positive — the least-bad of five losing variants is not a
+recommendation.
+
+Only signals whose price history reaches back to their signal date are
+included; an order-of-events question cannot be answered without the bars that
+hold the events. The panel reports how many of the closed signals qualified.
+
+Separate from the export because it needs price history for closed signals,
+which the export deliberately stopped downloading once signals began being kept
+forever. Runs weekly via the maintenance workflow.
+
+## Backfilling company data
+`backfill_company.py` fills `sector` / `industry` / `company_name` for signals
+fired before the per-signal lookup existed (~498 distinct US tickers covering
+572 rows).
+
+```
+python3 backfill_company.py --dry-run          # what it would fetch
+python3 backfill_company.py --market US        # ~12 min at 1.5s/request
+python3 backfill_company.py --limit 100
+```
+
+De-duplicates tickers first (a symbol's sector does not change between its
+signals), commits per ticker so an interrupt loses nothing and a re-run
+resumes, and writes with `COALESCE` so it can never overwrite what the scan
+already captured. Stops itself after 12 consecutive empty results rather than
+sending another 500 requests that will also come back empty.
+
+## Maintenance workflow
+`.github/workflows/maintenance.yml` — weekly (Saturday 22:40 UTC) for the stop
+study, plus `workflow_dispatch` to run the backfill or either job on demand.
+Shares the `scanner` concurrency group, because both it and the scan commit the
+database and push; overlapping them would be a push race.
 
 ## Run records
 `runs` table gains `run_type`: `intraday` (19:00 UTC) or `close`

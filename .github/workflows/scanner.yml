@@ -97,7 +97,10 @@ jobs:
         run: |
           git config user.name  "asr-bot"
           git config user.email "actions@github.com"
-          git add data/asr.db data.json
+          # history.json is published beside data.json at the same Pages path.
+          # Leaving it out of this list is how the Closed tab stays empty
+          # forever: the export writes the file, nothing ever ships it.
+          git add data/asr.db data.json history.json
           if ! git diff --cached --quiet; then
             git commit -m "scan $(date -u +'%Y-%m-%d %H:%M UTC')"
             git push

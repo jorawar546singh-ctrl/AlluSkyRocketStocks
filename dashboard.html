@@ -269,7 +269,11 @@
     .primary{grid-template-columns:1fr;gap:18px}
     .ptrigger{text-align:left}
     .primary .tick{font-size:30px}
-    table{display:none}
+    /* Only the signals table swaps to cards on mobile. This was `table`,
+       which also hid every .mtbl -- so the month cohorts and tip sources
+       were blank on a phone, with no card fallback to take their place.
+       Those scroll horizontally inside .mwrap instead. */
+    .sigtbl{display:none}
     .cards{display:flex}
     .showing{margin-left:0;width:100%}
     .hdr-right{width:100%;justify-content:space-between}
@@ -368,6 +372,7 @@
   <div class="vtabs">
     <button id="vToday" class="on" onclick="setView('today')">Today</button>
     <button id="vPerf" onclick="setView('perf')">Performance</button>
+    <button id="vClosed" onclick="setView('closed')">Closed<span class="vcount" id="vcClosed"></span></button>
   </div>
 
   <div class="view on" id="viewToday">
@@ -428,7 +433,7 @@
     <button class="btn f-chk" id="fBoxT" onclick="toggleChk('fBoxT')">Box ✓ today</button>
   </div>
 
-  <table>
+  <table class="sigtbl">
     <thead><tr id="thead"></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
@@ -445,6 +450,12 @@
   <div id="edge"></div>
   </div><!-- /viewPerf -->
 
+  <div class="view" id="viewClosed">
+  <div class="lbl">Closed signals
+      <span class="meta">every signal that ended, winners and losers — nothing is deleted</span></div>
+  <div id="closedPanel"></div>
+  </div><!-- /viewClosed -->
+
   <footer>
     <div>Darvas trigger · trend-gated · RS-ranked · 2% risk rule</div>
     <div>The journal is the discipline. The dashboard is just the tool.</div>
@@ -457,6 +468,9 @@
 // fresh setups and today's NEW badges belong at the top. One click on the
 // Age header still flips it back.
 let DATA=null, MARKET='US', DIR=1, STATUS='ALL', SELECTED=null;
+// Closed signals, from history.json. Null until loaded, and legitimately null
+// if the file is not there yet -- every reader must handle that.
+let HIST=null;
 // Month grouping is opt-in. Left always-on it would silently reorder the table
 // (months first, sort key second), and collapsing by default would hide the
 // oldest signals -- which under the two-tier retention rule are old precisely
@@ -511,6 +525,14 @@ async function load(){
     DATA=await r.json();
     document.getElementById('stamp').textContent=
       'scan '+DATA.generated.replace('T',' ').slice(0,16)+' UTC';
+    // history.json is fetched separately and is allowed to be absent: it does
+    // not exist until the first export after the close lifecycle shipped, and
+    // the Today view must not break waiting for it. A failure here costs the
+    // Closed tab, nothing else.
+    try{
+      const h=await fetch('history.json?'+Date.now());
+      HIST = h.ok ? await h.json() : null;
+    }catch(e){ HIST=null; }
     render();
     // Written only after the diff has been rendered, so this visit becomes
     // the baseline for the next one rather than erasing what we just showed.
@@ -600,7 +622,7 @@ function filtered(){
 function render(){
   rebuildTipped(); computeChanges(); renderSince(); renderStale(); renderConcentration();
   renderPrimary(); renderTable(); renderRegime(); renderPositions();
-  renderEdge(); renderDetail();
+  renderEdge(); renderClosed(); renderDetail();
 }
 
 function loadSeen(m){
@@ -791,10 +813,12 @@ function monthLabel(m){
 }
 function setView(v){
   VIEW=v;
-  document.getElementById('vToday').classList.toggle('on',v==='today');
-  document.getElementById('vPerf').classList.toggle('on',v==='perf');
-  document.getElementById('viewToday').classList.toggle('on',v==='today');
-  document.getElementById('viewPerf').classList.toggle('on',v==='perf');
+  for(const [k,btn,pane] of [['today','vToday','viewToday'],
+                             ['perf','vPerf','viewPerf'],
+                             ['closed','vClosed','viewClosed']]){
+    document.getElementById(btn).classList.toggle('on',v===k);
+    document.getElementById(pane).classList.toggle('on',v===k);
+  }
 }
 function toggleMore(){
   const b=document.getElementById('moreBar');
@@ -1353,6 +1377,152 @@ function renderPositions(){
   }).join('');
 }
 
+// ---------- Closed signals ----------
+// This is the only panel on the page that cannot be survivor-biased. Every
+// other number is computed over signals still in data.json, and until the
+// close lifecycle shipped the retention rule dropped a signal once it stopped
+// trending -- so the set grading the strategy was the set that had survived
+// it. history.json keeps every signal that ended, winners and losers, so the
+// counts below are the whole record rather than the flattering part of it.
+function closedRows(){
+  if(!HIST||!HIST.markets) return [];
+  const m=HIST.markets[MARKET];
+  return (m&&m.signals)?m.signals.filter(s=>s.close_reason):[];
+}
+const _avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+function _median(a){
+  if(!a.length) return null;
+  const s=[...a].sort((x,y)=>x-y), i=s.length>>1;
+  return s.length%2?s[i]:(s[i-1]+s[i])/2;
+}
+function _sd(a){
+  if(a.length<2) return null;
+  const m=_avg(a);
+  return Math.sqrt(a.reduce((t,v)=>t+(v-m)*(v-m),0)/(a.length-1));
+}
+// Same test the tip-source table uses: a positive average over few samples is
+// not an edge. t = avg / (sd/sqrt(n)); below 2 the mean is inside the noise.
+function _verdict(vals){
+  const n=vals.length, a=_avg(vals), sd=_sd(vals);
+  if(n<30) return '<span class="sub">too few closes to judge</span>';
+  if(a<=0) return '<span class="down">negative — no edge</span>';
+  const t=(sd&&sd>0)?a/(sd/Math.sqrt(n)):null;
+  return (t!=null&&t<2) ? '<span class="acc">positive but inside the noise</span>'
+                        : '<span class="up">beats zero</span>';
+}
+
+function renderClosed(){
+  const el=document.getElementById('closedPanel');
+  const badge=document.getElementById('vcClosed');
+  const rows=closedRows();
+  badge.textContent = rows.length ? rows.length : '';
+
+  if(!HIST){
+    el.innerHTML='<div class="empty">history.json not loaded yet. It is written by the '+
+      'first export after the close lifecycle ships — until then there are no closed '+
+      'signals to show.</div>';
+    return;
+  }
+  if(!rows.length){
+    el.innerHTML=`<div class="empty">No closed signals for ${mkt().label} yet.</div>`;
+    return;
+  }
+
+  const fin  = rows.map(s=>s.final_return_pct).filter(v=>v!=null);
+  const peak = rows.map(s=>s.peak_gain_pct).filter(v=>v!=null);
+  const dd   = rows.map(s=>s.max_dd_pct).filter(v=>v!=null);
+  const h10  = rows.map(s=>s.hit10_before_stop).filter(v=>v!=null);
+  const hitRate = h10.length ? 100*h10.filter(Boolean).length/h10.length : null;
+
+  const aFin=_avg(fin), aPeak=_avg(peak), aDD=_avg(dd);
+  // The gap between what the method FOUND and what the exit KEPT. If the
+  // first is healthy and the second is not, the entry is working and the exit
+  // is the thing to fix -- which is a different project from changing the scan.
+  const gap=(aPeak!=null&&aFin!=null)?aPeak-aFin:null;
+  // Signals whose best move cleared +10% and which still closed negative.
+  // This is the cleanest statement of an exit problem on the page.
+  const missed=rows.filter(s=>(s.peak_gain_pct??0)>=10&&(s.final_return_pct??0)<0).length;
+
+  const c=(v,s,cls='')=>`<div class="cell"><b class="num ${cls}">${v}</b><span>${s}</span></div>`;
+  const pc=(v,d=1)=>v==null?'—':(v>0?'+':'')+fmt(v,d)+'%';
+
+  const byReason=new Map();
+  for(const s of rows) byReason.set(s.close_reason,(byReason.get(s.close_reason)||0)+1);
+  const REASON_LABEL={stopped_out:'stopped out', expired:'expired (180d)',
+                      faded:'faded', hit_target_10:'hit +10% target'};
+  const reasonRows=[...byReason.entries()].sort((a,b)=>b[1]-a[1]).map(([k,n])=>{
+    const sub=rows.filter(s=>s.close_reason===k);
+    const f=sub.map(s=>s.final_return_pct).filter(v=>v!=null);
+    const p=sub.map(s=>s.peak_gain_pct).filter(v=>v!=null);
+    return `<tr><td>${REASON_LABEL[k]||k}</td><td>${n}</td>
+      <td>${Math.round(100*n/rows.length)}%</td>
+      <td class="${(_avg(f)??0)>0?'up':'down'}">${pc(_avg(f))}</td>
+      <td>${pc(_avg(p))}</td></tr>`;
+  }).join('');
+
+  const recent=[...rows].sort((a,b)=>
+    (b.close_date||'').localeCompare(a.close_date||'')).slice(0,40);
+  const tableRows=recent.map(s=>{
+    const f=s.final_return_pct, p=s.peak_gain_pct;
+    const flag=(p!=null&&p>=10&&f!=null&&f<0)
+      ? ' <span class="acc" title="peak cleared +10% but the exit closed negative">◆</span>' : '';
+    return `<tr>
+      <td>${s.ticker}${flag}</td>
+      <td class="sub">${s.scan_date||'—'}</td>
+      <td class="sub">${s.close_date||'—'}</td>
+      <td class="sub">${REASON_LABEL[s.close_reason]||s.close_reason}</td>
+      <td class="${(f??0)>0?'up':(f??0)<0?'down':''}">${pc(f)}</td>
+      <td>${pc(p)}</td>
+      <td class="down">${pc(s.max_dd_pct)}</td>
+      <td>${s.hit10_before_stop==null?'—':s.hit10_before_stop?'yes':'no'}</td></tr>`;
+  }).join('');
+
+  el.innerHTML=`<div class="edge">
+    ${c(rows.length,'signals closed')}
+    ${c(hitRate==null?'—':Math.round(hitRate)+'%',
+        `hit +10% before the stop${h10.length<rows.length?` (n=${h10.length})`:''}`,
+        (hitRate!=null&&hitRate>=50)?'up':'down')}
+    ${c(pc(aFin),'avg final return',(aFin??0)>0?'up':'down')}
+    ${c(pc(_median(fin)),'median final return',(_median(fin)??0)>0?'up':'down')}
+    ${c(pc(aPeak),'avg peak the move offered','up')}
+    ${c(pc(aDD),'avg worst drawdown','down')}
+  </div>
+  <div class="note">Verdict on closed outcomes: ${_verdict(fin)}
+    &nbsp;·&nbsp; ${mkt().label} only. Switch market above to see the others.</div>
+
+  ${gap!=null?`<div class="lbl" style="margin-top:30px">Found vs kept
+      <span class="meta">the entry and the exit are separate problems — this says which one is yours</span></div>
+  <div class="edge">
+    ${c(pc(aPeak),'the method FOUND','up')}
+    ${c(pc(aFin),'the exit KEPT',(aFin??0)>0?'up':'down')}
+    ${c(gap==null?'—':fmt(gap,1)+' pp','given back','down')}
+    ${c(missed,'cleared +10%, still closed red',missed>0?'down':'')}
+  </div>
+  <div class="note">${missed>0
+     ? `${missed} of ${rows.length} signals (${Math.round(100*missed/rows.length)}%) had a `
+       +`peak of +10% or better and still finished negative — marked ◆ below. That is an `
+       +`exit problem, not a scan problem: the move was there and was not kept.`
+     : 'No signal cleared +10% and still closed negative.'}</div>`:''}
+
+  <div class="lbl" style="margin-top:34px">How they ended</div>
+  <div class="mwrap"><table class="mtbl">
+    <thead><tr><th>Reason</th><th>n</th><th>Share</th><th>Avg final</th><th>Avg peak</th></tr></thead>
+    <tbody>${reasonRows}</tbody></table></div>
+
+  <div class="lbl" style="margin-top:34px">Most recent closes
+      <span class="meta">last ${recent.length} of ${rows.length}</span></div>
+  <div class="mwrap"><table class="mtbl">
+    <thead><tr><th>Ticker</th><th>Signalled</th><th>Closed</th><th>Reason</th>
+      <th>Final</th><th>Peak</th><th>Worst</th><th>+10% first</th></tr></thead>
+    <tbody>${tableRows}</tbody></table></div>
+  <div class="note">Peak and Worst are intraday extremes over the whole tracking
+    window, exit ignored — what the signal identified. Final is what the exit
+    actually returned. Read the gap carefully: the peak often lands <em>after</em>
+    the exit, so closing it would have taken a different stop, not better timing —
+    and a wider stop pays for that upside with deeper losses on everything that
+    never recovers. The stop study on the Performance tab prices that trade-off.</div>`;
+}
+
 function renderEdge(){
   const el=document.getElementById('edge');
   const e=mkt().edge;
@@ -1373,8 +1543,57 @@ function renderEdge(){
     ${e.stop_hit_rate!=null?c(e.stop_hit_rate+'%','stops hit \u00b7 30d',e.stop_hit_rate>40?'down':''):''}
   </div>
   <div class="note">Positive 30-day expectancy after 50+ signals = edge. Anything else = keep paper trading.</div>
+  ${stopStudyHTML()}
   ${monthEdgeHTML()}
   ${tipSourceHTML()}`;
+}
+
+// What a different stop would have done. Deliberately shows the average
+// return beside the hit rate, because the hit rate alone argues for an
+// ever-wider stop: more room means more signals reach +10% before being
+// taken out, while every trade that never recovers loses more.
+function stopStudyHTML(){
+  const st=mkt().stop_study;
+  if(!st||!st.variants||!st.variants.length) return '';
+  const pc=(v,d=1)=>v==null?'—':(v>0?'+':'')+fmt(v,d)+'%';
+  // Best average return, to mark the row rather than letting the eye pick the
+  // biggest hit rate -- which is the wrong column to optimise.
+  let best=st.variants.reduce((a,v)=>
+    (v.avg_return!=null&&(a==null||v.avg_return>a.avg_return))?v:a, null);
+  // Only mark a winner if it actually makes money. Flagging the least-bad of
+  // five losing variants reads as "use this one", when the honest reading is
+  // that no stop level rescues a negative edge -- the stop is not the problem.
+  if(best&&!(best.avg_return>0)) best=null;
+  const rows=st.variants.map(v=>{
+    const noisy=(v.t==null||Math.abs(v.t)<2);
+    const mark=(best&&v.label===best.label)?' <span class="acc">◆</span>':'';
+    return `<tr${v.label==='as signalled'?' class="pend"':''}>
+      <td>${v.label}${v.label==='as signalled'?' <span class="sub">(live rule)</span>':''}${mark}</td>
+      <td>${v.n}</td>
+      <td>${v.hit10_rate==null?'—':fmt(v.hit10_rate,0)+'%'}</td>
+      <td>${v.stop_rate==null?'—':fmt(v.stop_rate,0)+'%'}</td>
+      <td class="${(v.avg_return??0)>0?'up':'down'}">${pc(v.avg_return)}</td>
+      <td>${pc(v.median_return)}</td>
+      <td class="${noisy?'sub':''}">${v.t==null?'—':fmt(v.t,1)}</td></tr>`;
+  }).join('');
+  return `<div class="lbl" style="margin-top:34px">Stop study
+      <span class="meta">closed signals only, replayed against other stop levels</span></div>
+  <div class="mwrap"><table class="mtbl">
+    <thead><tr><th>Stop</th><th>n</th><th>+10% first</th><th>Stopped</th>
+      <th>Avg return</th><th>Median</th><th>t</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+  <div class="note">${st.n_walkable} of ${st.n_signals} closed signals had price
+    history reaching back to their signal date, which is what an order-of-events
+    question needs. ${best
+      ? '◆ marks the best average return, not the best hit rate — widening a stop '
+        +'always lifts the hit rate, so that column on its own argues for no stop at all.'
+      : '<b>No variant returns a positive average</b>, so nothing is marked as best: '
+        +'the least-bad of five losing stop levels is not a recommendation. A negative '
+        +'edge is not fixed by moving the stop.'}
+    <b>t</b> below 2 means the average is inside the noise
+    whatever its sign; the levels here were not searched for, but five variants
+    over one dataset is still five chances for noise to look like a finding.
+    Computed ${(st.computed_at||'').slice(0,10)}.</div>`;
 }
 
 function tipSourceHTML(){

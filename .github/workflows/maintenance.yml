@@ -1,0 +1,87 @@
+name: ASR maintenance
+
+# Jobs that are too slow or too network-heavy to belong in the daily scan.
+#
+#   stop_study       replays every closed signal against alternative stop
+#                    levels. Needs price history for CLOSED signals, which the
+#                    export deliberately no longer downloads. Weekly is ample:
+#                    it is a slow-moving statistic and running it daily would
+#                    re-fetch several hundred tickers to move a number by a
+#                    tenth of a point.
+#
+#   backfill_company sector / industry / company_name for signals fired before
+#                    the per-signal lookup existed (~498 US tickers). One
+#                    throttled request each, so ~12 minutes. Resumable: it
+#                    commits per ticker and re-running continues where it
+#                    stopped, so a timeout costs nothing.
+#
+# Shares the `scanner` concurrency group, because both this and the scan
+# commit the database and push -- overlapping them would mean a push race.
+on:
+  schedule:
+    - cron: "40 22 * * 6"     # Saturday, well clear of every scan window
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "which job to run"
+        type: choice
+        default: stop_study
+        options: [stop_study, backfill_company, both]
+      market:
+        description: "market key for the backfill"
+        default: US
+      limit:
+        description: "max tickers to backfill (0 = all)"
+        default: "0"
+
+concurrency:
+  group: scanner
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Stop study
+        if: ${{ github.event_name == 'schedule'
+                || inputs.task == 'stop_study' || inputs.task == 'both' }}
+        run: python run_stop_study.py
+
+      - name: Backfill company data
+        if: ${{ inputs.task == 'backfill_company' || inputs.task == 'both' }}
+        run: |
+          python backfill_company.py \
+            --market "${{ inputs.market }}" \
+            --limit "${{ inputs.limit }}"
+
+      # The study lands in the db; the export is what copies it into data.json
+      # for the dashboard to read. Without this the Performance tab would not
+      # see a study until the next scan happened to run.
+      - name: Export dashboard payload
+        run: python export_dashboard.py
+
+      - name: Commit results
+        run: |
+          git config user.name  "asr-bot"
+          git config user.email "actions@github.com"
+          git add data/asr.db data.json history.json
+          if ! git diff --cached --quiet; then
+            git commit -m "maintenance $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase --autostash
+            git push
+          else
+            echo "No changes."
+          fi

@@ -171,6 +171,18 @@ CREATE TABLE IF NOT EXISTS boxes (
     UNIQUE (market, ticker, formed_date)
 );
 
+-- Computed studies that are too expensive to recompute on every export
+-- (they need price history for CLOSED signals, which the export deliberately
+-- no longer downloads). One row per (market, kind); the payload is JSON.
+CREATE TABLE IF NOT EXISTS studies (
+    id           INTEGER PRIMARY KEY,
+    market       TEXT NOT NULL,
+    kind         TEXT NOT NULL,              -- 'stops'
+    computed_at  TEXT NOT NULL,
+    payload      TEXT NOT NULL,
+    UNIQUE (market, kind)
+);
+
 CREATE INDEX IF NOT EXISTS idx_signals_market_date ON signals (market, scan_date);
 CREATE INDEX IF NOT EXISTS idx_boxes_market_ticker ON boxes (market, ticker);
 CREATE INDEX IF NOT EXISTS idx_runs_market_ts ON runs (market, run_ts);
