@@ -77,8 +77,51 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
     except Exception as exc:                                   # noqa: BLE001
         _record("error", f"{type(exc).__name__}: {exc}"[:400])
         raise
-    _record("ok" if stats["universe"] else "empty_universe", None)
+
+    # Warnings are persisted even on success. They used to go only to the
+    # Telegram digest, so the db -- and therefore the dashboard -- recorded
+    # status=ok with no hint anything was wrong.
+    notes = list(uni.WARNINGS)
+    status = "ok" if stats["universe"] else "empty_universe"
+
+    # A COLLAPSED universe is the dangerous case, and it was invisible: the
+    # check above only caught a universe of exactly zero. On 2026-10-19 the
+    # Finviz screener stopped returning rows, leaving only the Yahoo
+    # most-active/gainers supplement -- 48 tickers instead of 380. Three runs
+    # recorded status=ok and found no breakouts, which reads identically to a
+    # genuinely quiet market. Scanning 12% of the universe and reporting
+    # "nothing today" is worse than not scanning at all.
+    #
+    # Compared against this market's own recent history rather than a
+    # hardcoded floor, so it keeps working as universe sizes change.
+    typical = _typical_universe(cfg.key)
+    if typical and stats["universe"] and stats["universe"] < typical * 0.5:
+        status = "degraded"
+        notes.append(f"universe collapsed to {stats['universe']} "
+                     f"(recent median {typical}) — source likely broken; "
+                     f"a 'no breakouts' result from this run means nothing")
+    _record(status, " | ".join(notes)[:400] or None)
     return rows
+
+
+def _typical_universe(market: str, lookback: int = 10) -> int | None:
+    """Median universe size over this market's recent successful runs."""
+    try:
+        with connect() as con:
+            # Healthy runs only. Including degraded ones would let a sustained
+            # outage drag the median down until the collapsed universe became
+            # the new "normal" and the alarm quietly stopped firing -- the
+            # failure mode this check exists to prevent, rebuilt one level up.
+            vals = [r[0] for r in con.execute(
+                "SELECT universe FROM runs WHERE market=? AND universe IS NOT NULL "
+                "AND status='ok' ORDER BY run_ts DESC LIMIT ?",
+                (market, lookback))]
+        if len(vals) < 3:
+            return None                 # not enough history to judge
+        vals.sort()
+        return vals[len(vals) // 2]
+    except Exception:                                          # noqa: BLE001
+        return None
 
 
 def _record_boxes(cfg, histories: dict, eligible: dict) -> None:

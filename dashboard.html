@@ -1312,6 +1312,19 @@ function renderStale(){
       `Last ${mkt().label} scan <b>failed</b> on <b>${h.run_date}</b>`+
       (h.error?`: <b>${h.error}</b>`:'')+`. Nothing below has been updated since.`);
 
+  // A collapsed universe is the failure that looks like success: the job runs,
+  // reports ok, and finds nothing -- because it only looked at a fraction of
+  // the market. On 2026-10-19 the Finviz screener stopped returning rows and
+  // three US runs scanned 48 tickers instead of 380, each reporting no
+  // breakouts. Louder than a stale badge, because the table below is not
+  // merely old, it is misleading.
+  if(h.status==='degraded')
+    return box('stale-bad','⚠',
+      `${mkt().label} scanned only <b>${h.universe}</b> tickers on <b>${h.run_date}</b>`+
+      (h.universe_typical?` — usually <b>${h.universe_typical}</b>`:'')+
+      `. The ticker source is broken, so <b>"no breakouts" from this run means nothing</b>.`+
+      (h.error?`<br><span class="funnel">${h.error}</span>`:''), funnel);
+
   if(since>=2)
     return box('stale-bad','⚠',
       `${mkt().label} has not been scanned in <b>${since} trading days</b> — last run `+

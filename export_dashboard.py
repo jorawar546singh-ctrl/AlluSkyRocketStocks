@@ -348,6 +348,16 @@ def _health(con, key: str) -> dict:
     out["runs_7d"] = con.execute(
         "SELECT COUNT(*) FROM runs WHERE market=? "
         "AND julianday('now') - julianday(run_ts) <= 7", (key,)).fetchone()[0]
+    # What this market's universe normally looks like, so the dashboard can say
+    # "48, usually 380" rather than printing a number with nothing to judge it
+    # against. A collapsed universe makes a "no breakouts" result meaningless,
+    # and that has to be visible without reading the Telegram digest.
+    # Healthy runs only, for the same reason the scanner's check uses them:
+    # a baseline that absorbs degraded runs normalises the outage away.
+    vals = sorted(r[0] for r in con.execute(
+        "SELECT universe FROM runs WHERE market=? AND universe IS NOT NULL "
+        "AND status='ok' ORDER BY run_ts DESC LIMIT 10", (key,)))
+    out["universe_typical"] = vals[len(vals) // 2] if len(vals) >= 3 else None
     return out
 
 
