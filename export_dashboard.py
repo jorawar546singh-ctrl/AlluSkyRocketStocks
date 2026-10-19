@@ -20,18 +20,26 @@ Enrichment is fail-soft: if the price fetch fails, fields stay null and the
 dashboard renders them as em-dashes. The payload always writes.
 """
 import json
+import os
 from datetime import datetime, timezone
 
 import pandas as pd
 
 from analyzer import cohorts, mention_report, report
+from core.company import days_to_earnings
 from core.config import DASHBOARD_JSON, MARKETS
+from core.daily import buyout_heuristic, daily_stats
+from core.lifecycle import decide_close, walk
 from core.datafeed import fetch_history
 from core.db import connect
 from core.datafeed import fetch_history as _fetch_bench
 from core.signals import regime as _regime
 from core.stops import position_trailing_stop, watchlist_entry_stop
 
+HISTORY_JSON = "history.json"
+# Closed signals move to their own file. All of them kept in data.json would
+# be ~1.1MB that the dashboard re-fetches on every load, most of it rows
+# nobody is deciding anything from today.
 RECENT_DAYS = 30
 # Older signals are only worth fetching/showing if they're still winning.
 # Bounding at 180d keeps the daily price-fetch cost sane (Darvas-style
@@ -65,12 +73,20 @@ def _streaks(closes: pd.Series, breakout_price: float) -> tuple[int, int]:
     return cur, peak
 
 
-def enrich(signals: list[dict], cfg) -> None:
+def enrich(signals: list[dict], cfg) -> dict:
+    """Returns the price frames it fetched, so the close lifecycle can walk
+    the same bars rather than paying for a second download."""
     if not signals:
-        return
+        return {}
     tickers = sorted({s["ticker"] + cfg.ticker_suffix for s in signals})
     try:
-        hist = fetch_history(tickers, period="3mo")
+        # A full year, not 3 months. Two things need it: the close lifecycle
+        # walks bars forward from the signal date, so a signal that stopped out
+        # on day 20 of a 150-day life needs that day-20 bar to be in the frame
+        # at all; and high_52w is only a 52-week high if 252 sessions are
+        # actually present. A 3-month window silently gave a 63-day high and a
+        # walk that began 90 days after the event it was looking for.
+        hist = fetch_history(tickers, period="1y")
     except Exception as e:                                   # noqa: BLE001
         print(f"  enrich: fetch failed entirely ({e}) — shipping nulls")
         hist = {}
@@ -89,6 +105,9 @@ def enrich(signals: list[dict], cfg) -> None:
             continue
         df = df.copy()
         df.index = pd.to_datetime(df.index).tz_localize(None)
+        # Hand the normalised frame back, so the close lifecycle walks exactly
+        # the bars that produced the numbers above rather than re-deriving them.
+        hist[s["ticker"] + cfg.ticker_suffix] = df
 
         # A gain is only meaningful against a bar at or after the signal.
         # Intraday signals routinely flag before that day's daily bar exists,
@@ -113,6 +132,11 @@ def enrich(signals: list[dict], cfg) -> None:
         now = float(closes.iloc[-1])
         s["now_price"] = round(now, 2)
         s["gain_pct"] = round((now - s["price"]) / s["price"] * 100, 2)
+
+        # Daily statistics and the buyout shape, both from bars already in hand.
+        s.update(daily_stats(df))
+        s["pinned_buyout"] = buyout_heuristic(df)
+        s["days_to_earnings"] = days_to_earnings(s.get("next_earnings_date"))
 
         since = df[df.index >= pd.Timestamp(s["scan_date"])]["Close"].dropna()
         cur, peak = _streaks(since, s["price"])
@@ -170,6 +194,7 @@ def enrich(signals: list[dict], cfg) -> None:
             s["status"] = "TRENDING"
         else:
             s["status"] = "WATCHING"
+    return hist
 
 
 def enrich_positions(positions: list[dict], cfg) -> None:
@@ -199,6 +224,100 @@ def enrich_positions(positions: list[dict], cfg) -> None:
         p["current_stop"] = new_stop
         p["running_high"] = new_high
         p["stop_moved"] = bool(new_stop > (p.get("initial_stop") or 0))
+
+
+_FLAG_FIELDS = ("hit10_before_stop", "pinned_buyout", "new_52w_high",
+                "trend_pass", "vol_today", "box_today", "clean_entry")
+
+
+def _coerce_flags(s: dict) -> dict:
+    """SQLite stores booleans as 0/1, and a column with any NULL comes back
+    from pandas as float64 -- so a re-read signal carries 0.0 where it was
+    written as false. Harmless to render, but it breaks a strict `=== true`
+    anywhere downstream and makes two exports of the same row differ. Restore
+    the bool, leaving None as None.
+    """
+    for k in _FLAG_FIELDS:
+        v = s.get(k)
+        if v is not None and not isinstance(v, bool):
+            try:
+                s[k] = bool(float(v))
+            except (TypeError, ValueError):
+                pass
+    return s
+
+
+def _apply_lifecycle(signals: list[dict], hist: dict, cfg) -> None:
+    """Decide which signals are now closed, and record how they ended.
+
+    Writes close_date / close_reason / exit_price / final_return_pct /
+    hit10_before_stop / hit10_date / max_gain_pct / max_dd_pct /
+    peak_gain_pct / trough_dd_pct onto each closed signal, and persists the
+    same to the db so the close survives the next export.
+
+    Reaching +10% is recorded, not closed on -- see core.lifecycle for the
+    measured reason why.
+    """
+    today = datetime.now(timezone.utc).date()
+    to_persist = []
+    for s in signals:
+        # Already closed on a previous run: keep the stored verdict, do not
+        # recompute it against newer prices.
+        if s.get("close_reason"):
+            continue
+        df = hist.get(s["ticker"] + cfg.ticker_suffix)
+        age = s.get("age_days") or 0
+        w = walk(df, s["scan_date"], s.get("price"), s.get("suggested_stop"))
+        # Max gain/drawdown from the walk, whatever happens below. These are
+        # intraday highs and lows over the signal's whole life; enrich() set a
+        # weaker version off the last 60 closes, which understates both.
+        if w["max_gain_pct"] is not None:
+            s["max_gain_pct"], s["max_dd_pct"] = w["max_gain_pct"], w["max_dd_pct"]
+            # What the signal identified, exit ignored. This is the number that
+            # shows a 312% mover was caught even when the stop took you out of
+            # it early; max_gain_pct alone would report that as a small loss.
+            s["peak_gain_pct"], s["trough_dd_pct"] = w["peak_gain_pct"], w["trough_dd_pct"]
+        # Only answerable if the walk saw the whole life -- it is a question
+        # about which of two events came first.
+        s["hit10_before_stop"] = w["hit10_before_stop"] if w["walk_complete"] else None
+        s["hit10_date"] = w["hit10_date"] if w["walk_complete"] else None
+
+        verdict = decide_close(s, w, age)
+        if not verdict:
+            continue
+        s.update(verdict)
+        if not s.get("close_date"):
+            s["close_date"] = today.isoformat()
+        exit_px = s.get("exit_price") or s.get("now_price")
+        s["exit_price"] = round(exit_px, 4) if exit_px else None
+        if exit_px and s.get("price"):
+            s["final_return_pct"] = round((exit_px / s["price"] - 1) * 100, 2)
+        to_persist.append(s)
+
+    if not to_persist:
+        return
+    with connect() as con:
+        for s in to_persist:
+            con.execute(
+                "UPDATE signals SET close_date=?, close_reason=?, exit_price=?, "
+                "final_return_pct=?, hit10_before_stop=?, hit10_date=?, "
+                "max_gain_pct=?, max_dd_pct=?, peak_gain_pct=?, trough_dd_pct=?, "
+                "pinned_buyout=? WHERE id=?",
+                (s["close_date"], s["close_reason"], s.get("exit_price"),
+                 s.get("final_return_pct"),
+                 None if s.get("hit10_before_stop") is None
+                 else int(s["hit10_before_stop"]),
+                 s.get("hit10_date"),
+                 s.get("max_gain_pct"), s.get("max_dd_pct"),
+                 s.get("peak_gain_pct"), s.get("trough_dd_pct"),
+                 # Persisted at close, because a settled signal is never
+                 # re-priced and so never recomputes this.
+                 None if s.get("pinned_buyout") is None
+                 else int(s["pinned_buyout"]),
+                 s["id"]))
+    print(f"  closed {len(to_persist)} signal(s): "
+          + ", ".join(f"{s['ticker']}({s['close_reason']})" for s in to_persist[:6])
+          + ("…" if len(to_persist) > 6 else ""))
 
 
 def _health(con, key: str) -> dict:
@@ -232,8 +351,9 @@ def _health(con, key: str) -> dict:
 
 
 def export():
-    payload = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-               "markets": {}}
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    payload = {"generated": stamp, "markets": {}}
+    history = {"generated": stamp, "markets": {}}
     with connect() as con:
         for key, cfg in MARKETS.items():
             sig = pd.read_sql_query(
@@ -245,17 +365,28 @@ def export():
             pos = pd.read_sql_query(
                 "SELECT * FROM positions WHERE market=? AND status='open'", con, params=(key,))
             signals = json.loads(sig.to_json(orient="records"))
-            enrich(signals, cfg)
-            # Two-tier retention, applied AFTER enrich() so status is known:
-            #   age <= 30d        -> always shown (fresh signals get a fair look
-            #                         regardless of how they're doing yet)
-            #   30d < age <= 180d -> shown only if still status=='TRENDING'
-            #                         (a real winner shouldn't vanish just for
-            #                         being old; a stalled/faded one should)
-            #   age > 180d        -> dropped (outer bound, see EXTENDED_DAYS)
-            signals = [s for s in signals
-                       if (s.get("age_days") or 0) <= RECENT_DAYS
-                       or s.get("status") == "TRENDING"]
+            # Signals closed on an earlier run are settled: their verdict is
+            # stored and must not be recomputed against newer prices. Holding
+            # them out of enrich() also keeps the download from growing without
+            # bound -- otherwise every ticker that ever fired gets re-priced on
+            # every export, forever, to no purpose.
+            settled = [_coerce_flags(s) for s in signals if s.get("close_reason")]
+            signals = [s for s in signals if not s.get("close_reason")]
+            hist = enrich(signals, cfg)
+            # Signals are CLOSED, never deleted. The old rule dropped a
+            # signal once it stopped trending, so the record quietly rewrote
+            # itself to survivors only and any win/loss count taken from it
+            # was wrong by construction.
+            #
+            # data.json carries the open ones (what you decide from today);
+            # history.json carries the closed ones (what the system has
+            # actually produced). Both are kept forever.
+            _apply_lifecycle(signals, hist, cfg)
+            closed = settled + [s for s in signals if s.get("close_reason")]
+            signals = [s for s in signals if not s.get("close_reason")]
+            history["markets"][key] = {"label": cfg.label,
+                                       "currency": cfg.currency,
+                                       "signals": closed}
             positions = json.loads(pos.to_json(orient="records"))
             enrich_positions(positions, cfg)
             # Persist any ratcheted stops back to the db
@@ -292,7 +423,36 @@ def export():
             }
     with open(DASHBOARD_JSON, "w") as f:
         json.dump(payload, f, separators=(",", ":"))
-    print(f"wrote {DASHBOARD_JSON}")
+    n_open = sum(len(m["signals"]) for m in payload["markets"].values())
+    print(f"wrote {DASHBOARD_JSON} ({n_open} open signals)")
+
+    # Closed signals, appended to whatever is already on disk so the record
+    # only ever grows. Keyed by signal id, so re-exporting cannot duplicate.
+    prior = {}
+    if os.path.exists(HISTORY_JSON):
+        try:
+            with open(HISTORY_JSON) as f:
+                old = json.load(f)
+            for k, m in (old.get("markets") or {}).items():
+                prior[k] = {s["id"]: s for s in m.get("signals", [])}
+        except Exception as e:                              # noqa: BLE001
+            print(f"  history: could not read existing file ({e}) — starting fresh")
+    for k, m in history["markets"].items():
+        merged = prior.get(k, {})
+        for s in m["signals"]:
+            # A signal closed on an earlier run comes back as a bare db row --
+            # no sparkline, no status, none of the enrichment it carried on the
+            # day it closed, because it is deliberately no longer being priced.
+            # Layering it over the stored entry keeps that detail and still lets
+            # the db win on the close fields themselves.
+            old = merged.get(s["id"])
+            merged[s["id"]] = {**old, **s} if old else s
+        m["signals"] = sorted(merged.values(),
+                              key=lambda x: (x.get("close_date") or "", x["ticker"]))
+    with open(HISTORY_JSON, "w") as f:
+        json.dump(history, f, separators=(",", ":"))
+    n_closed = sum(len(m["signals"]) for m in history["markets"].values())
+    print(f"wrote {HISTORY_JSON} ({n_closed} closed signals)")
 
 
 if __name__ == "__main__":

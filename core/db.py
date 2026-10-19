@@ -42,6 +42,24 @@ CREATE TABLE IF NOT EXISTS signals (
     sector        TEXT,                      -- from the universe page; NULL on
                                              -- older rows and when the source
                                              -- page did not carry one
+    industry      TEXT,
+    company_name  TEXT,
+    next_earnings_date TEXT,                 -- YYYY-MM-DD, NULL when unknown
+    -- Close lifecycle. A signal is never deleted now; it is closed and kept,
+    -- so the history stays auditable and win/loss can be counted honestly.
+    close_date    TEXT,                      -- YYYY-MM-DD, NULL while open
+    close_reason  TEXT,                      -- hit_target_10|stopped_out|expired|faded
+    exit_price    REAL,
+    final_return_pct REAL,
+    hit10_before_stop INTEGER,               -- 1/0: did +10% come before the stop
+    hit10_date    TEXT,                      -- YYYY-MM-DD the +10% was reached
+    max_gain_pct  REAL,                      -- best move while LIVE (to the exit bar)
+    max_dd_pct    REAL,                      -- worst move while live
+    peak_gain_pct REAL,                      -- best move over the whole window,
+                                             -- exit ignored: what the SIGNAL caught
+    trough_dd_pct REAL,                      -- worst move over the whole window
+    pinned_buyout INTEGER,                   -- 1 when the buyout heuristic matches
+    buyout_price  REAL,
     source        TEXT DEFAULT 'scanner',    -- 'scanner' | 'migration_csv' | 'migration_history'
     UNIQUE (market, ticker, scan_date)
 );
@@ -140,7 +158,21 @@ CREATE TABLE IF NOT EXISTS mention_outcomes (
     computed_at   TEXT
 );
 
+-- Every Darvas box a ticker has formed, so a trailing stop can follow each
+-- new box bottom instead of being pinned to the one at signal time.
+CREATE TABLE IF NOT EXISTS boxes (
+    id           INTEGER PRIMARY KEY,
+    market       TEXT NOT NULL,
+    ticker       TEXT NOT NULL,
+    box_top      REAL NOT NULL,
+    box_bottom   REAL NOT NULL,
+    formed_date  TEXT NOT NULL,              -- YYYY-MM-DD the box was first seen
+    broken_date  TEXT,                       -- NULL while price is still inside
+    UNIQUE (market, ticker, formed_date)
+);
+
 CREATE INDEX IF NOT EXISTS idx_signals_market_date ON signals (market, scan_date);
+CREATE INDEX IF NOT EXISTS idx_boxes_market_ticker ON boxes (market, ticker);
 CREATE INDEX IF NOT EXISTS idx_runs_market_ts ON runs (market, run_ts);
 CREATE INDEX IF NOT EXISTS idx_mentions_market_date ON mentions (market, mention_date);
 """
@@ -160,6 +192,22 @@ _ADDED_COLUMNS = [
     ("outcomes", "ret_d180", "REAL"),
     ("outcomes", "max_gain_d180", "REAL"),
     ("outcomes", "max_dd_d180", "REAL"),
+    ("signals", "industry", "TEXT"),
+    ("signals", "company_name", "TEXT"),
+    ("signals", "next_earnings_date", "TEXT"),
+    ("signals", "close_date", "TEXT"),
+    ("signals", "close_reason", "TEXT"),
+    ("signals", "exit_price", "REAL"),
+    ("signals", "final_return_pct", "REAL"),
+    ("signals", "hit10_before_stop", "INTEGER"),
+    ("signals", "max_gain_pct", "REAL"),
+    ("signals", "max_dd_pct", "REAL"),
+    ("signals", "hit10_date", "TEXT"),
+    ("signals", "peak_gain_pct", "REAL"),
+    ("signals", "trough_dd_pct", "REAL"),
+    ("signals", "pinned_buyout", "INTEGER"),
+    ("signals", "buyout_price", "REAL"),
+    ("runs", "run_type", "TEXT"),
 ]
 
 

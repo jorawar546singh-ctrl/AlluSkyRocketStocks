@@ -14,7 +14,11 @@ name: AlluSkyRocketStocks v2
 on:
   schedule:
     - cron: "0 19 * * 1-5"    # 19:00 UTC = noon PT — US/CA INTRADAY (provisional)
-    - cron: "15 21 * * 1-5"   # 21:15 UTC = after US close — US/CA confirming run
+    - cron: "30 21 * * 1-5"   # 21:30 UTC = 17:30 ET (EDT) / 16:30 ET (EST) —
+                              # the POST-CLOSE run: final daily bars, run_type
+                              # "close". Was 21:15; moved so the EST half of
+                              # the year lands on 16:30 rather than 16:15,
+                              # giving the daily bar time to settle.
     - cron: "30 10 * * 1-5"   # 10:30 UTC = 4:00pm IST, after NSE close
   workflow_dispatch:
 

@@ -39,6 +39,8 @@ WARNINGS: list[str] = []   # scanner.py appends these to the digest
 # no extra request. Every path fails soft to absent -- a missing sector must
 # never cost a signal.
 SECTORS: dict[str, str] = {}
+NAMES: dict[str, str] = {}      # {bare ticker -> company name}, same free ride
+INDUSTRIES: dict[str, str] = {}
 
 
 def _warn(msg: str):
@@ -99,11 +101,18 @@ def _finviz_sector(anchor, sym: str) -> None:
         cells = [td.get_text(strip=True) for td in tr.find_all("td")]
         if len(cells) < 5:
             return
+        # Column 2 is the company name in the same Overview row.
+        name = cells[2]
+        if name and 1 < len(name) <= 80:
+            NAMES[sym] = name
         sector = cells[3]
         # Guard against a column shift: a real sector is a short phrase, not
         # a number, a price or a company name running to half a line.
         if sector and 2 < len(sector) <= 40 and not any(ch.isdigit() for ch in sector):
             SECTORS[sym] = sector
+            industry = cells[4]
+            if industry and 2 < len(industry) <= 60:
+                INDUSTRIES[sym] = industry
     except Exception:                                       # noqa: BLE001
         pass
 
@@ -299,12 +308,19 @@ def ca_universe() -> list[str]:
             # Wikipedia has titled this column "Sector" and "GICS Sector" at
             # different times; try both, and carry the same dot->dash fix the
             # tickers get so the keys match.
-            for col in ("Sector", "GICS Sector", "GICS sector"):
-                if col in tbl.columns:
-                    t2 = tbl.copy()
-                    t2["Ticker"] = t2["Ticker"].astype(str).str.strip().str.replace(".", "-", regex=False)
-                    _sectors_from_frame(t2, "Ticker", col)
-                    break
+            # Wikipedia has titled this column several ways over the years
+            # ("Sector", "GICS Sector", "Industry"), so match on content
+            # rather than an exact name -- the fixed list was returning
+            # nothing, which is why every CA signal had a null sector.
+            col = next((c for c in tbl.columns
+                        if "sector" in str(c).lower() or "industry" in str(c).lower()),
+                       None)
+            if col:
+                t2 = tbl.copy()
+                t2["Ticker"] = t2["Ticker"].astype(str).str.strip().str.replace(".", "-", regex=False)
+                _sectors_from_frame(t2, "Ticker", col)
+            else:
+                _warn(f"TSX table has no sector-like column; got {list(tbl.columns)[:6]}")
             if len(syms) > 150:
                 print(f"  universe: live TSX Composite (Wikipedia) ({len(syms)})")
                 return syms

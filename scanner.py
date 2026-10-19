@@ -34,6 +34,7 @@ from datetime import datetime, timezone
 from core import universe as uni
 from core.config import MARKETS
 from core.datafeed import fetch_history
+from core import company as comp
 from core.db import connect, record_run, upsert_signal
 from core.signals import darvas, regime, relative_strength, trend_filter
 
@@ -60,6 +61,10 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
             "run_ts": started.isoformat(timespec="seconds"),
             "run_date": started.strftime("%Y-%m-%d"),
             "source": "scanner_intraday" if intraday else "scanner",
+            # run_type says WHAT the bars were, not when the job fired:
+            # "close" means final daily bars, "intraday" means the session
+            # was still open and the last bar can still change.
+            "run_type": "intraday" if intraday else "close",
             "status": status,
             "duration_s": round(
                 (datetime.now(timezone.utc) - started).total_seconds(), 1),
@@ -74,6 +79,44 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
         raise
     _record("ok" if stats["universe"] else "empty_universe", None)
     return rows
+
+
+def _record_boxes(cfg, histories: dict, eligible: dict) -> None:
+    """Record the current Darvas box for every eligible ticker.
+
+    One row per (ticker, formed_date); re-running a day is idempotent. A box
+    is marked broken the first time the close leaves it, which is what a
+    trailing stop follows.
+
+    Best-effort: a failure here costs box history, never a scan.
+    """
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        with connect() as con:
+            for t in eligible:
+                df = histories.get(t)
+                if df is None or len(df) < cfg.darvas_box_days + 1:
+                    continue
+                bare = t.removesuffix(cfg.ticker_suffix)
+                box = df.iloc[-(cfg.darvas_box_days + 1):-1]
+                top, bottom = float(box["High"].max()), float(box["Low"].min())
+                close = float(df["Close"].iloc[-1])
+
+                prev = con.execute(
+                    "SELECT id, box_top, box_bottom FROM boxes WHERE market=? AND ticker=? "
+                    "AND broken_date IS NULL ORDER BY formed_date DESC LIMIT 1",
+                    (cfg.key, bare)).fetchone()
+                if prev and close > prev["box_top"]:
+                    con.execute("UPDATE boxes SET broken_date=? WHERE id=?",
+                                (today, prev["id"]))
+                    prev = None
+                if prev is None:
+                    con.execute(
+                        "INSERT INTO boxes (market,ticker,box_top,box_bottom,formed_date) "
+                        "VALUES (?,?,?,?,?) ON CONFLICT(market,ticker,formed_date) DO NOTHING",
+                        (cfg.key, bare, round(top, 4), round(bottom, 4), today))
+    except Exception as exc:                                # noqa: BLE001
+        print(f"  WARNING: box history not recorded ({exc})")
 
 
 def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
@@ -181,10 +224,36 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
                 # Read off the universe page the scan already fetched. None
                 # when that page carried no sector for this name.
                 "sector": uni.SECTORS.get(bare_t),
+                "company_name": uni.NAMES.get(bare_t),
+                "industry": uni.INDUSTRIES.get(bare_t),
                 "source": "scanner_intraday" if intraday else "scanner",
             }
             upsert_signal(con, row)
             rows.append(row)
+
+    # Company metadata for the handful of names that actually fired, not for
+    # the 400-ticker universe: one request each, only when a signal is new.
+    for row in rows:
+        info = comp.lookup(row["ticker"], cfg.key)
+        for k in ("company_name", "sector", "industry", "next_earnings_date"):
+            if info.get(k) and not row.get(k):
+                row[k] = info[k]
+    if rows:
+        with connect() as con:
+            for row in rows:
+                con.execute(
+                    "UPDATE signals SET company_name=COALESCE(?,company_name),"
+                    " sector=COALESCE(?,sector), industry=COALESCE(?,industry),"
+                    " next_earnings_date=COALESCE(?,next_earnings_date)"
+                    " WHERE market=? AND ticker=? AND scan_date=?",
+                    (row.get("company_name"), row.get("sector"),
+                     row.get("industry"), row.get("next_earnings_date"),
+                     cfg.key, row["ticker"], row["scan_date"]))
+
+    # Box history: every box each eligible ticker is currently sitting in, so
+    # a trailing stop can follow the newest box bottom rather than the one
+    # that happened to exist at signal time.
+    _record_boxes(cfg, histories, eligible)
 
     stats["saved"] = len(rows)
     rows.sort(key=lambda x: (x["rs_pct"] or 0), reverse=True)
