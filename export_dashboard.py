@@ -28,6 +28,7 @@ import pandas as pd
 from analyzer import cohorts, mention_report, report
 from core.company import days_to_earnings
 from core.config import DASHBOARD_JSON, MARKETS
+from core import deadlist
 from core.daily import buyout_heuristic, daily_stats
 from core.lifecycle import decide_close, walk
 from core.stop_study import load as load_stop_study
@@ -87,7 +88,12 @@ def enrich(signals: list[dict], cfg) -> dict:
         # at all; and high_52w is only a 52-week high if 252 sessions are
         # actually present. A 3-month window silently gave a 63-day high and a
         # walk that began 90 days after the event it was looking for.
+        # Same skip the scan applies: a delisted symbol stays in the signal
+        # history forever, and re-requesting it every export only re-proves
+        # that it is gone.
+        tickers = deadlist.filter_live(cfg.key, tickers, "export")
         hist = fetch_history(tickers, period="1y")
+        deadlist.record(cfg.key, tickers, set(hist))
     except Exception as e:                                   # noqa: BLE001
         print(f"  enrich: fetch failed entirely ({e}) — shipping nulls")
         hist = {}

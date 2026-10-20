@@ -195,6 +195,19 @@ CREATE TABLE IF NOT EXISTS universe_cache (
     tickers    TEXT NOT NULL              -- JSON array
 );
 
+-- Tickers the price feed has stopped answering for (delisted, renamed).
+-- They never leave the signal history, so without this they are re-requested
+-- every run forever, each one burning the full retry budget to rediscover
+-- that it is gone. A single success clears the row; see core/deadlist.py.
+CREATE TABLE IF NOT EXISTS dead_tickers (
+    market       TEXT NOT NULL,
+    ticker       TEXT NOT NULL,
+    fails        INTEGER NOT NULL DEFAULT 1,
+    first_failed TEXT,
+    last_failed  TEXT,
+    UNIQUE (market, ticker)
+);
+
 CREATE INDEX IF NOT EXISTS idx_signals_market_date ON signals (market, scan_date);
 CREATE INDEX IF NOT EXISTS idx_boxes_market_ticker ON boxes (market, ticker);
 CREATE INDEX IF NOT EXISTS idx_runs_market_ts ON runs (market, run_ts);

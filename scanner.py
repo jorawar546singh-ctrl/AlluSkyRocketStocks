@@ -32,6 +32,7 @@ import json
 import sys
 from datetime import datetime, timezone
 
+from core import deadlist
 from core import universe as uni
 from core.config import MARKETS
 from core.datafeed import fetch_history
@@ -273,7 +274,14 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
         return []
     tickers = [b + cfg.ticker_suffix for b in bare]
 
+    # Leave out symbols the feed has repeatedly had no data for. They are
+    # delisted or renamed, they never drop out of the signal history, and each
+    # one burns the full retry budget every run to confirm again that it is
+    # gone. The benchmark is never skipped -- the scan depends on it.
+    tickers = deadlist.filter_live(cfg.key, tickers, cfg.key)
+
     histories = fetch_history(tickers + [cfg.benchmark], period="1y")
+    deadlist.record(cfg.key, tickers, set(histories))
     bench_df = histories.pop(cfg.benchmark, None)
     if bench_df is None:
         uni.WARNINGS.append(f"benchmark {cfg.benchmark} fetch failed — rs_excess will be null")
