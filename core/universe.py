@@ -198,47 +198,95 @@ YAHOO_SCREENS = (
     "growth_technology_stocks",
     "undervalued_growth_stocks",
 )
-YAHOO_SCREENER_URL = ("https://query1.finance.yahoo.com/v1/finance/screener/"
-                      "predefined/saved?scrIds={scr}&count={count}&start=0")
 YAHOO_MIN_AVG_VOL = 300_000     # matches the Finviz sh_avgvol_o300 clause
 
 
-def _yahoo_screener(cfg, count: int = 250) -> list[str]:
-    """Tickers from Yahoo's predefined screeners, filtered on the numbers it
-    returns. Each screen fails soft: one bad response must not cost the rest."""
+def _quotes_of(res) -> list[dict]:
+    """yf.screen returns the raw Yahoo body; be liberal about its shape."""
+    if isinstance(res, dict):
+        if "quotes" in res:
+            return res.get("quotes") or []
+        inner = (res.get("finance", {}) or {}).get("result") or []
+        if inner:
+            return inner[0].get("quotes") or []
+    return []
+
+
+def _keep(cfg, quotes, seen: set) -> list[str]:
+    """Apply the numeric filters locally, on the numbers Yahoo returned."""
+    out = []
+    for q in quotes:
+        sym = (q.get("symbol") or "").strip().upper()
+        # US common stock only: dotted/dashed class tickers (BRK-B) and
+        # suffixed foreign listings are different instruments.
+        if not sym or not sym.isalpha() or len(sym) > 5 or sym in seen:
+            continue
+        price = q.get("regularMarketPrice")
+        avgvol = (q.get("averageDailyVolume3Month")
+                  or q.get("averageDailyVolume10Day"))
+        if price is not None and not (cfg.min_price <= price <= cfg.max_price):
+            continue
+        if avgvol is not None and avgvol < YAHOO_MIN_AVG_VOL:
+            continue
+        seen.add(sym)
+        out.append(sym)
+    return out
+
+
+def _yahoo_screener(cfg, target: int = 400) -> list[str]:
+    """Tickers from Yahoo's screener, via yfinance.
+
+    Goes through yfinance rather than plain requests because Yahoo's screener
+    endpoint requires an auth cookie and crumb: a bare GET returns HTTP 429 from
+    a datacenter IP, which is exactly what it did on the first run. yfinance
+    already negotiates and caches that handshake for every price download in
+    this project, so reusing it costs nothing and removes a second thing to
+    keep working.
+
+    A custom query first, replicating the Finviz filter's intent on real
+    numbers, sorted by percent change so the day's movers come first -- that is
+    where breakouts live, and it matters because the list is capped. Then the
+    predefined screens top it up with names the custom query ranked too low.
+    """
+    import yfinance as yf
+
     out: list[str] = []
     seen: set[str] = set()
-    for scr in YAHOO_SCREENS:
-        try:
-            r = requests.get(YAHOO_SCREENER_URL.format(scr=scr, count=count),
-                             headers=HEADERS, timeout=20)
-            if r.status_code != 200:
-                _warn(f"Yahoo screener {scr} -> HTTP {r.status_code}")
-                continue
-            res = (r.json().get("finance", {}).get("result") or [])
-            quotes = res[0].get("quotes", []) if res else []
-        except Exception as e:                              # noqa: BLE001
-            _warn(f"Yahoo screener {scr} failed: {e}")
-            continue
 
-        kept = 0
-        for q in quotes:
-            sym = (q.get("symbol") or "").strip().upper()
-            # US common stock only: skip the dotted/dashed class tickers and
-            # anything with a suffix, which are other listings entirely.
-            if not sym or not sym.isalpha() or len(sym) > 5 or sym in seen:
-                continue
-            price = q.get("regularMarketPrice")
-            avgvol = q.get("averageDailyVolume3Month") or q.get("averageDailyVolume10Day")
-            if price is not None and not (cfg.min_price <= price <= cfg.max_price):
-                continue
-            if avgvol is not None and avgvol < YAHOO_MIN_AVG_VOL:
-                continue
-            seen.add(sym)
-            out.append(sym)
-            kept += 1
-        print(f"  universe: Yahoo {scr} -> {kept} new (of {len(quotes)})")
-    return out
+    try:
+        from yfinance import EquityQuery as EQ
+        q = EQ("and", [
+            EQ("eq", ["region", "us"]),
+            EQ("gt", ["intradayprice", float(cfg.min_price)]),
+            EQ("lt", ["intradayprice", float(cfg.max_price)]),
+            EQ("gt", ["dayvolume", YAHOO_MIN_AVG_VOL]),
+            EQ("gt", ["intradaymarketcap", 300_000_000]),
+        ])
+        for offset in range(0, target, 250):
+            res = yf.screen(q, offset=offset, size=250,
+                            sortField="percentchange", sortAsc=False)
+            quotes = _quotes_of(res)
+            new = _keep(cfg, quotes, seen)
+            out.extend(new)
+            print(f"  universe: Yahoo custom screen +{len(new)} (of {len(quotes)}) "
+                  f"at offset {offset}")
+            if len(quotes) < 250 or len(out) >= target:
+                break
+    except Exception as e:                                  # noqa: BLE001
+        _warn(f"Yahoo custom screen failed: {e}")
+
+    # Predefined screens, for names the custom query ranked below the cap.
+    if len(out) < target:
+        for scr in YAHOO_SCREENS:
+            if len(out) >= target:
+                break
+            try:
+                new = _keep(cfg, _quotes_of(yf.screen(scr, count=250)), seen)
+                out.extend(new)
+                print(f"  universe: Yahoo {scr} -> +{len(new)}")
+            except Exception as e:                          # noqa: BLE001
+                _warn(f"Yahoo screener {scr} failed: {e}")
+    return out[:target]
 
 
 MENTION_DAYS = 14   # a tip older than this is not a fresh idea any more
