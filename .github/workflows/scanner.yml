@@ -32,7 +32,9 @@ permissions:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Raised from 25: a rejected push can now redo the scan on a fresh base,
+    # and a redo must fit inside the budget rather than being killed halfway.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 1 }
@@ -77,33 +79,75 @@ jobs:
               || echo "mention ingest failed for $m (non-fatal)"
           done
 
-      - name: Scan
+      # Scan and publish in one step, so a rejected push can be retried with
+      # the work redone rather than thrown away.
+      #
+      # This used to be scan / export / commit as separate steps ending in a
+      # bare `git push`. When anything else pushed while a scan was running --
+      # a code change, the maintenance job, the other market's cron -- the push
+      # was rejected and the whole scan was lost with it, which is what
+      # happened on 2026-10-20 00:51 UTC.
+      #
+      # `git pull --rebase` is not the fix: data/asr.db is a binary SQLite file
+      # that git cannot merge, so a rebase conflicts the moment another run has
+      # also written it. But when origin moved for a CODE change the database
+      # is untouched on both sides and the rebase is clean, which is the common
+      # case and cheap. So: try the rebase, and only redo the scan when it
+      # genuinely conflicts.
+      - name: Scan, export and publish
         run: |
-          for m in ${{ steps.mkt.outputs.markets }}; do
-            python scanner.py "$m" ${{ steps.mkt.outputs.intraday }}
-            python analyzer.py "$m"
+          git config user.name  "asr-bot"
+          git config user.email "actions@github.com"
+
+          run_pipeline() {
+            for m in ${{ steps.mkt.outputs.markets }}; do
+              python scanner.py "$m" ${{ steps.mkt.outputs.intraday }}
+              python analyzer.py "$m"
+            done
+            python export_dashboard.py
+          }
+
+          stage_and_commit() {
+            # history.json is published beside data.json at the same Pages
+            # path. Leaving it out is how the Closed tab stays empty forever:
+            # the export writes the file, nothing ever ships it.
+            git add data/asr.db data.json history.json
+            if git diff --cached --quiet; then
+              echo "No changes."
+              return 1
+            fi
+            git commit -q -m "scan $(date -u +'%Y-%m-%d %H:%M UTC')"
+            return 0
+          }
+
+          run_pipeline
+          stage_and_commit || exit 0
+
+          for attempt in 1 2 3; do
+            if git push -q origin HEAD:main; then
+              echo "pushed $(git rev-parse --short HEAD)"
+              exit 0
+            fi
+            echo "::warning::push rejected (attempt $attempt) — origin moved while this ran"
+            git fetch -q origin
+            if git rebase -q origin/main; then
+              echo "  rebased cleanly onto $(git rev-parse --short origin/main) — retrying push"
+              continue
+            fi
+            git rebase --abort || true
+            echo "  rebase conflicted: another run also wrote the database."
+            echo "  redoing the scan on top of $(git rev-parse --short origin/main)"
+            git reset --hard -q origin/main
+            run_pipeline
+            stage_and_commit || exit 0
           done
 
-      - name: Export dashboard payload
-        run: python export_dashboard.py
+          echo "::error::could not publish after 3 attempts"
+          exit 1
 
+      # After publishing, so a retry cannot send the digest twice.
       - name: Telegram digest
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python telegram_digest.py || echo "digest failed (non-fatal)"
-
-      - name: Commit results
-        run: |
-          git config user.name  "asr-bot"
-          git config user.email "actions@github.com"
-          # history.json is published beside data.json at the same Pages path.
-          # Leaving it out of this list is how the Closed tab stays empty
-          # forever: the export writes the file, nothing ever ships it.
-          git add data/asr.db data.json history.json
-          if ! git diff --cached --quiet; then
-            git commit -m "scan $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
-          else
-            echo "No changes."
-          fi
