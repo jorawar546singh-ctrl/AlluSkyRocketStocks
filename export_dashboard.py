@@ -386,8 +386,7 @@ def export():
             # them out of enrich() also keeps the download from growing without
             # bound -- otherwise every ticker that ever fired gets re-priced on
             # every export, forever, to no purpose.
-            settled = [_coerce_flags(s) for s in signals if s.get("close_reason")]
-            signals = [s for s in signals if not s.get("close_reason")]
+            signals = [_coerce_flags(s) for s in signals]
             hist = enrich(signals, cfg)
             # Signals are CLOSED, never deleted. The old rule dropped a
             # signal once it stopped trending, so the record quietly rewrote
@@ -398,8 +397,24 @@ def export():
             # history.json carries the closed ones (what the system has
             # actually produced). Both are kept forever.
             _apply_lifecycle(signals, hist, cfg)
-            closed = settled + [s for s in signals if s.get("close_reason")]
-            signals = [s for s in signals if not s.get("close_reason")]
+            closed = [s for s in signals if s.get("close_reason")]
+
+            # The Today view keeps the ORIGINAL retention rule, and closing a
+            # signal no longer removes it from there.
+            #
+            # Splitting them looked right -- data.json for live decisions,
+            # history.json for the record -- but it hid 443 of 572 US signals
+            # in one run, including 135 that had peaked +20% or better. A stock
+            # that dipped through its stop once and then ran is exactly what
+            # this tool is for, and filing it away as a loss is worse than the
+            # survivorship problem the close lifecycle was built to fix.
+            #
+            # So closes are still computed and still written to history.json,
+            # where honest win/loss counts come from. They just no longer
+            # decide what is on screen.
+            signals = [s for s in signals
+                       if (s.get("age_days") or 0) <= RECENT_DAYS
+                       or s.get("status") == "TRENDING"]
             history["markets"][key] = {"label": cfg.label,
                                        "currency": cfg.currency,
                                        "signals": closed}
