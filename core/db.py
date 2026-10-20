@@ -183,6 +183,18 @@ CREATE TABLE IF NOT EXISTS studies (
     UNIQUE (market, kind)
 );
 
+-- The last known-good ticker list per market.
+-- When the live source breaks, the scan used to fall back to whatever scraps
+-- it could assemble -- 48 tickers instead of 380 on 2026-10-19 -- and then
+-- report "no breakouts" because it was barely looking. A stale list misses
+-- new listings; scanning 12% of the market misses almost everything.
+CREATE TABLE IF NOT EXISTS universe_cache (
+    market     TEXT PRIMARY KEY,
+    saved_at   TEXT NOT NULL,
+    n          INTEGER NOT NULL,
+    tickers    TEXT NOT NULL              -- JSON array
+);
+
 CREATE INDEX IF NOT EXISTS idx_signals_market_date ON signals (market, scan_date);
 CREATE INDEX IF NOT EXISTS idx_boxes_market_ticker ON boxes (market, ticker);
 CREATE INDEX IF NOT EXISTS idx_runs_market_ts ON runs (market, run_ts);

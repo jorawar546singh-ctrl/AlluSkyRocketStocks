@@ -28,6 +28,7 @@ the confirmed one, and upsert_signal's ON CONFLICT DO NOTHING would drop it
 again — so without the purge the permanent record would be the unconfirmed
 price, and every outcome measured off it.
 """
+import json
 import sys
 from datetime import datetime, timezone
 
@@ -102,6 +103,56 @@ def run(market_key: str, intraday: bool = False) -> list[dict]:
                      f"a 'no breakouts' result from this run means nothing")
     _record(status, " | ".join(notes)[:400] or None)
     return rows
+
+
+def _save_universe(market: str, tickers: list[str]) -> None:
+    """Remember a healthy ticker list so a broken source has a fallback."""
+    try:
+        with connect() as con:
+            con.execute(
+                "INSERT INTO universe_cache (market, saved_at, n, tickers) "
+                "VALUES (?,?,?,?) ON CONFLICT(market) DO UPDATE SET "
+                "saved_at=excluded.saved_at, n=excluded.n, tickers=excluded.tickers",
+                (market, datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                 len(tickers), json.dumps(list(tickers))))
+    except Exception as exc:                                   # noqa: BLE001
+        print(f"  WARNING: could not cache universe ({exc})")
+
+
+def _load_universe(market: str) -> list[str] | None:
+    """The cached list, or -- if nothing is cached yet -- every ticker this
+    market has ever signalled.
+
+    The bootstrap matters because the cache is empty the first time the source
+    breaks, which is exactly when it is needed. Those tickers are known to
+    trade in the configured price range, so they are a usable stopgap.
+
+    It is NOT a substitute for the real list: it only contains names that have
+    already broken out once, so a scan restricted to it cannot discover
+    anything new. It keeps the scanner working while the source is fixed, and
+    the warning says so.
+    """
+    try:
+        with connect() as con:
+            r = con.execute("SELECT tickers FROM universe_cache WHERE market=?",
+                            (market,)).fetchone()
+            if r:
+                return json.loads(r["tickers"])
+            return [x[0] for x in con.execute(
+                "SELECT DISTINCT ticker FROM signals WHERE market=? ORDER BY ticker",
+                (market,))] or None
+    except Exception:                                          # noqa: BLE001
+        return None
+
+
+def cached_age(market: str) -> str:
+    try:
+        with connect() as con:
+            r = con.execute("SELECT saved_at FROM universe_cache WHERE market=?",
+                            (market,)).fetchone()
+        return r["saved_at"] if r else "bootstrap"
+    except Exception:                                          # noqa: BLE001
+        return "an earlier run"
 
 
 def _typical_universe(market: str, lookback: int = 10) -> int | None:
@@ -185,6 +236,28 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
     bare = (uni.us_universe(cfg) if cfg.key == "US"
             else uni.ca_universe() if cfg.key == "CA"
             else uni.in_universe())
+
+    # If the ticker source broke, scan the last known-good list rather than
+    # the scraps. On 2026-10-19 the Finviz screener stopped returning rows and
+    # the US universe fell from 380 names to 48 -- three runs then reported
+    # "no breakouts", which is true of 48 tickers and says nothing about the
+    # market. A list a few days old misses new listings; scanning 12% of the
+    # market misses almost everything.
+    typical = _typical_universe(cfg.key)
+    if typical and len(bare) < typical * 0.5:
+        cached = _load_universe(cfg.key)
+        if cached and len(cached) > len(bare):
+            src = cached_age(cfg.key)
+            uni.WARNINGS.append(
+                f"ticker source returned only {len(bare)} names (usually ~{typical}); "
+                f"scanning {len(cached)} from " +
+                (f"the cached list saved {src}" if src != "bootstrap"
+                 else "previously-signalled tickers (bootstrap — cannot find NEW names)") +
+                " — fix the source to restore full coverage")
+            bare = cached
+    elif len(bare) >= 50:
+        _save_universe(cfg.key, bare)
+
     # Tips from Discord / the manual watchlist join the universe -- they do not
     # bypass anything downstream, they just get looked at. A screener that only
     # ever sees what the screener found cannot act on an idea from outside it.

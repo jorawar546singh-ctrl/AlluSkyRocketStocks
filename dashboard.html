@@ -401,6 +401,7 @@
     </div>
     <div class="grp" id="statusBtns">
       <button class="btn f-today" data-st="TODAY">Today 🎯</button>
+      <button class="btn f-highs" data-st="HIGHS">New highs 📈</button>
       <button class="btn f-live" data-st="LIVE">Live ⚡</button>
       <button class="btn f-all on" data-st="ALL">All</button>
       <button class="btn f-TRENDING" data-st="TRENDING">Trending</button>
@@ -582,6 +583,7 @@ document.getElementById('statusBtns').addEventListener('click',e=>{
   if(STATUS==='TODAY'){document.getElementById('fSort').value='entry_risk_now';DIR=1;document.getElementById('fDir').textContent='↑';}
   if(STATUS==='LIVE'){document.getElementById('fSort').value='rs_pct';DIR=-1;document.getElementById('fDir').textContent='↓';}
   if(STATUS==='LOSERS'){document.getElementById('fSort').value='gain_pct';DIR=1;document.getElementById('fDir').textContent='↑';}
+  if(STATUS==='HIGHS'){document.getElementById('fSort').value='dist_52w_high_pct';DIR=-1;document.getElementById('fDir').textContent='↓';}
   syncStatusBtns(); renderTable();
 });
 
@@ -601,6 +603,12 @@ function filtered(){
   // TRENDING or WATCHING, so no tab in the dashboard ever showed them.
   // The status badge on each row still says which kind it is.
   else if(STATUS==='LOSERS') rows=rows.filter(s=>(s.gain_pct??0)<0&&(s.age_days??0)>=2);
+  // What the scanner is for: names pushing into new high ground that still
+  // pass the rules. At or within 2% of the 52-week high, still above the box,
+  // and not fading. Sorted closest-to-high first.
+  else if(STATUS==='HIGHS') rows=rows.filter(s=>
+      (s.new_52w_high===true || (s.dist_52w_high_pct??-99) >= -2)
+      && s.box_today!==false && s.status!=='FADING');
   else if(STATUS==='TODAY') rows=rows.filter(s=>s.status==='TRENDING'&&(s.streak??0)>=2&&s.clean_entry===true);
   else if(STATUS==='LIVE') rows=rows.filter(s=>s.source==='scanner_intraday');
   else if(STATUS!=='ALL') rows=rows.filter(s=>s.status===STATUS);
@@ -1306,6 +1314,17 @@ function renderStale(){
     ? `scanned <b>${h.universe}</b> tickers · <b>${h.eligible??'—'}</b> passed the trend gate `+
       `· <b>${h.breakouts??'—'}</b> broke out · <b>${h.saved??'—'}</b> new signal(s) saved`
     : '';
+
+  // Prices can lag the scan: the feed does not always carry the latest session
+  // by the time the export runs. Every "Now" and "Gain" below comes from this
+  // bar, so when it is not the latest trading day it has to say so -- PAYS
+  // showed Friday's 14.80 as "Now" while it was trading at 15.44.
+  const bars=mkt().bars_through;
+  if(bars && tradingDaysBetween(bars,gen)>=1)
+    return box('stale-bad','⚠',
+      `Prices below are from <b>${bars}</b>, not today. Every <b>Now</b>, `+
+      `<b>Gain</b> and <b>status</b> on this page is that session's — the feed `+
+      `had no newer bar when this ran.`, funnel);
 
   if(h.status==='error')
     return box('stale-bad','⚠',

@@ -120,6 +120,11 @@ def enrich(signals: list[dict], cfg) -> dict:
         if closes.empty:
             continue
         last_bar = closes.index[-1].date()
+        # Always recorded, not only when it predates the signal. The feed does
+        # not always have today's bar by the time this runs, and "Now" showing
+        # Friday's close with nothing to say so is how a price reads as live
+        # when it is a full session old.
+        s["last_bar"] = last_bar.isoformat()
         sig_date = datetime.strptime(s["scan_date"], "%Y-%m-%d").date()
         if last_bar < sig_date:
             # Everything downstream (gain, status, box_today, vol_today) would
@@ -425,6 +430,11 @@ def export():
                 "cohorts": cohorts(key),
                 "mentions": mention_report(key),
                 "regime": mkt_regime,
+                # Newest price bar behind every "now" number below. The
+                # dashboard prints this next to the scan stamp so a stale feed
+                # is visible rather than silently passed off as live.
+                "bars_through": max((s.get("last_bar") for s in signals
+                                     if s.get("last_bar")), default=None),
                 # Computed weekly by run_stop_study.py, not here: it needs
                 # price history for closed signals, which this export
                 # deliberately no longer downloads. None until it first runs.
