@@ -56,7 +56,21 @@ def _warn(msg: str):
 # at $100 even after max_price was raised to $1000).
 # Dropped ta_gap_u (2026-07-28): excluded quiet climbers that never gap;
 # gappy names were also the likeliest to form wide/messy boxes (BLZE, CLSK).
-FINVIZ_FILTER_BASE = "cap_smallover,sh_avgvol_o300,sh_relvol_o1.5,ta_perf_1w5o"
+# Minimum market cap for the US universe. 0 = no floor.
+#
+# Was $300M (Finviz's "cap_smallover"), which did not match the screener
+# preset this scanner is meant to mirror -- that one sets Market Cap to Any.
+# The gap was not academic: of 11 names the preset returned on 2026-10-19, SIX
+# were below $300M and so could never be found however well everything else
+# worked (BYRN $121M, ENGS $167M, EXYN $22M, SITC $187M, TCRT $9M, XLAB $103M).
+#
+# The $2 price floor and the 300K average-volume floor still exclude shells,
+# which is what a cap floor was really guarding against. Watch the trend-gate
+# pass rate after this: if the universe fills with microcaps that never clear
+# the gate, the right answer is a smaller floor, not the old one.
+US_MIN_MARKET_CAP = 0
+
+FINVIZ_FILTER_BASE = "sh_avgvol_o300,sh_relvol_o1.5,ta_perf_1w5o"
 FINVIZ_HEADERS = {
     "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36"),
@@ -310,13 +324,16 @@ def _yahoo_screener(cfg, target: int = 400) -> list[str]:
 
     try:
         from yfinance import EquityQuery as EQ
-        q = EQ("and", [
+        clauses = [
             EQ("eq", ["region", "us"]),
             EQ("gt", ["intradayprice", float(cfg.min_price)]),
             EQ("lt", ["intradayprice", float(cfg.max_price)]),
             EQ("gt", ["dayvolume", YAHOO_MIN_AVG_VOL]),
-            EQ("gt", ["intradaymarketcap", 300_000_000]),
-        ])
+        ]
+        # Only when a floor is actually set -- see US_MIN_MARKET_CAP.
+        if US_MIN_MARKET_CAP > 0:
+            clauses.append(EQ("gt", ["intradaymarketcap", US_MIN_MARKET_CAP]))
+        q = EQ("and", clauses)
         for offset in range(0, target, 250):
             res = yf.screen(q, offset=offset, size=250,
                             sortField="percentchange", sortAsc=False)
