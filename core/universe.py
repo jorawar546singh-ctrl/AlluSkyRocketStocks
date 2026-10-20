@@ -145,39 +145,47 @@ def _finviz_csv(filt: str) -> list[str]:
     return syms
 
 
-def _finviz_sector(anchor, sym: str) -> None:
-    """Read Sector out of the row this ticker link sits in.
+def _finviz_row(row) -> str | None:
+    """Pull ticker, company, sector and industry out of one screener row.
 
-    v=111 is Finviz's Overview view, whose columns are
-        No. | Ticker | Company | Sector | Industry | Country | Market Cap | ...
-    so the sector is the 4th cell. The page is already being downloaded for
-    the ticker list; this just stops throwing the rest of the row away.
+    Finviz rebuilt the screener as a div grid: there is no <table>, no <tr>
+    and no <td> on the page any more, and ticker links are /quote?t=SYM rather
+    than quote.ashx?t=SYM. The old parser matched none of that and returned
+    zero tickers from a perfectly good 422KB page, which is what collapsed the
+    US universe -- it was never an IP block.
 
-    Positional, therefore brittle to a Finviz layout change -- so it is
-    wrapped and silent. A wrong or missing sector is a cosmetic loss; an
-    exception here would cost the whole universe.
+    The replacement is sturdier than what it replaces. Each row carries
+    data-row-key="SYM" and each cell a data-column-id (row, ticker, company,
+    sector, industry, country, marketCap, PE, price, change, volume), so the
+    fields are read by NAME instead of by counting columns. A reordered or
+    inserted column no longer silently shifts sector into industry.
+
+    Note the ticker CELL's text is doubled ("WWORX") by a logo glyph, so the
+    symbol comes from data-row-key, never from that cell.
     """
     try:
-        tr = anchor.find_parent("tr")
-        if tr is None:
-            return
-        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
-        if len(cells) < 5:
-            return
-        # Column 2 is the company name in the same Overview row.
-        name = cells[2]
+        sym = (row.get("data-row-key") or "").strip().upper()
+        if not sym:
+            return None
+        cells = {}
+        for c in row.select("[data-column-id]"):
+            cid = c.get("data-column-id")
+            if cid and cid not in cells:
+                cells[cid] = c.get_text(strip=True)
+
+        name = cells.get("company")
         if name and 1 < len(name) <= 80:
             NAMES[sym] = name
-        sector = cells[3]
-        # Guard against a column shift: a real sector is a short phrase, not
-        # a number, a price or a company name running to half a line.
+        sector = cells.get("sector")
+        # A real sector is a short phrase, not a number or a half-line of text.
         if sector and 2 < len(sector) <= 40 and not any(ch.isdigit() for ch in sector):
             SECTORS[sym] = sector
-            industry = cells[4]
-            if industry and 2 < len(industry) <= 60:
-                INDUSTRIES[sym] = industry
+        industry = cells.get("industry")
+        if industry and 2 < len(industry) <= 60:
+            INDUSTRIES[sym] = industry
+        return sym
     except Exception:                                       # noqa: BLE001
-        pass
+        return None
 
 
 def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500 rows,
@@ -198,18 +206,18 @@ def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500
     last_resp = None
     for page in range(max_pages):
         offset = page * 20 + 1
-        url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4&o=-relativevolume&r={offset}"
+        # The canonical path is /screener/stocks now; screener.ashx still
+        # redirects there, and the r= offset works on both.
+        url = f"https://finviz.com/screener/stocks?v=111&f={filt}&ft=4&o=-relativevolume&r={offset}"
         r = _http_get(url, headers=FINVIZ_HEADERS, timeout=20)
         r.raise_for_status()
         last_resp = r
         soup = BeautifulSoup(r.text, "html.parser")
         page_syms: list[str] = []
-        for a in soup.find_all("a", href=True):
-            m = re.search(r"[?&]t=([A-Z][A-Z0-9.\-]{0,6})(?:&|$)", a["href"])
-            if m and a.get_text(strip=True) == m.group(1):
-                if m.group(1) not in page_syms:
-                    page_syms.append(m.group(1))
-                    _finviz_sector(a, m.group(1))
+        for row in soup.select("[data-row-key]"):
+            sym = _finviz_row(row)
+            if sym and sym not in page_syms:
+                page_syms.append(sym)
         new = [s for s in page_syms if s not in syms]
         if not new:
             break
