@@ -66,10 +66,59 @@ FINVIZ_HEADERS = {
 }
 
 
+def _http_get(url: str, headers=None, timeout: int = 20):
+    """GET with a browser's TLS fingerprint when one is available.
+
+    Finviz answers the GitHub runner with a normal HTTP 200 whose body contains
+    no ticker rows, while serving the same URL correctly to a browser. The
+    usual cause is not headers but TLS fingerprinting: `requests` announces
+    itself as Python during the handshake, before a single header is read, so
+    no User-Agent string can disguise it.
+
+    curl_cffi replays Chrome's actual TLS fingerprint and is already installed
+    here as a yfinance dependency, so trying it first costs nothing. Falls back
+    to plain requests if it is missing or errors.
+    """
+    try:
+        from curl_cffi import requests as cr
+        return cr.get(url, headers=headers, timeout=timeout, impersonate="chrome")
+    except Exception as e:                                  # noqa: BLE001
+        print(f"  universe: curl_cffi unavailable ({type(e).__name__}), using requests")
+        return requests.get(url, headers=headers, timeout=timeout)
+
+
+def _diagnose(r, where: str) -> str:
+    """Say what actually came back, so a silent empty page is identifiable.
+
+    Without this a bot-challenge page and a markup change look identical from
+    the log: both are "0 tickers". They need opposite fixes.
+    """
+    try:
+        body = r.text or ""
+        title = re.search(r"<title[^>]*>(.*?)</title>", body, re.I | re.S)
+        title = title.group(1).strip()[:80] if title else "(no title)"
+        markers = [m for m in ("cloudflare", "captcha", "are you a robot",
+                               "access denied", "unusual traffic", "cf-chl",
+                               "just a moment", "enable javascript")
+                   if m in body.lower()]
+        note = (f"{where}: HTTP {r.status_code}, {len(body)} bytes, "
+                f"title={title!r}")
+        if markers:
+            note += f", BOT-CHALLENGE markers: {markers}"
+        elif len(body) > 20000:
+            note += ", large body but no rows parsed -> markup likely changed"
+        else:
+            note += ", small body -> blocked or empty result"
+        print(f"  universe: {note}")
+        return note
+    except Exception:                                       # noqa: BLE001
+        return f"{where}: could not inspect response"
+
+
 def _finviz_csv(filt: str) -> list[str]:
     """Primary: Finviz CSV export endpoint. Clean columns, no HTML parsing."""
     url = f"https://finviz.com/export.ashx?v=111&f={filt}&ft=4&o=-relativevolume"
-    r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
+    r = _http_get(url, headers=FINVIZ_HEADERS, timeout=20)
     if r.status_code != 200 or "," not in r.text[:200]:
         raise RuntimeError(f"CSV endpoint HTTP {r.status_code} / non-CSV body")
     df = pd.read_csv(io.StringIO(r.text))
@@ -132,11 +181,13 @@ def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500
     markup change can't cause a runaway loop against Finviz."""
     from bs4 import BeautifulSoup
     syms: list[str] = []
+    last_resp = None
     for page in range(max_pages):
         offset = page * 20 + 1
         url = f"https://finviz.com/screener.ashx?v=111&f={filt}&ft=4&o=-relativevolume&r={offset}"
-        r = requests.get(url, headers=FINVIZ_HEADERS, timeout=20)
+        r = _http_get(url, headers=FINVIZ_HEADERS, timeout=20)
         r.raise_for_status()
+        last_resp = r
         soup = BeautifulSoup(r.text, "html.parser")
         page_syms: list[str] = []
         for a in soup.find_all("a", href=True):
@@ -153,7 +204,11 @@ def _finviz_html(filt: str, max_pages: int = 25) -> list[str]:   # 25 x 20 = 500
             break              # short page = last page, stop paging
         time.sleep(1)          # polite gap between pages
     if not syms:
-        raise RuntimeError("HTML parse found 0 tickers (markup changed)")
+        # "0 tickers" alone cannot distinguish a bot-challenge page from a
+        # markup change, and those need opposite fixes. Say which.
+        detail = _diagnose(last_resp, "finviz screener") if last_resp is not None \
+            else "no response captured"
+        raise RuntimeError(f"HTML parse found 0 tickers — {detail}")
     return syms
 
 
