@@ -177,6 +177,70 @@ def _price_filter(cfg) -> str:
     return ",".join(parts)
 
 
+# Yahoo's predefined screeners, as the primary US source.
+#
+# Finviz blocks datacenter IPs on screener.ashx, so from GitHub Actions it
+# returns nothing while working perfectly from a home browser -- that is what
+# dropped the universe from 380 names to 48 on 2026-10-19. Yahoo is demonstrably
+# reachable from the runner: every price bar in this project comes from it, and
+# the 48 survivors came from its HTML pages. So the universe comes from Yahoo
+# too, and Finviz becomes a bonus rather than the dependency.
+#
+# These screens are chosen to overlap the Finviz filter's intent -- movers on
+# unusual volume -- rather than to be a broad market list. The response carries
+# price, volume and average volume per name, so the same numeric filters get
+# applied locally instead of trusting a remote preset.
+YAHOO_SCREENS = (
+    "day_gainers",
+    "most_actives",
+    "small_cap_gainers",
+    "aggressive_small_caps",
+    "growth_technology_stocks",
+    "undervalued_growth_stocks",
+)
+YAHOO_SCREENER_URL = ("https://query1.finance.yahoo.com/v1/finance/screener/"
+                      "predefined/saved?scrIds={scr}&count={count}&start=0")
+YAHOO_MIN_AVG_VOL = 300_000     # matches the Finviz sh_avgvol_o300 clause
+
+
+def _yahoo_screener(cfg, count: int = 250) -> list[str]:
+    """Tickers from Yahoo's predefined screeners, filtered on the numbers it
+    returns. Each screen fails soft: one bad response must not cost the rest."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for scr in YAHOO_SCREENS:
+        try:
+            r = requests.get(YAHOO_SCREENER_URL.format(scr=scr, count=count),
+                             headers=HEADERS, timeout=20)
+            if r.status_code != 200:
+                _warn(f"Yahoo screener {scr} -> HTTP {r.status_code}")
+                continue
+            res = (r.json().get("finance", {}).get("result") or [])
+            quotes = res[0].get("quotes", []) if res else []
+        except Exception as e:                              # noqa: BLE001
+            _warn(f"Yahoo screener {scr} failed: {e}")
+            continue
+
+        kept = 0
+        for q in quotes:
+            sym = (q.get("symbol") or "").strip().upper()
+            # US common stock only: skip the dotted/dashed class tickers and
+            # anything with a suffix, which are other listings entirely.
+            if not sym or not sym.isalpha() or len(sym) > 5 or sym in seen:
+                continue
+            price = q.get("regularMarketPrice")
+            avgvol = q.get("averageDailyVolume3Month") or q.get("averageDailyVolume10Day")
+            if price is not None and not (cfg.min_price <= price <= cfg.max_price):
+                continue
+            if avgvol is not None and avgvol < YAHOO_MIN_AVG_VOL:
+                continue
+            seen.add(sym)
+            out.append(sym)
+            kept += 1
+        print(f"  universe: Yahoo {scr} -> {kept} new (of {len(quotes)})")
+    return out
+
+
 MENTION_DAYS = 14   # a tip older than this is not a fresh idea any more
 
 
@@ -211,17 +275,32 @@ def us_universe(cfg) -> list[str]:
     filt = f"{FINVIZ_FILTER_BASE},{pf}"
     print(f"  universe: price filter -> {pf}  (from cfg: ${cfg.min_price}-${cfg.max_price})")
 
-    # Finviz: try CSV export, then HTML scrape. Either fills `tickers`.
+    # Yahoo first. It is the source that actually answers from a datacenter IP,
+    # and it carries price/volume per name so the filters are applied on real
+    # numbers rather than a remote preset.
+    tickers = _yahoo_screener(cfg)
+    print(f"  universe: Yahoo screeners -> {len(tickers)} tickers")
+
+    # Finviz second, as a bonus. It adds names Yahoo's screens miss, and its
+    # rows also populate SECTORS/NAMES/INDUSTRIES for free. It returns nothing
+    # from GitHub Actions (datacenter IPs are blocked on screener.ashx) and
+    # everything from a home connection, so it must never be load-bearing.
     for layer, fn in (("CSV export", _finviz_csv), ("HTML scrape", _finviz_html)):
         try:
-            tickers = fn(filt)
-            print(f"  universe: Finviz {layer} -> {len(tickers)} tickers")
+            extra = fn(filt)
+            new = [t for t in extra if t not in set(tickers)]
+            tickers = list(tickers) + new
+            print(f"  universe: Finviz {layer} -> +{len(new)} tickers")
             break
         except Exception as e:                              # noqa: BLE001
-            # CSV needs Finviz Elite; failing through to HTML is expected,
-            # so log it quietly. Only warn loudly if HTML (the real source) fails.
+            # Expected on the runner. Not a warning unless Yahoo also came up
+            # short, because a working scan does not need Finviz at all.
+            msg = f"Finviz {layer} unavailable: {e}"
             if layer == "HTML scrape":
-                _warn(f"Finviz HTML scrape failed: {e}")
+                if len(tickers) < 100:
+                    _warn(msg + " — and Yahoo returned too few to cover for it")
+                else:
+                    print(f"  universe: {msg} (Yahoo covered it)")
             else:
                 print(f"  universe: Finviz {layer} unavailable (free tier), trying HTML")
 
