@@ -1577,23 +1577,39 @@ function stopStudyHTML(){
   // five losing variants reads as "use this one", when the honest reading is
   // that no stop level rescues a negative edge -- the stop is not the problem.
   if(best&&!(best.avg_return>0)) best=null;
-  const rows=st.variants.map(v=>{
-    const noisy=(v.t==null||Math.abs(v.t)<2);
-    const mark=(best&&v.label===best.label)?' <span class="acc">◆</span>':'';
-    return `<tr${v.label==='as signalled'?' class="pend"':''}>
-      <td>${v.label}${v.label==='as signalled'?' <span class="sub">(live rule)</span>':''}${mark}</td>
-      <td>${v.n}</td>
-      <td>${v.hit10_rate==null?'—':fmt(v.hit10_rate,0)+'%'}</td>
-      <td>${v.stop_rate==null?'—':fmt(v.stop_rate,0)+'%'}</td>
-      <td class="${(v.avg_return??0)>0?'up':'down'}">${pc(v.avg_return)}</td>
-      <td>${pc(v.median_return)}</td>
-      <td class="${noisy?'sub':''}">${v.t==null?'—':fmt(v.t,1)}</td></tr>`;
+  // Fixed rules first, then trailing, with a divider. The split is the point:
+  // a stop that never moves above the entry price cannot produce a winning
+  // exit at all, so its win rate is ~0 by construction rather than by
+  // performance. Comparing a trailing rule against a fixed one without that
+  // context reads as a tuning difference when it is a structural one.
+  const order=['fixed','trail'];
+  const rows=order.flatMap((kind,ki)=>{
+    const group=st.variants.filter(v=>(v.kind||'fixed')===kind);
+    if(!group.length) return [];
+    const head=`<tr class="pend"><td colspan="8" style="padding-top:16px">`+
+      (kind==='fixed'
+        ? 'FIXED — stop set below entry, never moved. Cannot close in profit.'
+        : 'TRAILING — stop ratchets up as the position gains.')+`</td></tr>`;
+    return [head, ...group.map(v=>{
+      const noisy=(v.t==null||Math.abs(v.t)<2);
+      const live=v.label==='as signalled';
+      const mark=(best&&v.label===best.label)?' <span class="acc">◆</span>':'';
+      return `<tr>
+        <td>${v.label}${live?' <span class="sub">(live rule)</span>':''}${mark}</td>
+        <td>${v.n}</td>
+        <td>${v.hit10_rate==null?'—':fmt(v.hit10_rate,0)+'%'}</td>
+        <td>${v.stop_rate==null?'—':fmt(v.stop_rate,0)+'%'}</td>
+        <td class="${(v.win_rate??0)>0?'up':'sub'}">${v.win_rate==null?'—':fmt(v.win_rate,0)+'%'}</td>
+        <td class="${(v.avg_return??0)>0?'up':'down'}">${pc(v.avg_return)}</td>
+        <td>${pc(v.median_return)}</td>
+        <td class="${noisy?'sub':''}">${v.t==null?'—':fmt(v.t,1)}</td></tr>`;
+    })];
   }).join('');
   return `<div class="lbl" style="margin-top:34px">Stop study
-      <span class="meta">closed signals only, replayed against other stop levels</span></div>
+      <span class="meta">closed signals only, replayed against other stop rules</span></div>
   <div class="mwrap"><table class="mtbl">
-    <thead><tr><th>Stop</th><th>n</th><th>+10% first</th><th>Stopped</th>
-      <th>Avg return</th><th>Median</th><th>t</th></tr></thead>
+    <thead><tr><th>Stop rule</th><th>n</th><th>+10% first</th><th>Stopped</th>
+      <th>Won</th><th>Avg return</th><th>Median</th><th>t</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
   <div class="note">${st.n_walkable} of ${st.n_signals} closed signals had price
     history reaching back to their signal date, which is what an order-of-events
@@ -1601,11 +1617,13 @@ function stopStudyHTML(){
       ? '◆ marks the best average return, not the best hit rate — widening a stop '
         +'always lifts the hit rate, so that column on its own argues for no stop at all.'
       : '<b>No variant returns a positive average</b>, so nothing is marked as best: '
-        +'the least-bad of five losing stop levels is not a recommendation. A negative '
-        +'edge is not fixed by moving the stop.'}
+        +'the least-bad rule is not a recommendation.'}
     <b>t</b> below 2 means the average is inside the noise
-    whatever its sign; the levels here were not searched for, but five variants
-    over one dataset is still five chances for noise to look like a finding.
+    whatever its sign. The rules here were not searched for — round percentages,
+    breakeven, and the strategy's own Darvas box — but picking the best row
+    afterwards is still selection, and nine variants over one dataset is nine
+    chances for noise to look like a finding. Treat a winner here as a
+    hypothesis to test forward, not a settled answer.
     Computed ${(st.computed_at||'').slice(0,10)}.</div>`;
 }
 

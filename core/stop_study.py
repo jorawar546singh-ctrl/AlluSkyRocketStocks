@@ -1,30 +1,43 @@
 """
 What would a different stop have done?
 
-The live rule puts the stop just under the Darvas box bottom. That is one
-choice out of many, and the cost of it has never been measured -- so this
-replays every closed signal's actual bars against several stop levels and
-reports what each would have produced.
+The live rule puts the stop just under the Darvas box bottom and never moves
+it. Replay every closed signal's actual bars against other stop rules, both
+fixed and trailing, and report what each would have produced.
 
-The question asked is "what share reached +10% before the stop was touched",
-which is the order-of-events question walk() already answers. But that number
-ALONE is misleading, and dangerously so: a looser stop raises it mechanically
-(there is simply more room before you are taken out) while making every trade
-that never recovers lose more. So each variant also reports the average return
-it would have produced, which is the number that actually decides anything.
+Why trailing rules are here
+---------------------------
+A fixed stop below the entry price cannot produce a winning exit. The only
+ways a position closes are: fall back to that stop (a loss by definition),
+expire, or fade. Measured on the real history, 100% of signals that reached
++10% still closed negative -- as did 100% of those that reached +50%, and
+100% of those that doubled. That is not a statistic about the strategy, it is
+an arithmetic consequence of the exit design, and it makes the entry's quality
+unmeasurable: you cannot detect edge through an exit incapable of winning.
 
-Exit rule used for the return, matching how the system now behaves: exit at
-the stop if it is touched, otherwise hold to the end of the tracking window.
-Reaching +10% does NOT exit -- see core.lifecycle.CLOSE_ON_TARGET.
+A trailing stop ratchets upward as the position gains, so a move that goes
++50% and gives half of it back still books a profit. That is the mechanism
+being tested.
+
+Intraday ordering
+-----------------
+Daily bars do not say whether the high or the low came first, so two rules
+keep this honest:
+
+  * The stop is checked BEFORE it is ratcheted by the same bar's high. A
+    position cannot be stopped out at a level that only this bar's high
+    created.
+  * The signal day itself is skipped entirely (see lifecycle.walk): a Darvas
+    entry happens intraday on a break above the box, and that bar's low
+    usually predates the entry.
 
 On reading these results
 ------------------------
-Five variants over one dataset is five chances for noise to look like signal.
-The levels here are deliberately NOT searched for: 5/7/10% are conventional
-round numbers and the box bottom is the strategy's own rule, so none of them
-were chosen by looking at the answer first. A difference of a point or two
-between adjacent variants is noise. The t column is avg/(sd/sqrt(n)); below
-2 the average is not distinguishable from zero whatever its sign.
+Nine variants over one dataset is nine chances for noise to look like signal.
+The levels are deliberately not searched for -- round percentages, breakeven,
+and the strategy's own Darvas box -- but picking the best row afterwards is
+still selection. The t column is avg/(sd/sqrt(n)); below 2 the average is not
+distinguishable from zero whatever its sign.
 """
 from __future__ import annotations
 
@@ -36,30 +49,99 @@ import pandas as pd
 from core.lifecycle import walk
 
 TARGET_PCT = 10.0
-# (label, how to derive the stop price from the signal row)
-VARIANTS: list[tuple[str, str]] = [
-    ("5% below entry", "pct:5"),
-    ("7% below entry", "pct:7"),
-    ("10% below entry", "pct:10"),
-    ("under box bottom", "box"),
-    ("as signalled", "signalled"),
+DARVAS_DAYS = 14
+
+# (label, kind, params). kind "fixed" never moves the stop; "trail" ratchets.
+VARIANTS: list[tuple[str, str, dict]] = [
+    ("5% below entry",        "fixed", {"init": "pct:5"}),
+    ("7% below entry",        "fixed", {"init": "pct:7"}),
+    ("10% below entry",       "fixed", {"init": "pct:10"}),
+    ("under box bottom",      "fixed", {"init": "box"}),
+    ("as signalled",          "fixed", {"init": "signalled"}),
+    ("breakeven at +10%",     "trail", {"init": "signalled", "breakeven_at": 10.0}),
+    ("trail 10% below high",  "trail", {"init": "signalled", "trail_pct": 10.0}),
+    ("trail 20% below high",  "trail", {"init": "signalled", "trail_pct": 20.0}),
+    ("trail 14d Darvas low",  "trail", {"init": "signalled", "darvas_days": DARVAS_DAYS}),
 ]
 
 
-def _stop_for(spec: str, s: dict) -> float | None:
+def _initial_stop(spec: str, s: dict) -> float | None:
     entry = s.get("price")
     if not entry:
         return None
     if spec.startswith("pct:"):
         return entry * (1 - float(spec.split(":")[1]) / 100)
     if spec == "box":
-        # The strategy's own rule: just under the box bottom. Slightly under,
-        # because a stop exactly at the bottom is hit by every probe of it.
         bb = s.get("box_bottom")
-        return bb * 0.995 if bb else None
+        return bb * 0.995 if bb else None     # a stop AT the bottom is hit by every probe
     if spec == "signalled":
         return s.get("suggested_stop")
     return None
+
+
+def _frame_after(df: pd.DataFrame, scan_date: str):
+    d = df.dropna(subset=["High", "Low", "Close"])
+    if getattr(d.index, "tz", None) is not None:
+        d = d.copy()
+        d.index = d.index.tz_localize(None)
+    return d
+
+
+def simulate(df, scan_date, entry, init_stop, *, trail_pct=None,
+             breakeven_at=None, darvas_days=None, target_pct=TARGET_PCT) -> dict | None:
+    """Replay one signal under one stop rule.
+
+    Returns {ret_pct, stopped, hit10_before_stop, exit_date} or None when the
+    bars cannot support a walk.
+    """
+    if df is None or df.empty or not entry or entry <= 0:
+        return None
+    d = _frame_after(df, scan_date)
+    sig = pd.Timestamp(scan_date)
+    # The rolling Darvas low is computed on the FULL frame so the window at the
+    # first post-signal bar still looks back over real prior bars.
+    roll_low = (d["Low"].rolling(darvas_days).min() if darvas_days else None)
+    d2 = d[d.index > sig]
+    if d2.empty:
+        return None
+
+    stop = init_stop
+    high = entry
+    target = entry * (1 + target_pct / 100)
+    hit10 = None
+
+    for ts, bar in d2.iterrows():
+        lo, hi = float(bar["Low"]), float(bar["High"])
+
+        # 1. Stop first, against the level as it stood BEFORE this bar.
+        if stop is not None and lo <= stop:
+            return {"ret_pct": (stop / entry - 1) * 100, "stopped": True,
+                    "hit10_before_stop": bool(hit10) if hit10 is not None else False,
+                    "exit_date": ts.strftime("%Y-%m-%d")}
+
+        # 2. The +10% milestone, recorded but never an exit.
+        if hit10 is None and hi >= target:
+            hit10 = True
+
+        # 3. Ratchet, using this bar's high. The stop never moves down.
+        high = max(high, hi)
+        new = stop
+        if breakeven_at is not None and high >= entry * (1 + breakeven_at / 100):
+            new = entry if new is None else max(new, entry)
+        if trail_pct is not None:
+            cand = high * (1 - trail_pct / 100)
+            new = cand if new is None else max(new, cand)
+        if darvas_days is not None and roll_low is not None:
+            rl = roll_low.get(ts)
+            if rl is not None and pd.notna(rl):
+                new = float(rl) if new is None else max(new, float(rl))
+        stop = new
+
+    # Never stopped: held to the end of the available window.
+    last = float(d2["Close"].iloc[-1])
+    return {"ret_pct": (last / entry - 1) * 100, "stopped": False,
+            "hit10_before_stop": bool(hit10) if hit10 is not None else False,
+            "exit_date": d2.index[-1].strftime("%Y-%m-%d")}
 
 
 def _stats(vals: list[float]) -> dict:
@@ -67,7 +149,8 @@ def _stats(vals: list[float]) -> dict:
     if not n:
         return {"n": 0, "avg": None, "median": None, "sd": None, "t": None}
     avg = sum(vals) / n
-    med = sorted(vals)[n // 2] if n % 2 else sum(sorted(vals)[n // 2 - 1:n // 2 + 1]) / 2
+    sv = sorted(vals)
+    med = sv[n // 2] if n % 2 else (sv[n // 2 - 1] + sv[n // 2]) / 2
     sd = (sum((v - avg) ** 2 for v in vals) / (n - 1)) ** 0.5 if n > 1 else None
     t = (avg / (sd / n ** 0.5)) if (sd and sd > 0) else None
     return {"n": n, "avg": round(avg, 2), "median": round(med, 2),
@@ -76,13 +159,8 @@ def _stats(vals: list[float]) -> dict:
 
 
 def run(signals: list[dict], frames: dict, suffix: str = "") -> dict:
-    """Replay `signals` against every stop variant.
-
-    signals : rows carrying ticker, scan_date, price, box_bottom, suggested_stop
-    frames  : {ticker+suffix -> daily OHLC DataFrame} covering each signal's life
-    """
     out = {"computed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-           "target_pct": TARGET_PCT, "variants": [], "n_signals": 0,
+           "target_pct": TARGET_PCT, "variants": [], "n_signals": len(signals),
            "n_walkable": 0}
 
     usable = []
@@ -90,44 +168,41 @@ def run(signals: list[dict], frames: dict, suffix: str = "") -> dict:
         df = frames.get(s["ticker"] + suffix)
         if df is None or df.empty or not s.get("price"):
             continue
-        # Only signals whose bars actually reach back to the signal date can
-        # answer an order-of-events question. See lifecycle.walk_complete.
-        probe = walk(df, s["scan_date"], s["price"], None, TARGET_PCT)
-        if not probe["walk_complete"]:
+        # Only signals whose bars reach back to the signal date can answer an
+        # order-of-events question. See lifecycle.walk_complete.
+        if not walk(df, s["scan_date"], s["price"], None, TARGET_PCT)["walk_complete"]:
             continue
         usable.append((s, df))
-    out["n_signals"] = len(signals)
     out["n_walkable"] = len(usable)
 
-    for label, spec in VARIANTS:
-        hit10, rets, stopped, skipped = [], [], 0, 0
+    for label, kind, params in VARIANTS:
+        rets, hit10, stopped, skipped = [], [], 0, 0
         for s, df in usable:
-            stop = _stop_for(spec, s)
-            if stop is None:
+            init = _initial_stop(params["init"], s)
+            if init is None:
                 skipped += 1
                 continue
-            w = walk(df, s["scan_date"], s["price"], stop, TARGET_PCT)
-            hit10.append(bool(w["hit10_before_stop"]))
-            if w["hit_stop"]:
-                stopped += 1
-                rets.append((w["exit_price"] / s["price"] - 1) * 100)
-            else:
-                # Not stopped: held to the end of the available window.
-                d = df.dropna(subset=["Close"])
-                if getattr(d.index, "tz", None) is not None:
-                    d = d.copy()
-                    d.index = d.index.tz_localize(None)
-                d = d[d.index >= pd.Timestamp(s["scan_date"])]
-                if len(d):
-                    rets.append((float(d["Close"].iloc[-1]) / s["price"] - 1) * 100)
-        n = len(hit10)
+            kw = {k: v for k, v in params.items() if k != "init"}
+            r = simulate(df, s["scan_date"], s["price"], init, **kw)
+            if r is None:
+                skipped += 1
+                continue
+            rets.append(r["ret_pct"])
+            hit10.append(r["hit10_before_stop"])
+            stopped += int(r["stopped"])
+        n = len(rets)
         st = _stats(rets)
         out["variants"].append({
             "label": label,
+            "kind": kind,
             "n": n,
             "skipped": skipped,
             "hit10_rate": round(100 * sum(hit10) / n, 1) if n else None,
             "stop_rate": round(100 * stopped / n, 1) if n else None,
+            # Share of signals that actually closed in profit. Under every
+            # fixed-stop rule this is near zero by construction, which is the
+            # whole reason the trailing variants exist.
+            "win_rate": round(100 * sum(1 for v in rets if v > 0) / n, 1) if n else None,
             "avg_return": st["avg"],
             "median_return": st["median"],
             "sd": st["sd"],
