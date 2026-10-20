@@ -1319,8 +1319,12 @@ function renderStale(){
   // by the time the export runs. Every "Now" and "Gain" below comes from this
   // bar, so when it is not the latest trading day it has to say so -- PAYS
   // showed Friday's 14.80 as "Now" while it was trading at 15.44.
-  const bars=mkt().bars_through;
-  if(bars && tradingDaysBetween(bars,gen)>=1)
+  // Compared against the last CLOSED session, not the calendar. Before
+  // today's close yesterday's bar is the current price, and the first version
+  // of this compared dates -- so it would have cried stale every morning,
+  // which teaches you to ignore the one banner that matters.
+  const bars=mkt().bars_through, due=mkt().session_expected;
+  if(bars && due && bars < due)
     return box('stale-bad','⚠',
       `Prices below are from <b>${bars}</b>, not today. Every <b>Now</b>, `+
       `<b>Gain</b> and <b>status</b> on this page is that session's — the feed `+

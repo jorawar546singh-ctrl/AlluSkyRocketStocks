@@ -21,7 +21,7 @@ dashboard renders them as em-dashes. The payload always writes.
 """
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -383,6 +383,31 @@ def _apply_lifecycle(signals: list[dict], hist: dict, cfg) -> None:
           + ("…" if len(to_persist) > 6 else ""))
 
 
+# Hour (UTC) after which that market's daily bar for the day should exist.
+# US/CA close at 20:00 UTC in EDT and 21:00 in EST; NSE at 10:00. Each gets an
+# hour of slack, because a feed that has only just closed has not published.
+_CLOSE_HOUR_UTC = {"US": 22, "CA": 22, "IN": 11}
+
+
+def _last_session(market: str) -> str:
+    """The most recent trading day whose close has already happened.
+
+    Deliberately not "today's date minus one": at 12:00 UTC on a Tuesday the US
+    market has not opened, so Monday's bar is current and nothing is stale. And
+    at 01:00 UTC on a Tuesday it is still Monday evening in New York, so Monday
+    IS the session being waited on. A calendar comparison gets both wrong in
+    opposite directions.
+    """
+    close_h = _CLOSE_HOUR_UTC.get(market, 22)
+    now = datetime.now(timezone.utc)
+    d = now.date()
+    if not (d.weekday() < 5 and now.hour >= close_h):
+        d -= timedelta(days=1)
+    while d.weekday() >= 5:              # back over the weekend
+        d -= timedelta(days=1)
+    return d.isoformat()
+
+
 def _health(con, key: str) -> dict:
     """Did the scanner actually run, and what did it see?
 
@@ -520,6 +545,12 @@ def export():
                 # is visible rather than silently passed off as live.
                 "bars_through": max((s.get("last_bar") for s in signals
                                      if s.get("last_bar")), default=None),
+                # The newest bar that COULD exist right now. Staleness is
+                # bars_through < this, never a calendar comparison: before
+                # today's close, yesterday's bar is the current price, and a
+                # banner that says otherwise every morning trains you to
+                # ignore it.
+                "session_expected": _last_session(key),
                 # Computed weekly by run_stop_study.py, not here: it needs
                 # price history for closed signals, which this export
                 # deliberately no longer downloads. None until it first runs.
