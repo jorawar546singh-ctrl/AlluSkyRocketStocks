@@ -21,7 +21,7 @@ dashboard renders them as em-dashes. The payload always writes.
 """
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -259,6 +259,57 @@ def _coerce_flags(s: dict) -> dict:
     return s
 
 
+# Everything enrich() derives from the price frame. Restored as a set, because
+# they all come from the same fetch and mixing two fetches would be worse than
+# either one alone.
+_PRICE_FIELDS = (
+    "now_price", "gain_pct", "close", "prev_close", "day_change_pct", "volume",
+    "avg_volume_50d", "vol_ratio_50d", "high_52w", "dist_52w_high_pct",
+    "new_52w_high", "streak", "peak_streak", "spark", "max_gain_pct",
+    "max_dd_pct", "vol_today", "box_today", "box_bottom_now", "box_top_now",
+    "box_pos", "clean_entry", "entry_stop_now", "entry_risk_now", "status",
+    "last_bar", "awaiting_close", "pinned_buyout", "days_to_earnings",
+)
+
+
+def _keep_newest_bar(signals: list[dict], prior: dict | None) -> int:
+    """Never let a fresh fetch replace a newer bar with an older one.
+
+    The feed does not always return the most recent session. Measured on three
+    consecutive nights, the 22:0x export captured Thursday's close for DCOM at
+    42.52 and the 00:0x export two hours later came back one session short and
+    wrote 40.72 over it. The dashboard then showed Wednesday's price as today's
+    for the next fifteen hours.
+
+    Whatever the feed's reason, writing older data over newer is never right,
+    so the previous payload's bar date acts as a high-water mark: if this fetch
+    is behind it, the previous run's price fields are kept intact.
+
+    This is a display guard only. The signal rows, the close lifecycle and the
+    outcome backfills all read the database, not this file.
+    """
+    if not prior:
+        return 0
+    old = {s["id"]: s for s in prior.get("signals", []) if s.get("id") is not None}
+    restored = 0
+    for s in signals:
+        o = old.get(s.get("id"))
+        if not o:
+            continue
+        new_bar, old_bar = s.get("last_bar"), o.get("last_bar")
+        # Only when the previous run genuinely saw a LATER session.
+        if not old_bar or not new_bar or old_bar <= new_bar:
+            continue
+        for f in _PRICE_FIELDS:
+            if f in o:
+                s[f] = o[f]
+        restored += 1
+    if restored:
+        print(f"  enrich: feed came back stale for {restored} signal(s); kept the "
+              f"newer prices from the previous export")
+    return restored
+
+
 def _apply_lifecycle(signals: list[dict], hist: dict, cfg) -> None:
     """Decide which signals are now closed, and record how they ended.
 
@@ -332,6 +383,31 @@ def _apply_lifecycle(signals: list[dict], hist: dict, cfg) -> None:
           + ("…" if len(to_persist) > 6 else ""))
 
 
+# Hour (UTC) after which that market's daily bar for the day should exist.
+# US/CA close at 20:00 UTC in EDT and 21:00 in EST; NSE at 10:00. Each gets an
+# hour of slack, because a feed that has only just closed has not published.
+_CLOSE_HOUR_UTC = {"US": 22, "CA": 22, "IN": 11}
+
+
+def _last_session(market: str) -> str:
+    """The most recent trading day whose close has already happened.
+
+    Deliberately not "today's date minus one": at 12:00 UTC on a Tuesday the US
+    market has not opened, so Monday's bar is current and nothing is stale. And
+    at 01:00 UTC on a Tuesday it is still Monday evening in New York, so Monday
+    IS the session being waited on. A calendar comparison gets both wrong in
+    opposite directions.
+    """
+    close_h = _CLOSE_HOUR_UTC.get(market, 22)
+    now = datetime.now(timezone.utc)
+    d = now.date()
+    if not (d.weekday() < 5 and now.hour >= close_h):
+        d -= timedelta(days=1)
+    while d.weekday() >= 5:              # back over the weekend
+        d -= timedelta(days=1)
+    return d.isoformat()
+
+
 def _health(con, key: str) -> dict:
     """Did the scanner actually run, and what did it see?
 
@@ -376,6 +452,18 @@ def export():
     stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
     payload = {"generated": stamp, "markets": {}}
     history = {"generated": stamp, "markets": {}}
+
+    # The payload this run is about to replace, read before anything overwrites
+    # it. Used only as a high-water mark for the price bar -- see
+    # _keep_newest_bar. Missing or unreadable is fine: the guard just does
+    # nothing, which is exactly the old behaviour.
+    prior_payload: dict = {}
+    if os.path.exists(DASHBOARD_JSON):
+        try:
+            with open(DASHBOARD_JSON) as f:
+                prior_payload = (json.load(f).get("markets") or {})
+        except Exception as e:                              # noqa: BLE001
+            print(f"  export: could not read the previous payload ({e})")
     with connect() as con:
         for key, cfg in MARKETS.items():
             sig = pd.read_sql_query(
@@ -394,6 +482,7 @@ def export():
             # every export, forever, to no purpose.
             signals = [_coerce_flags(s) for s in signals]
             hist = enrich(signals, cfg)
+            _keep_newest_bar(signals, prior_payload.get(key))
             # Signals are CLOSED, never deleted. The old rule dropped a
             # signal once it stopped trending, so the record quietly rewrote
             # itself to survivors only and any win/loss count taken from it
@@ -456,6 +545,12 @@ def export():
                 # is visible rather than silently passed off as live.
                 "bars_through": max((s.get("last_bar") for s in signals
                                      if s.get("last_bar")), default=None),
+                # The newest bar that COULD exist right now. Staleness is
+                # bars_through < this, never a calendar comparison: before
+                # today's close, yesterday's bar is the current price, and a
+                # banner that says otherwise every morning trains you to
+                # ignore it.
+                "session_expected": _last_session(key),
                 # Computed weekly by run_stop_study.py, not here: it needs
                 # price history for closed signals, which this export
                 # deliberately no longer downloads. None until it first runs.

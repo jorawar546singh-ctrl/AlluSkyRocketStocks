@@ -45,25 +45,35 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Decide market from trigger time
+      - name: Decide market from the schedule that fired
         id: mkt
         run: |
-          HOUR=$(date -u +%H)
-          # Only the 19:00 UTC cron is the mid-session run. Detect it by the
-          # schedule string itself rather than hour math, so it can't drift.
-          if [ "${{ github.event.schedule }}" = "0 19 * * 1-5" ]; then
-            echo "intraday=--intraday" >> "$GITHUB_OUTPUT"
-            echo "markets=US CA" >> "$GITHUB_OUTPUT"
-          else
-            echo "intraday=" >> "$GITHUB_OUTPUT"
-            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              echo "markets=US IN CA" >> "$GITHUB_OUTPUT"   # manual run does all three
-            elif [ "$HOUR" -ge 15 ]; then
-              echo "markets=US CA" >> "$GITHUB_OUTPUT"   # TSX closes same time as US (4pm ET)
-            else
-              echo "markets=IN" >> "$GITHUB_OUTPUT"
-            fi
-          fi
+          # Routed by the SCHEDULE STRING, never by the clock.
+          #
+          # GitHub runs scheduled workflows late -- 2.5 to 5 hours late on this
+          # repo, every day. The old code special-cased the 19:00 cron by its
+          # schedule string and then fell back to hour math for the rest, so
+          # the delay silently rerouted everything:
+          #
+          #   10:30 India cron fired ~15:30 -> HOUR>=15 -> scanned US/CA as a
+          #     "close" run, at 11:30am ET, with the US market still OPEN;
+          #   19:00 US intraday cron fired ~22:00 -> ran "intraday" two hours
+          #     AFTER the close;
+          #   21:30 US close cron fired ~00:05 -> HOUR<15 -> scanned India.
+          #
+          # India got the US close slot, the US close run happened mid-session,
+          # and the intraday run happened post-close. Each cron now states its
+          # own market and mode, so a late start changes when it runs and
+          # nothing else.
+          case "${{ github.event.schedule }}" in
+            "0 19 * * 1-5")   M="US CA"; I="--intraday" ;;   # mid-session US/CA
+            "30 21 * * 1-5")  M="US CA"; I="" ;;             # after the US/CA close
+            "30 10 * * 1-5")  M="IN";    I="" ;;             # after the NSE close
+            *)                M="US IN CA"; I="" ;;          # manual run: all three
+          esac
+          echo "markets=$M" >> "$GITHUB_OUTPUT"
+          echo "intraday=$I" >> "$GITHUB_OUTPUT"
+          echo "routing: schedule='${{ github.event.schedule }}' -> markets=$M intraday='$I'"
 
       # Tips land BEFORE the scan so a ticker mentioned overnight is in the
       # universe this run rather than next. Non-fatal on purpose: a Discord
