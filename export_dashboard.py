@@ -259,6 +259,57 @@ def _coerce_flags(s: dict) -> dict:
     return s
 
 
+# Everything enrich() derives from the price frame. Restored as a set, because
+# they all come from the same fetch and mixing two fetches would be worse than
+# either one alone.
+_PRICE_FIELDS = (
+    "now_price", "gain_pct", "close", "prev_close", "day_change_pct", "volume",
+    "avg_volume_50d", "vol_ratio_50d", "high_52w", "dist_52w_high_pct",
+    "new_52w_high", "streak", "peak_streak", "spark", "max_gain_pct",
+    "max_dd_pct", "vol_today", "box_today", "box_bottom_now", "box_top_now",
+    "box_pos", "clean_entry", "entry_stop_now", "entry_risk_now", "status",
+    "last_bar", "awaiting_close", "pinned_buyout", "days_to_earnings",
+)
+
+
+def _keep_newest_bar(signals: list[dict], prior: dict | None) -> int:
+    """Never let a fresh fetch replace a newer bar with an older one.
+
+    The feed does not always return the most recent session. Measured on three
+    consecutive nights, the 22:0x export captured Thursday's close for DCOM at
+    42.52 and the 00:0x export two hours later came back one session short and
+    wrote 40.72 over it. The dashboard then showed Wednesday's price as today's
+    for the next fifteen hours.
+
+    Whatever the feed's reason, writing older data over newer is never right,
+    so the previous payload's bar date acts as a high-water mark: if this fetch
+    is behind it, the previous run's price fields are kept intact.
+
+    This is a display guard only. The signal rows, the close lifecycle and the
+    outcome backfills all read the database, not this file.
+    """
+    if not prior:
+        return 0
+    old = {s["id"]: s for s in prior.get("signals", []) if s.get("id") is not None}
+    restored = 0
+    for s in signals:
+        o = old.get(s.get("id"))
+        if not o:
+            continue
+        new_bar, old_bar = s.get("last_bar"), o.get("last_bar")
+        # Only when the previous run genuinely saw a LATER session.
+        if not old_bar or not new_bar or old_bar <= new_bar:
+            continue
+        for f in _PRICE_FIELDS:
+            if f in o:
+                s[f] = o[f]
+        restored += 1
+    if restored:
+        print(f"  enrich: feed came back stale for {restored} signal(s); kept the "
+              f"newer prices from the previous export")
+    return restored
+
+
 def _apply_lifecycle(signals: list[dict], hist: dict, cfg) -> None:
     """Decide which signals are now closed, and record how they ended.
 
@@ -376,6 +427,18 @@ def export():
     stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
     payload = {"generated": stamp, "markets": {}}
     history = {"generated": stamp, "markets": {}}
+
+    # The payload this run is about to replace, read before anything overwrites
+    # it. Used only as a high-water mark for the price bar -- see
+    # _keep_newest_bar. Missing or unreadable is fine: the guard just does
+    # nothing, which is exactly the old behaviour.
+    prior_payload: dict = {}
+    if os.path.exists(DASHBOARD_JSON):
+        try:
+            with open(DASHBOARD_JSON) as f:
+                prior_payload = (json.load(f).get("markets") or {})
+        except Exception as e:                              # noqa: BLE001
+            print(f"  export: could not read the previous payload ({e})")
     with connect() as con:
         for key, cfg in MARKETS.items():
             sig = pd.read_sql_query(
@@ -394,6 +457,7 @@ def export():
             # every export, forever, to no purpose.
             signals = [_coerce_flags(s) for s in signals]
             hist = enrich(signals, cfg)
+            _keep_newest_bar(signals, prior_payload.get(key))
             # Signals are CLOSED, never deleted. The old rule dropped a
             # signal once it stopped trending, so the record quietly rewrote
             # itself to survivors only and any win/loss count taken from it
