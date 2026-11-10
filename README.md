@@ -8,14 +8,6 @@ universe -> bulk history -> trend gate (4 checks) -> Darvas trigger (14d box, 2x
 -> RS percentile rank -> SQLite -> analyzer backfills 7/14/30d outcomes
 -> data.json -> dashboard (GitHub Pages) + Telegram digest
 
-The US universe approximates the original Finviz screen on Yahoo, which is
-what GitHub Actions can reach. The screener query keeps US names inside the
-price band with 3-month average volume above 300k; after the daily bars are
-downloaded, a post-filter keeps relative volume (last session / ~20-day
-average ≥ 1.5) and 1-week performance (close vs five sessions ago > +5%).
-Finviz is still tried and any rows it returns are kept, but the scan does
-not depend on it. India and Canada are unchanged.
-
 ## Setup on the existing repo
 1. Copy these files over the repo root (legacy CSVs can stay until migration is confirmed)
 2. Run once locally or via Actions:

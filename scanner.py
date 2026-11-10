@@ -259,10 +259,9 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
     elif len(bare) >= 50:
         _save_universe(cfg.key, bare)
 
-    # Tips from Discord / the manual watchlist join the universe. They skip the
-    # US bar filter (that is the screener's admission rule; a tip is how a name
-    # the screener missed still gets looked at) and then face the same trend
-    # gate and Darvas trigger as everything else.
+    # Tips from Discord / the manual watchlist join the universe -- they do not
+    # bypass anything downstream, they just get looked at. A screener that only
+    # ever sees what the screener found cannot act on an idea from outside it.
     mentioned = uni.mentioned_recently(cfg.key)
     extra = [t for t in mentioned if t not in set(bare)]
     if extra:
@@ -293,27 +292,6 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
     stats["fetched"] = len(histories)
     stats["regime"] = mkt_regime.get("label")
     print(f"  market regime: {mkt_regime['label']} ({mkt_regime['detail']})")
-
-    # US only. Yahoo's screener already required region, the price band and
-    # 3-month average volume. Finviz's other two clauses — relative volume
-    # >= 1.5 and 1-week performance > +5% — are measured on the bars just
-    # downloaded. Mentions stay: a tip is here because someone named it.
-    # India and Canada are not screened this way.
-    #
-    # stats["universe"] stays the builder's count. The collapse check compares
-    # it with recent ok runs, and those runs predate this filter; writing the
-    # smaller post-filter count there would mark every quiet day degraded
-    # and then freeze the median, because degraded runs are excluded from it.
-    if cfg.key == "US":
-        before = len(histories)
-        histories, dropped = uni.filter_us_histories(
-            histories, cfg.ticker_suffix, exempt=set(mentioned))
-        print(f"  universe: bar filter kept {len(histories)}/{before} "
-              f"(rel vol >= {uni.YAHOO_MIN_REL_VOL}, "
-              f"1w > {uni.YAHOO_MIN_WEEK_PERF:.0%}; dropped {dropped})")
-        if before and not histories:
-            uni._warn("US bar filter removed every candidate — "
-                      "relative volume / 1-week check kept nothing")
 
     # 1) Trend gate — kills ineligible stocks before the trigger ever runs
     eligible: dict[str, dict] = {}
