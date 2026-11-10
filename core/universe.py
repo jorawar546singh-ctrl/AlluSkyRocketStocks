@@ -1,9 +1,6 @@
 """
 Universe builders. Ported from v1 (ttm_scanner / nifty_scanner), trimmed.
-US : Yahoo screener (region, price, 3-month average volume) plus a bar
-     post-filter for relative volume and 1-week performance. That pair
-     approximates the original Finviz screen. Finviz is still queried and
-     kept when it answers, and is never required.
+US : Finviz screener + Yahoo most-active/gainers (scrape, fail-soft)
 IN : live NSE archives CSV -> bundled data/nifty500.csv fallback
 Any layer that fails prints a loud warning so failures surface in the
 Actions log and the Telegram digest instead of dying silently.
@@ -73,18 +70,6 @@ def _warn(msg: str):
 # the gate, the right answer is a smaller floor, not the old one.
 US_MIN_MARKET_CAP = 0
 
-# Original Finviz screen this scanner is meant to mirror:
-#   sh_avgvol_o300   3-month average volume over 300k
-#   sh_relvol_o1.5   relative volume over 1.5
-#   ta_perf_1w5o     1-week performance over +5%
-# plus a price floor near $2, appended from cfg in us_universe().
-#
-# Yahoo approximates the same four rules without Finviz. The EquityQuery
-# applies US region, the price band, and avgdailyvol3m > 300k. Relative
-# volume and the 1-week move are not screener fields in that form, so
-# passes_yahoo_bar_filters() measures them on the daily bars the scan
-# already downloads. Finviz stays an optional bonus when the export or
-# HTML scrape actually returns rows.
 FINVIZ_FILTER_BASE = "sh_avgvol_o300,sh_relvol_o1.5,ta_perf_1w5o"
 FINVIZ_HEADERS = {
     "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -280,10 +265,8 @@ def _price_filter(cfg) -> str:
 #
 # These screens are chosen to overlap the Finviz filter's intent -- movers on
 # unusual volume -- rather than to be a broad market list. The response carries
-# price and average volume per name, so those two are applied on the quotes.
-# Relative volume and 1-week performance are applied later, on daily bars
-# (passes_yahoo_bar_filters): Yahoo's screener has no operand that matches
-# Finviz's sh_relvol_o1.5 or ta_perf_1w5o.
+# price, volume and average volume per name, so the same numeric filters get
+# applied locally instead of trusting a remote preset.
 YAHOO_SCREENS = (
     "day_gainers",
     "most_actives",
@@ -292,14 +275,7 @@ YAHOO_SCREENS = (
     "growth_technology_stocks",
     "undervalued_growth_stocks",
 )
-YAHOO_MIN_AVG_VOL = 300_000     # Finviz sh_avgvol_o300 (the "300" is thousands)
-YAHOO_MIN_REL_VOL = 1.5         # Finviz sh_relvol_o1.5
-YAHOO_MIN_WEEK_PERF = 0.05      # Finviz ta_perf_1w5o: strictly over +5%
-# Prior sessions used as the relative-volume baseline, today excluded so the
-# session being judged cannot lift its own denominator. Finviz divides by the
-# 3-month average; ~20 sessions is the same window the Darvas trigger already
-# uses for vol_ratio. A shorter history fails the check.
-YAHOO_REL_VOL_SESSIONS = 20
+YAHOO_MIN_AVG_VOL = 300_000     # matches the Finviz sh_avgvol_o300 clause
 
 
 def _quotes_of(res) -> list[dict]:
@@ -334,61 +310,6 @@ def _keep(cfg, quotes, seen: set) -> list[str]:
     return out
 
 
-def passes_yahoo_bar_filters(df: pd.DataFrame) -> bool:
-    """Relative volume and 1-week performance, measured on daily bars.
-
-    Yahoo approximates Finviz here. The screener query already required US
-    region, the price band, and 3-month average volume over 300k. These two
-    clauses of FINVIZ_FILTER_BASE have no matching screener operand, so they
-    are checked on the OHLCV the scan downloads for every candidate:
-
-      relative volume     last volume / mean(prior ~20 sessions) >= 1.5
-      1-week performance  close[-1] / close[-6] - 1 > +5%
-
-    Today is left out of the volume baseline. Fail closed when there are not
-    enough bars to measure either one: a missing bar is not a pass.
-    """
-    if df is None or df.empty:
-        return False
-    if "Close" not in df.columns or "Volume" not in df.columns:
-        return False
-    d = df.dropna(subset=["Close", "Volume"])
-    need = max(YAHOO_REL_VOL_SESSIONS + 1, 6)
-    if len(d) < need:
-        return False
-    vol_today = float(d["Volume"].iloc[-1])
-    vol_avg = float(d["Volume"].iloc[-(YAHOO_REL_VOL_SESSIONS + 1):-1].mean())
-    if not (vol_avg > 0) or vol_today / vol_avg < YAHOO_MIN_REL_VOL:
-        return False
-    prev_close = float(d["Close"].iloc[-6])
-    last_close = float(d["Close"].iloc[-1])
-    if not (prev_close > 0):
-        return False
-    # close[-1] / close[-6] - 1, written as a difference so an exact +5%
-    # (10.50 vs 10.00) does not pass on floating-point dust.
-    return (last_close - prev_close) / prev_close > YAHOO_MIN_WEEK_PERF
-
-
-def filter_us_histories(histories: dict, suffix: str = "",
-                        exempt: set | None = None) -> tuple[dict, int]:
-    """Drop US frames that miss the Finviz relative-volume / 1-week rules.
-
-    `exempt` is bare tickers that skip the check (mentions: a tip is in the
-    universe because someone named it, not because a screener returned it).
-    India and Canada do not call this. Returns (kept, dropped_count).
-    """
-    exempt = {(s or "").strip().upper() for s in (exempt or set())}
-    kept: dict = {}
-    dropped = 0
-    for ticker, df in histories.items():
-        bare = ticker.removesuffix(suffix) if suffix else ticker
-        if bare.upper() in exempt or passes_yahoo_bar_filters(df):
-            kept[ticker] = df
-        else:
-            dropped += 1
-    return kept, dropped
-
-
 def _yahoo_screener(cfg, target: int = 400) -> list[str]:
     """Tickers from Yahoo's screener, via yfinance.
 
@@ -399,13 +320,10 @@ def _yahoo_screener(cfg, target: int = 400) -> list[str]:
     this project, so reusing it costs nothing and removes a second thing to
     keep working.
 
-    A custom query first: US region, the configured price band, and 3-month
-    average volume over 300k (Finviz's sh_avgvol_o300). Sorted by percent
-    change so the day's movers come first -- that is where breakouts live,
-    and it matters because the list is capped. Relative volume and the
-    1-week move are applied afterwards on daily bars, not in this query.
-    Then the predefined screens top it up with names the custom query
-    ranked too low.
+    A custom query first, replicating the Finviz filter's intent on real
+    numbers, sorted by percent change so the day's movers come first -- that is
+    where breakouts live, and it matters because the list is capped. Then the
+    predefined screens top it up with names the custom query ranked too low.
     """
     import yfinance as yf
 
@@ -418,9 +336,7 @@ def _yahoo_screener(cfg, target: int = 400) -> list[str]:
             EQ("eq", ["region", "us"]),
             EQ("gt", ["intradayprice", float(cfg.min_price)]),
             EQ("lt", ["intradayprice", float(cfg.max_price)]),
-            # 3-month average volume, not today's print. dayvolume let a
-            # one-off session pass the average-volume rule.
-            EQ("gt", ["avgdailyvol3m", YAHOO_MIN_AVG_VOL]),
+            EQ("gt", ["dayvolume", YAHOO_MIN_AVG_VOL]),
         ]
         # Only when a floor is actually set -- see US_MIN_MARKET_CAP.
         if US_MIN_MARKET_CAP > 0:
@@ -459,11 +375,11 @@ MENTION_DAYS = 14   # a tip older than this is not a fresh idea any more
 def mentioned_recently(market_key: str, days: int = MENTION_DAYS) -> list[str]:
     """Tickers someone flagged lately (Discord, manual list).
 
-    These are ADDED to the universe, not substituted for it. They skip the US
-    relative-volume / 1-week bar filter, which is the screener's admission
-    rule — a tip exists so a name the screener missed still gets looked at.
-    Once in, a tip earns a signal by passing the same trend gate, Darvas
-    trigger and price bounds as everything else.
+    These are ADDED to the universe, not substituted for it, and they get no
+    special treatment once there -- same trend gate, same Darvas trigger, same
+    price bounds. A tip earns a signal by passing the screen like anything
+    else. The point is only that a stock nobody screened for still gets looked
+    at when someone points at it.
 
     Imported lazily so a db without the mentions table (or a fresh checkout)
     cannot break the scan.
@@ -487,10 +403,9 @@ def us_universe(cfg) -> list[str]:
     filt = f"{FINVIZ_FILTER_BASE},{pf}"
     print(f"  universe: price filter -> {pf}  (from cfg: ${cfg.min_price}-${cfg.max_price})")
 
-    # Yahoo first. It is the source that actually answers from a datacenter IP.
-    # The query enforces region, price and 3-month average volume. Relative
-    # volume and the 1-week move are applied in the scanner once daily bars
-    # exist (filter_us_histories); they are not screener fields.
+    # Yahoo first. It is the source that actually answers from a datacenter IP,
+    # and it carries price/volume per name so the filters are applied on real
+    # numbers rather than a remote preset.
     tickers = _yahoo_screener(cfg)
     print(f"  universe: Yahoo screeners -> {len(tickers)} tickers")
 
