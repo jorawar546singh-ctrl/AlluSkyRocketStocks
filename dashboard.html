@@ -65,6 +65,16 @@
   .empty{border:1px solid var(--hair);padding:36px 28px;color:var(--sec);
          font-family:var(--mono);font-size:13px;background:var(--panel)}
 
+
+  /* ---------- pipeline picks (pipeline.json, written by the box consolidation routine) ---------- */
+  .pp-tbl tbody tr{cursor:default}
+  .pp-tbl td.wrap{white-space:normal;text-align:left;font-family:var(--grot);font-size:12.5px;color:var(--sec);max-width:280px}
+  .pp-trend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .pp-chip{border:1px solid var(--hair);background:var(--panel);padding:8px 12px;font-family:var(--mono);font-size:12px}
+  .pp-chip b{font-weight:600;margin-right:8px}
+  .pp-chip small{display:block;color:var(--sec);font-size:10px;letter-spacing:.06em;margin-top:2px}
+  .pp-notes{margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--sec)}
+
   /* ---------- filter bar ---------- */
   .fbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:8px}
   .fbar .grp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -382,6 +392,9 @@
   <div id="regime"></div>
   <div class="lbl">Primary candidate <span class="meta" id="pmeta"></span></div>
   <div id="primary"></div>
+
+  <div class="lbl">Pipeline picks <span class="meta" id="ppmeta"></span></div>
+  <div id="pipeline"><div class="empty">Loading pipeline…</div></div>
 
   <div class="lbl">Signal watchlist <span class="meta" id="wmeta"></span></div>
 
@@ -1725,8 +1738,50 @@ function monthEdgeHTML(){
 
 ['fStreak','fAgeMin','fAgeMax','fGainMin','fGainMax'].forEach(id=>
   document.getElementById(id).addEventListener('input',renderTable));
+
+// ---------- Pipeline picks ----------
+// pipeline.json is committed separately (weekday consolidation routine) and is
+// independent of data.json: a missing or bad file only empties this panel.
+function ppEsc(x){return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function ppNum(x,d=2){return x==null?'—':Number(x).toFixed(d);}
+function ppTime(iso){
+  if(!iso) return '—';
+  const d=new Date(iso); if(isNaN(d)) return ppEsc(iso);
+  return d.toLocaleString('en-US',{timeZone:'America/Vancouver',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' PT';
+}
+async function loadPipeline(){
+  const el=document.getElementById('pipeline'), meta=document.getElementById('ppmeta');
+  let P=null;
+  try{ const r=await fetch('pipeline.json?'+Date.now()); P=r.ok?await r.json():null; }catch(e){ P=null; }
+  if(!P){ el.innerHTML='<div class="empty">No pipeline qualifiers today (pipeline.json not published yet).</div>'; return; }
+  meta.textContent='US · updated '+ppTime(P.generated_at)+(P.source_scrape_at?' · scrape '+ppTime(P.source_scrape_at):'');
+  const Q=P.qualifiers||[], T=P.trending||[], H=P.holding_notes||[];
+  let out='';
+  if(Q.length){
+    out+=`<div class="mwrap"><table class="pp-tbl"><thead><tr><th>Ticker</th><th>Close</th><th>Max buy</th><th>Stop</th><th>Lock</th><th>Vol ×</th><th style="text-align:left">Reddit</th><th style="text-align:left">Catalyst</th></tr></thead><tbody>`+
+      Q.map(q=>{const rd=q.reddit||{}; const rn=[rd.sentiment,rd.note].filter(Boolean).join(' · ');
+        return `<tr><td><span class="tick-cell">${ppEsc(q.ticker)}</span>${q.name?`<div class="sub">${ppEsc(q.name)}</div>`:''}</td>`+
+        `<td>${ppNum(q.close)}</td><td class="acc">${ppNum(q.max_buy)}</td><td class="down">${ppNum(q.stop)}</td><td class="up">${ppNum(q.lock)}</td>`+
+        `<td>${q.volume_ratio==null?'—':ppNum(q.volume_ratio,1)+'×'}</td><td class="wrap">${ppEsc(rn)||'—'}</td><td class="wrap">${ppEsc(q.catalyst)||'—'}</td></tr>`;}).join('')+
+      `</tbody></table></div>`;
+  } else {
+    out+='<div class="empty">No pipeline qualifiers today.</div>';
+  }
+  if(T.length){
+    out+=`<div class="lbl" style="margin-top:26px">Trending from Nasdaq/Finviz scrape <span class="meta">context only, not buy signals</span></div><div class="pp-trend">`+
+      T.slice(0,10).map(t=>{const pc=t.pct_change;
+        return `<div class="pp-chip" title="${ppEsc(t.name)}"><b>${ppEsc(t.ticker)}</b>${ppNum(t.price)} `+
+        `<span class="${pc==null?'':pc>=0?'up':'down'}">${pc==null?'':(pc>=0?'+':'')+ppNum(pc)+'%'}</span>`+
+        `<small>${ppEsc(t.source)}${t.status_note?' · '+ppEsc(t.status_note):''}</small></div>`;}).join('')+`</div>`;
+  }
+  if(H.length){
+    out+='<div class="pp-notes">'+H.map(h=>(h.ticker?'<b class="acc">'+ppEsc(h.ticker)+'</b> ':'')+ppEsc(h.note)).join('<br>')+'</div>';
+  }
+  el.innerHTML=out;
+}
 document.getElementById('fSort').addEventListener('change',renderTable);
 load();
+loadPipeline();
 </script>
 </body>
 </html>

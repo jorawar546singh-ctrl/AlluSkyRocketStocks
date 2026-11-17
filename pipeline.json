@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-11-17T13:06:45-07:00",
+  "source_scrape_at": "2026-11-17T12:59:12-07:00",
+  "qualifiers": [],
+  "trending": [
+    {
+      "ticker": "SLS",
+      "name": "SELLAS Life Sciences Group Inc",
+      "price": 19.37,
+      "pct_change": 159.3,
+      "volume": 105034447,
+      "source": "Finviz screen, Nasdaq most active (shares), Nasdaq top gainers",
+      "status_note": null
+    },
+    {
+      "ticker": "ACM",
+      "name": "AECOM",
+      "price": 81.96,
+      "pct_change": 13.04,
+      "volume": 2325342,
+      "source": "Finviz screen",
+      "status_note": null
+    },
+    {
+      "ticker": "LFTO",
+      "name": "Liftoff Mobile Inc",
+      "price": 22.77,
+      "pct_change": -6.91,
+      "volume": 1502500,
+      "source": "Finviz screen",
+      "status_note": null
+    },
+    {
+      "ticker": "BKHAU",
+      "name": "Black Hawk Acquisition Corporation",
+      "price": 15.3,
+      "pct_change": 91.49,
+      "volume": null,
+      "source": "Nasdaq top gainers",
+      "status_note": null
+    },
+    {
+      "ticker": "SPCX",
+      "name": "Space Exploration Technologies Corp. Class A Common Stock",
+      "price": 141.3,
+      "pct_change": 2.87,
+      "volume": 67471671,
+      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "AVGO",
+      "name": "Broadcom Inc.",
+      "price": 337.77,
+      "pct_change": 1.31,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla, Inc.",
+      "price": 379.86,
+      "pct_change": 0.03,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon.com, Inc.",
+      "price": 256.57,
+      "pct_change": -0.46,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "price": 350.82,
+      "pct_change": -0.55,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms, Inc.",
+      "price": 619.91,
+      "pct_change": -1.04,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    }
+  ],
+  "holding_notes": []
+}
