@@ -1,98 +1,107 @@
 {
-  "generated_at": "2026-11-17T13:06:45-07:00",
-  "source_scrape_at": "2026-11-17T12:59:12-07:00",
+  "generated_at": "2026-11-17T17:18:23-07:00",
+  "source_scrape_at": "2026-11-17T14:34:08-07:00",
   "qualifiers": [],
   "trending": [
     {
       "ticker": "SLS",
       "name": "SELLAS Life Sciences Group Inc",
-      "price": 19.37,
-      "pct_change": 159.3,
-      "volume": 105034447,
+      "price": 19.15,
+      "pct_change": 156.36,
+      "volume": 118611170,
       "source": "Finviz screen, Nasdaq most active (shares), Nasdaq top gainers",
-      "status_note": null
+      "status_note": "Not buyable: +156% on Phase 3 AML data (vol 17.8x), 54% above box top 12.44; $150M stock offering filed after close. Needs a new base to form; far too extended."
     },
     {
       "ticker": "ACM",
       "name": "AECOM",
-      "price": 81.96,
-      "pct_change": 13.04,
-      "volume": 2325342,
+      "price": 80.53,
+      "pct_change": 11.08,
+      "volume": 4152480,
       "source": "Finviz screen",
-      "status_note": null
+      "status_note": "Trending up, NOT buyable: +11% on Q4 beat/FY27 guide raise (vol 2.9x), but close 80.53 is 10% above box top 73.20 (max buy 75.40). Needs a pullback to <=75.40 or a new box to form above. Reddit mixed, info only."
+    },
+    {
+      "ticker": "SNAP",
+      "name": "Snap Inc",
+      "price": 5.5,
+      "pct_change": 8.06,
+      "volume": 74914916,
+      "source": "Finviz screen",
+      "status_note": "Under $10 (5.50): excluded."
     },
     {
       "ticker": "LFTO",
       "name": "Liftoff Mobile Inc",
-      "price": 22.77,
-      "pct_change": -6.91,
-      "volume": 1502500,
+      "price": 22.68,
+      "pct_change": -7.28,
+      "volume": 2393835,
       "source": "Finviz screen",
-      "status_note": null
+      "status_note": "Below 14-day box top 25.96 (-12.6%); down 7% today. Uptrend intact but no breakout."
     },
     {
       "ticker": "BKHAU",
       "name": "Black Hawk Acquisition Corporation",
-      "price": 15.3,
-      "pct_change": 91.49,
+      "price": 16.15,
+      "pct_change": 102.13,
       "volume": null,
       "source": "Nasdaq top gainers",
-      "status_note": null
+      "status_note": "SPAC unit, no trend history: excluded."
     },
     {
       "ticker": "SPCX",
       "name": "Space Exploration Technologies Corp. Class A Common Stock",
-      "price": 141.3,
-      "pct_change": 2.87,
-      "volume": 67471671,
+      "price": 141.7,
+      "pct_change": 3.16,
+      "volume": 86472792,
       "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Below box top 148.20 (-4.4%), under 50-day avg, volume 0.9x; short history."
     },
     {
       "ticker": "AVGO",
       "name": "Broadcom Inc.",
-      "price": 337.77,
-      "pct_change": 1.31,
+      "price": 341.6,
+      "pct_change": 2.46,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Below box top 369.82 (-7.6%), volume 1.0x. Needs close above 369.82 on >=1.5x volume."
     },
     {
       "ticker": "TSLA",
       "name": "Tesla, Inc.",
-      "price": 379.86,
-      "pct_change": 0.03,
+      "price": 380.11,
+      "pct_change": 0.1,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Below box top 414.23 (-8.2%), volume 0.6x."
     },
     {
       "ticker": "AMZN",
       "name": "Amazon.com, Inc.",
-      "price": 256.57,
-      "pct_change": -0.46,
+      "price": 257.89,
+      "pct_change": 0.05,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Below box top 275.34 (-6.3%), volume 0.9x. Needs breakout on >=1.5x volume."
     },
     {
-      "ticker": "AAPL",
-      "name": "Apple Inc.",
-      "price": 350.82,
-      "pct_change": -0.55,
+      "ticker": "AMD",
+      "name": "Advanced Micro Devices, Inc.",
+      "price": 503.41,
+      "pct_change": -0.17,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
-    },
-    {
-      "ticker": "META",
-      "name": "Meta Platforms, Inc.",
-      "price": 619.91,
-      "pct_change": -1.04,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Below box top 594 (-15%), under 20/50-day avg."
     }
   ],
-  "holding_notes": []
+  "holding_notes": [
+    {
+      "ticker": "DEO",
+      "note": "HOLD: close 100.73 (stop-limit 90.41, lock 110.76 not reached). Box top 102.72 / new box forming. Reddit bearish but threads are stale (Jan-Feb 2026); info only, no news that changes the plan."
+    },
+    {
+      "ticker": "EXEL",
+      "note": "Stopped out today at 66.65 (13 sh); no longer a holding."
+    }
+  ]
 }
