@@ -58,17 +58,18 @@ def _warn(msg: str):
 # gappy names were also the likeliest to form wide/messy boxes (BLZE, CLSK).
 # Minimum market cap for the US universe. 0 = no floor.
 #
-# Was $300M (Finviz's "cap_smallover"), which did not match the screener
-# preset this scanner is meant to mirror -- that one sets Market Cap to Any.
-# The gap was not academic: of 11 names the preset returned on 2026-10-19, SIX
-# were below $300M and so could never be found however well everything else
-# worked (BYRN $121M, ENGS $167M, EXYN $22M, SITC $187M, TCRT $9M, XLAB $103M).
+# Re-enabled at $300M (Finviz's "cap_smallover") on 2026-11-20 at the user's
+# request. It had been removed on 2026-10-19 (commit 9560dbb) because the
+# screener preset this scanner was meant to mirror set Market Cap to Any, and
+# of 11 names that preset returned that day, six were below $300M (BYRN $121M,
+# ENGS $167M, EXYN $22M, SITC $187M, TCRT $9M, XLAB $103M).
 #
-# The $2 price floor and the 300K average-volume floor still exclude shells,
-# which is what a cap floor was really guarding against. Watch the trend-gate
-# pass rate after this: if the universe fills with microcaps that never clear
-# the gate, the right answer is a smaller floor, not the old one.
-US_MIN_MARKET_CAP = 0
+# The Yahoo custom query already honors this constant. When the floor is >0,
+# Finviz also gets cap_smallover, and scanner.py applies a final guard after
+# the Darvas trigger so Yahoo predefined screens, most-active/gainers pages,
+# and mentions cannot sneak a name under the floor into the signal list.
+# Canada and India are unchanged.
+US_MIN_MARKET_CAP = 300_000_000
 
 FINVIZ_FILTER_BASE = "sh_avgvol_o300,sh_relvol_o1.5,ta_perf_1w5o"
 FINVIZ_HEADERS = {
@@ -397,11 +398,95 @@ def mentioned_recently(market_key: str, days: int = MENTION_DAYS) -> list[str]:
         return []
 
 
+
+def lookup_market_cap(ticker: str) -> float | None:
+    """Market cap in USD, or None if it cannot be fetched.
+
+    Tries yfinance fast_info first, then the slower info dict. A failure
+    must return None so the caller can keep the name rather than drop it:
+    a data error must not silently lose a signal.
+    """
+    try:
+        import yfinance as yf
+        t = yf.Ticker(ticker)
+        cap = None
+        try:
+            fi = t.fast_info
+            cap = getattr(fi, "market_cap", None)
+            if cap is None and hasattr(fi, "get"):
+                cap = fi.get("marketCap") or fi.get("market_cap")
+        except Exception:                                  # noqa: BLE001
+            cap = None
+        if not cap:
+            try:
+                info = t.info or {}
+                cap = info.get("marketCap") or info.get("market_cap")
+            except Exception:                              # noqa: BLE001
+                cap = None
+        if cap is None:
+            return None
+        cap = float(cap)
+        return cap if cap > 0 else None
+    except Exception as e:                                 # noqa: BLE001
+        print(f"  market-cap: could not fetch {ticker} ({e})")
+        return None
+
+
+def apply_market_cap_floor(hits: dict, floor: int, caps: dict,
+                           bare=None) -> tuple[dict, list, list]:
+    """Split hits into kept, dropped-under-floor, and unknown-cap.
+
+    caps maps each hit key to a USD market cap, or None if lookup failed.
+    A missing or non-positive cap is treated as unknown and the name is kept.
+    """
+    kept, dropped, unknown = {}, [], []
+    for t, d in hits.items():
+        name = bare(t) if bare else t
+        cap = caps.get(t)
+        if cap is None or cap <= 0:
+            unknown.append(name)
+            kept[t] = d
+        elif cap < floor:
+            dropped.append((name, cap))
+        else:
+            kept[t] = d
+    return kept, dropped, unknown
+
+
+def filter_us_hits_by_market_cap(hits: dict, suffix: str = "") -> dict:
+    """Drop US Darvas hits under US_MIN_MARKET_CAP.
+
+    Lookups that fail keep the name (and are logged) so a data error cannot
+    silently lose a signal. No-op when the floor is 0 or hits is empty.
+    """
+    if US_MIN_MARKET_CAP <= 0 or not hits:
+        return hits
+    caps = {t: lookup_market_cap(t) for t in hits}
+    kept, dropped, unknown = apply_market_cap_floor(
+        hits, US_MIN_MARKET_CAP, caps,
+        bare=lambda t: t.removesuffix(suffix))
+    detail = ", ".join(f"{s} (${c/1e6:.0f}M)" for s, c in dropped)
+    print(f"  market-cap floor: dropped {len(dropped)} under "
+          f"${US_MIN_MARKET_CAP/1e6:.0f}M"
+          f"{f' ({detail})' if detail else ''}")
+    if unknown:
+        print(f"  market-cap floor: kept {len(unknown)} with unknown cap "
+              f"({', '.join(unknown)}) — not dropped on a data error")
+    return kept
+
+
 def us_universe(cfg) -> list[str]:
     tickers: list[str] = []
     pf = _price_filter(cfg)
-    filt = f"{FINVIZ_FILTER_BASE},{pf}"
-    print(f"  universe: price filter -> {pf}  (from cfg: ${cfg.min_price}-${cfg.max_price})")
+    parts = [FINVIZ_FILTER_BASE, pf]
+    # cap_smallover is Finviz's $300M+ preset. Added only when a floor is
+    # set; the numeric guard in scanner.py is the real enforcement if the
+    # constant later moves off $300M.
+    if US_MIN_MARKET_CAP > 0:
+        parts.append("cap_smallover")
+    filt = ",".join(parts)
+    print(f"  universe: price filter -> {pf}  (from cfg: ${cfg.min_price}-${cfg.max_price})"
+          f"{'  cap_smallover' if US_MIN_MARKET_CAP > 0 else ''}")
 
     # Yahoo first. It is the source that actually answers from a datacenter IP,
     # and it carries price/volume per name so the filters are applied on real

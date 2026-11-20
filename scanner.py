@@ -317,6 +317,15 @@ def _scan(cfg, intraday: bool, stats: dict) -> list[dict]:
     print(f"  darvas trigger: {len(hits)} breakouts"
           f"{f'  ({dropped_by_price} dropped outside ${cfg.min_price}-${cfg.max_price})' if dropped_by_price else ''}")
 
+    # 2b) US market-cap floor. Applied after the trigger (and before anything
+    #     is saved) so Yahoo predefined screens, most-active/gainers pages,
+    #     and mentions — which have no cap filter of their own — cannot sneak
+    #     a microcap into the signal list. Lookups that fail keep the name.
+    #     Canada and India are left alone.
+    if cfg.key == "US":
+        hits = uni.filter_us_hits_by_market_cap(hits, cfg.ticker_suffix)
+        stats["breakouts"] = len(hits)
+
     # 3) RS percentile across everything scanned today (broad base = honest rank)
     rs = relative_strength.rank(histories, bench_df, cfg.rs_lookback_days)
 
