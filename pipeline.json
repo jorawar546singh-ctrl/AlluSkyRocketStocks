@@ -1,103 +1,103 @@
 {
-  "generated_at": "2026-11-18T17:20:00-07:00",
-  "source_scrape_at": "2026-11-18T14:32:22-07:00",
+  "generated_at": "2026-11-19T17:11:08-07:00",
+  "source_scrape_at": "2026-11-19T14:32:57-07:00",
   "qualifiers": [],
   "trending": [
     {
-      "ticker": "ATEN",
-      "name": "A10 Networks Inc",
-      "price": 32.36,
-      "pct_change": 10.52,
-      "volume": 1859089,
+      "ticker": "PANW",
+      "name": "Palo Alto Networks Inc",
+      "price": 361.73,
+      "pct_change": 6.42,
+      "volume": 19078177,
       "source": "Finviz screen",
-      "status_note": "Trending up but NOT buyable: +10.5% today (vol 1.6x), 9.3% above box top 29.62 (max buy 30.51). Needs a pullback to <=30.51 or a new box. Pipeline-only find (not in scanner data)."
-    },
-    {
-      "ticker": "BILL",
-      "name": "BILL Holdings Inc",
-      "price": 66.01,
-      "pct_change": 1.74,
-      "volume": 3790977,
-      "source": "Finviz screen",
-      "status_note": "Excluded: buyout. TPG reported days from a take-private deal (FT/Reuters Nov 17); closed 66.01, 0.9% over box top 65.45 on 2.2x vol, but the move is deal-driven. Reddit mixed, info only."
+      "status_note": "Rebounding (+6.4%, vol 3.06x) but still below 50-day (367) and 7.2% under box top 390. Needs a close above 390 on volume. Reddit mixed, info only; P/E extreme."
     },
     {
       "ticker": "CGON",
       "name": "Cg Oncology Inc",
-      "price": 80.0,
-      "pct_change": 1.34,
-      "volume": 1790308,
+      "price": 81.9,
+      "pct_change": 2.38,
+      "volume": 2520596,
       "source": "Finviz screen",
-      "status_note": "Uptrend but 14.8% below box top 93.95; vol 1.35x. No breakout. Reddit mixed, info only."
+      "status_note": "Uptrend (above 20/50-day) but 12.8% below box top 93.95; vol 1.87x. No breakout. Scanner also lists it."
     },
     {
-      "ticker": "SLS",
-      "name": "SELLAS Life Sciences Group Inc",
-      "price": 17.95,
-      "pct_change": -6.27,
-      "volume": 35498031,
+      "ticker": "ATEN",
+      "name": "A10 Networks Inc",
+      "price": 32.54,
+      "pct_change": 0.56,
+      "volume": 1891881,
       "source": "Finviz screen",
-      "status_note": "Not buyable: downtrend vs 50-day, -6% today after the Phase 3 spike and stock offering; 28% below its recent high. Reddit bullish, info only."
+      "status_note": "Trending up, not buyable: 5-day +11%, vol 1.67x, close 32.54 is 0.6% under 14-day box top 32.73, so no breakout yet. Needs a close above 32.73 (max buy ~33.71) on >=1.5x volume. Pipeline-only find (not in scanner). Reddit not searched."
     },
     {
-      "ticker": "RIBBU",
-      "name": "Ribbon Acquisition Corp Unit",
-      "price": 55.95,
-      "pct_change": 50.2,
+      "ticker": "FVNNU",
+      "name": "Future Vision II Acquisition Corporation",
+      "price": 67.0,
+      "pct_change": 71.36,
       "volume": null,
       "source": "Nasdaq top gainers",
       "status_note": null
     },
     {
-      "ticker": "PANW",
-      "name": "Palo Alto Networks, Inc.",
-      "price": 339.92,
-      "pct_change": 9.9,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "Below box top 390 (-12.8%), under 50-day avg despite +9.9% today."
+      "ticker": "ANT",
+      "name": "Anthropic, PBC Class A Common Stock",
+      "price": 97.17,
+      "pct_change": 17.07,
+      "volume": 847369894,
+      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
+      "status_note": "Newly listed; no usable daily history. Not evaluated."
     },
     {
-      "ticker": "AMD",
-      "name": "Advanced Micro Devices, Inc.",
-      "price": 530.14,
-      "pct_change": 5.31,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "Below box top 594 (-10.8%), under 50-day avg; up 5.3% today but no breakout."
+      "ticker": "INTC",
+      "name": "Intel Corporation",
+      "price": 55.72,
+      "pct_change": 1.92,
+      "volume": 131525967,
+      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
+      "status_note": "Downtrend: far below 50-day. Not buyable."
     },
     {
-      "ticker": "AMZN",
-      "name": "Amazon.com, Inc.",
-      "price": 267.74,
-      "pct_change": 3.82,
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "price": 349.21,
+      "pct_change": -0.92,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Uptrend, 2.8% below box top 275.34, vol 1.0x. Needs a breakout above 275.34 on >=1.5x volume."
+      "status_note": "Uptrend but 3.2% under box top 360.83, vol 0.94x. Needs a close above 360.83 on >=1.5x volume."
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft Corporation",
+      "price": 498.3,
+      "pct_change": -1.78,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": "Below box top by 10.9%, no breakout."
     },
     {
       "ticker": "AVGO",
       "name": "Broadcom Inc.",
-      "price": 354.05,
-      "pct_change": 3.64,
+      "price": 346.65,
+      "pct_change": -2.09,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Below box top 369.82 (-4.3%), under 50-day avg, vol 1.0x."
+      "status_note": "Near 50-day, 6.3% under box top 369.82, vol 1.0x. No breakout."
     },
     {
-      "ticker": "SPCX",
-      "name": "Space Exploration Technologies Corp. Class A Common Stock",
-      "price": 143.5,
-      "pct_change": 1.27,
-      "volume": 84907023,
-      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "Below box top 147.60 (-2.8%), under 50-day avg, vol 0.8x."
+      "ticker": "MU",
+      "name": "Micron Technology, Inc.",
+      "price": 690.44,
+      "pct_change": -2.1,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": "Downtrend: below 50-day (920), 24% under box top. Not buyable."
     }
   ],
   "holding_notes": [
     {
       "ticker": "DEO",
-      "note": "HOLD: close 99.69 (stop-limit 90.41, lock 110.76 not reached). Box top 102.72, new box still forming, no raise. Reddit bearish but threads stale (early 2026); info only, no news that changes the plan."
+      "note": "HOLD: close 98.33 (-1.4%), vol 0.89x, box top 102.72 still forming, stop 90.41, lock 110.76. Reddit found nothing recent."
     }
   ]
 }
