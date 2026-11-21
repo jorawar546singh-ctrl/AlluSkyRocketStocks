@@ -37,6 +37,7 @@ from core.db import connect
 from core.datafeed import fetch_history as _fetch_bench
 from core.signals import regime as _regime
 from core.stops import position_trailing_stop, watchlist_entry_stop
+from core.universe import US_MIN_MARKET_CAP, lookup_market_cap
 
 HISTORY_JSON = "history.json"
 # Closed signals move to their own file. All of them kept in data.json would
@@ -448,6 +449,71 @@ def _health(con, key: str) -> dict:
     return out
 
 
+
+def _prior_market_caps(prior_market: dict | None) -> dict[str, float]:
+    """Reuse caps already stamped on the previous dashboard payload."""
+    caps: dict[str, float] = {}
+    if not prior_market:
+        return caps
+    for s in prior_market.get("signals") or []:
+        t, cap = s.get("ticker"), s.get("market_cap")
+        if t and cap and cap > 0:
+            caps[t] = float(cap)
+    return caps
+
+
+def _apply_us_market_cap_floor(signals: list[dict],
+                               prior_market: dict | None) -> list[dict]:
+    """Keep displayed US signals at or above US_MIN_MARKET_CAP.
+
+    Caps already on the signal, or on the previous data.json, are reused.
+    Anything still missing is looked up once per ticker through
+    lookup_market_cap. A missing or failed cap keeps the name, matching
+    the scanner guard: a data error must not silently drop a signal.
+    Canada and India are not passed through this function.
+    """
+    if US_MIN_MARKET_CAP <= 0 or not signals:
+        return signals
+
+    caps = _prior_market_caps(prior_market)
+    for s in signals:
+        cap = s.get("market_cap")
+        if s.get("ticker") and cap and cap > 0:
+            caps[s["ticker"]] = float(cap)
+
+    missing = sorted({s["ticker"] for s in signals if s["ticker"] not in caps})
+    for t in missing:
+        caps[t] = lookup_market_cap(t)
+
+    kept, dropped, unknown = [], [], []
+    seen_drop, seen_unknown = set(), set()
+    for s in signals:
+        t = s["ticker"]
+        cap = caps.get(t)
+        if cap is not None and cap > 0:
+            s["market_cap"] = cap
+        if cap is None or cap <= 0:
+            if t not in seen_unknown:
+                unknown.append(t)
+                seen_unknown.add(t)
+            kept.append(s)
+        elif cap < US_MIN_MARKET_CAP:
+            if t not in seen_drop:
+                dropped.append((t, cap))
+                seen_drop.add(t)
+        else:
+            kept.append(s)
+
+    detail = ", ".join(f"{t} (${c/1e6:.0f}M)" for t, c in dropped)
+    print(f"  market-cap floor: hid {len(dropped)} US name(s) under "
+          f"${US_MIN_MARKET_CAP/1e6:.0f}M from the dashboard"
+          f"{f' ({detail})' if detail else ''}")
+    if unknown:
+        print(f"  market-cap floor: kept {len(unknown)} with unknown cap "
+              f"({', '.join(unknown)}) — not dropped on a data error")
+    return kept
+
+
 def export():
     stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
     payload = {"generated": stamp, "markets": {}}
@@ -510,6 +576,12 @@ def export():
             signals = [s for s in signals
                        if (s.get("age_days") or 0) <= RECENT_DAYS
                        or s.get("status") == "TRENDING"]
+            # Closing a signal does not take it off this list (a sub-30-day
+            # name still shows), so the US $300M floor has to be applied
+            # here or a microcap already in the db stays on the dashboard.
+            if key == "US":
+                signals = _apply_us_market_cap_floor(
+                    signals, prior_payload.get(key))
             history["markets"][key] = {"label": cfg.label,
                                        "currency": cfg.currency,
                                        "signals": closed}
