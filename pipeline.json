@@ -1,103 +1,103 @@
 {
-  "generated_at": "2026-11-19T17:11:08-07:00",
-  "source_scrape_at": "2026-11-19T14:32:57-07:00",
+  "generated_at": "2026-11-20T17:19:58-07:00",
+  "source_scrape_at": "2026-11-20T14:28:01-07:00",
   "qualifiers": [],
   "trending": [
     {
-      "ticker": "PANW",
-      "name": "Palo Alto Networks Inc",
-      "price": 361.73,
-      "pct_change": 6.42,
-      "volume": 19078177,
+      "ticker": "TSN",
+      "name": "Tyson Foods Inc",
+      "price": 65.12,
+      "pct_change": 1.97,
+      "volume": 5580679,
       "source": "Finviz screen",
-      "status_note": "Rebounding (+6.4%, vol 3.06x) but still below 50-day (367) and 7.2% under box top 390. Needs a close above 390 on volume. Reddit mixed, info only; P/E extreme."
+      "status_note": "Trending up, not buyable: above 20/50-day, +10.7% 5d, vol 1.93x, close 65.12 is 0.3% under 14-day box top 65.34. Needs a close above 65.34 (max buy ~67.30) on >=1.5x volume. Pipeline-only find (Finviz). Reddit not searched."
     },
     {
-      "ticker": "CGON",
-      "name": "Cg Oncology Inc",
-      "price": 81.9,
-      "pct_change": 2.38,
-      "volume": 2520596,
+      "ticker": "SLS",
+      "name": "SELLAS Life Sciences Group Inc",
+      "price": 13.66,
+      "pct_change": -8.08,
+      "volume": 15213336,
       "source": "Finviz screen",
-      "status_note": "Uptrend (above 20/50-day) but 12.8% below box top 93.95; vol 1.87x. No breakout. Scanner also lists it."
+      "status_note": "Biotech spike (+74% 5d, then -8% today); 45% below prior box top 24.89, below 50-day trend history. Not buyable."
     },
     {
-      "ticker": "ATEN",
-      "name": "A10 Networks Inc",
-      "price": 32.54,
-      "pct_change": 0.56,
-      "volume": 1891881,
-      "source": "Finviz screen",
-      "status_note": "Trending up, not buyable: 5-day +11%, vol 1.67x, close 32.54 is 0.6% under 14-day box top 32.73, so no breakout yet. Needs a close above 32.73 (max buy ~33.71) on >=1.5x volume. Pipeline-only find (not in scanner). Reddit not searched."
-    },
-    {
-      "ticker": "FVNNU",
-      "name": "Future Vision II Acquisition Corporation",
-      "price": 67.0,
-      "pct_change": 71.36,
+      "ticker": "MACI",
+      "name": "Melar Acquisition Corp. I",
+      "price": 13.3,
+      "pct_change": 62.2,
       "volume": null,
       "source": "Nasdaq top gainers",
-      "status_note": null
-    },
-    {
-      "ticker": "ANT",
-      "name": "Anthropic, PBC Class A Common Stock",
-      "price": 97.17,
-      "pct_change": 17.07,
-      "volume": 847369894,
-      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "Newly listed; no usable daily history. Not evaluated."
-    },
-    {
-      "ticker": "INTC",
-      "name": "Intel Corporation",
-      "price": 55.72,
-      "pct_change": 1.92,
-      "volume": 131525967,
-      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "Downtrend: far below 50-day. Not buyable."
+      "status_note": "SPAC (Melar Acquisition Corp.) +62% on 15.8x volume, 12% over box top; excluded as blank-check/not a playbook stock."
     },
     {
       "ticker": "AAPL",
       "name": "Apple Inc.",
-      "price": 349.21,
-      "pct_change": -0.92,
+      "price": 342.56,
+      "pct_change": -1.9,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Uptrend but 3.2% under box top 360.83, vol 0.94x. Needs a close above 360.83 on >=1.5x volume."
+      "status_note": "Near 50-day, 5.1% under box top 360.83, vol 1.89x on a down day. No breakout."
+    },
+    {
+      "ticker": "GOOG",
+      "name": "Alphabet Inc.",
+      "price": 264.0,
+      "pct_change": -2.59,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet Inc.",
+      "price": 265.29,
+      "pct_change": -2.7,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": "Downtrend vs 50-day, no breakout."
     },
     {
       "ticker": "MSFT",
       "name": "Microsoft Corporation",
-      "price": 498.3,
-      "pct_change": -1.78,
+      "price": 484.52,
+      "pct_change": -2.77,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Below box top by 10.9%, no breakout."
+      "status_note": "13% under box top; below-trend. No breakout."
     },
     {
-      "ticker": "AVGO",
-      "name": "Broadcom Inc.",
-      "price": 346.65,
-      "pct_change": -2.09,
+      "ticker": "AMZN",
+      "name": "Amazon.com, Inc.",
+      "price": 246.82,
+      "pct_change": -4.1,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Near 50-day, 6.3% under box top 369.82, vol 1.0x. No breakout."
+      "status_note": "10.4% under box top 275.34; no breakout."
     },
     {
-      "ticker": "MU",
-      "name": "Micron Technology, Inc.",
-      "price": 690.44,
-      "pct_change": -2.1,
+      "ticker": "META",
+      "name": "Meta Platforms, Inc.",
+      "price": 560.84,
+      "pct_change": -5.93,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Downtrend: below 50-day (920), 24% under box top. Not buyable."
+      "status_note": "Below 50-day, no breakout."
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla, Inc.",
+      "price": 345.82,
+      "pct_change": -7.64,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": "No breakout, 16% under box top."
     }
   ],
   "holding_notes": [
     {
       "ticker": "DEO",
-      "note": "HOLD: close 98.33 (-1.4%), vol 0.89x, box top 102.72 still forming, stop 90.41, lock 110.76. Reddit found nothing recent."
+      "note": "HOLD: close 97.07 (-1.3%), vol 0.91x, box top 102.72 still forming, stop 90.41, lock 110.76. No Reddit/news items found for it in today's data."
     }
   ]
 }
