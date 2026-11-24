@@ -1,103 +1,103 @@
 {
-  "generated_at": "2026-11-20T17:19:58-07:00",
-  "source_scrape_at": "2026-11-20T14:28:01-07:00",
+  "generated_at": "2026-11-23T17:19:13-07:00",
+  "source_scrape_at": "2026-11-23T14:28:42-07:00",
   "qualifiers": [],
   "trending": [
     {
-      "ticker": "TSN",
-      "name": "Tyson Foods Inc",
-      "price": 65.12,
-      "pct_change": 1.97,
-      "volume": 5580679,
+      "ticker": "KYMR",
+      "name": "Kymera Therapeutics Inc",
+      "price": 150.37,
+      "pct_change": 30.4,
+      "volume": 7757732,
       "source": "Finviz screen",
-      "status_note": "Trending up, not buyable: above 20/50-day, +10.7% 5d, vol 1.93x, close 65.12 is 0.3% under 14-day box top 65.34. Needs a close above 65.34 (max buy ~67.30) on >=1.5x volume. Pipeline-only find (Finviz). Reddit not searched."
+      "status_note": "Trending up, not buyable: +30% today on 8.6x volume, close 150.37 is 5.2% over box top 142.92 (max buy would be 147.21) - entry zone exceeded. Needs a pullback to <=147.21 or a new box; check catalyst/earnings first. Pipeline-only find. Reddit mixed (info only)."
+    },
+    {
+      "ticker": "ZS",
+      "name": "Zscaler Inc",
+      "price": 229.24,
+      "pct_change": 17.67,
+      "volume": 19084342,
+      "source": "Finviz screen",
+      "status_note": "Trending up, not buyable yet: +17.7% on 6.8x volume but close 229.24 is 0.3% under box top 229.85. Needs a close above 229.85 (max buy ~236.74) on >=1.5x volume; confirm earnings just passed. Pipeline-only find. Reddit mixed (info only)."
+    },
+    {
+      "ticker": "BRVE",
+      "name": "Braveheart Bio Inc",
+      "price": 23.23,
+      "pct_change": 13.93,
+      "volume": 1020319,
+      "source": "Finviz screen",
+      "status_note": "Biotech +14%, 6.3% over box top 21.85 and below a flat 50-day (no uptrend); over the 3% zone. Not buyable. Reddit bearish."
+    },
+    {
+      "ticker": "WWD",
+      "name": "Woodward Inc",
+      "price": 349.11,
+      "pct_change": 6.91,
+      "volume": 1197673,
+      "source": "Finviz screen",
+      "status_note": "Near breakout, not buyable yet: close 349.11 is 0.3% under box top 350.00, vol 1.49x, 50-day not yet rising. Needs close above 350.00 (max buy ~360.50) on >=1.5x volume. Pipeline-only find. Reddit bullish (info only)."
+    },
+    {
+      "ticker": "INSM",
+      "name": "Insmed Inc",
+      "price": 149.09,
+      "pct_change": 5.49,
+      "volume": 4619787,
+      "source": "Finviz screen",
+      "status_note": "Trending up, not buyable yet: above rising 50-day, +21% 5d, close 149.09 is 0.6% under box top 150.00; vol 1.36x (<1.5x). Needs close above 150.00 (max buy ~154.50) on >=1.5x volume. Pipeline-only find. Reddit mixed (info only)."
+    },
+    {
+      "ticker": "VVV",
+      "name": "Valvoline Inc",
+      "price": 37.68,
+      "pct_change": 3.94,
+      "volume": 4516667,
+      "source": "Finviz screen",
+      "status_note": "Trending up, not buyable yet: uptrend, close 37.68 is 1.0% under box top 38.07, vol 1.50x. Needs close above 38.07 (max buy ~39.21). Pipeline-only find. Reddit bullish (info only)."
+    },
+    {
+      "ticker": "GAP",
+      "name": "Gap Inc",
+      "price": 21.75,
+      "pct_change": 3.87,
+      "volume": 12227628,
+      "source": "Finviz screen",
+      "status_note": "Below 50-day, 9.3% under box top 23.99. No breakout."
+    },
+    {
+      "ticker": "PANW",
+      "name": "Palo Alto Networks Inc",
+      "price": 353.43,
+      "pct_change": 2.94,
+      "volume": 10085377,
+      "source": "Finviz screen",
+      "status_note": "Below 50-day, 4.5% under box top 370. No breakout."
     },
     {
       "ticker": "SLS",
       "name": "SELLAS Life Sciences Group Inc",
-      "price": 13.66,
-      "pct_change": -8.08,
-      "volume": 15213336,
+      "price": 13.3,
+      "pct_change": -2.64,
+      "volume": 14754094,
       "source": "Finviz screen",
-      "status_note": "Biotech spike (+74% 5d, then -8% today); 45% below prior box top 24.89, below 50-day trend history. Not buyable."
+      "status_note": "Biotech spike then fade; 46.6% under box top 24.89; scanner shows FADING. Not buyable."
     },
     {
-      "ticker": "MACI",
-      "name": "Melar Acquisition Corp. I",
-      "price": 13.3,
-      "pct_change": 62.2,
+      "ticker": "OTLY",
+      "name": "Oatly Group AB",
+      "price": 14.5,
+      "pct_change": 109.08,
       "volume": null,
       "source": "Nasdaq top gainers",
-      "status_note": "SPAC (Melar Acquisition Corp.) +62% on 15.8x volume, 12% over box top; excluded as blank-check/not a playbook stock."
-    },
-    {
-      "ticker": "AAPL",
-      "name": "Apple Inc.",
-      "price": 342.56,
-      "pct_change": -1.9,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "Near 50-day, 5.1% under box top 360.83, vol 1.89x on a down day. No breakout."
-    },
-    {
-      "ticker": "GOOG",
-      "name": "Alphabet Inc.",
-      "price": 264.0,
-      "pct_change": -2.59,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": null
-    },
-    {
-      "ticker": "GOOGL",
-      "name": "Alphabet Inc.",
-      "price": 265.29,
-      "pct_change": -2.7,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "Downtrend vs 50-day, no breakout."
-    },
-    {
-      "ticker": "MSFT",
-      "name": "Microsoft Corporation",
-      "price": 484.52,
-      "pct_change": -2.77,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "13% under box top; below-trend. No breakout."
-    },
-    {
-      "ticker": "AMZN",
-      "name": "Amazon.com, Inc.",
-      "price": 246.82,
-      "pct_change": -4.1,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "10.4% under box top 275.34; no breakout."
-    },
-    {
-      "ticker": "META",
-      "name": "Meta Platforms, Inc.",
-      "price": 560.84,
-      "pct_change": -5.93,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "Below 50-day, no breakout."
-    },
-    {
-      "ticker": "TSLA",
-      "name": "Tesla, Inc.",
-      "price": 345.82,
-      "pct_change": -7.64,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "No breakout, 16% under box top."
+      "status_note": "+109% on 115x volume, 71% over box top; far outside entry zone, not an uptrend. Not buyable."
     }
   ],
   "holding_notes": [
     {
       "ticker": "DEO",
-      "note": "HOLD: close 97.07 (-1.3%), vol 0.91x, box top 102.72 still forming, stop 90.41, lock 110.76. No Reddit/news items found for it in today's data."
+      "note": "Hold. Close 97.57 (Nov 23), stop 90.41, lock 110.76 not reached; box top 102.72, still no stop-raising box. Reddit bearish (info only). No new action."
     }
   ]
 }
