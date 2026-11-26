@@ -1,103 +1,120 @@
 {
-  "generated_at": "2026-11-24T17:13:33-07:00",
-  "source_scrape_at": "2026-11-24T14:34:45-07:00",
-  "qualifiers": [],
+  "generated_at": "2026-11-25T17:20:00-07:00",
+  "source_scrape_at": "2026-11-25T14:38:17-07:00",
+  "qualifiers": [
+    {
+      "ticker": "TGLS",
+      "name": "Tecnoglass Holdings Inc",
+      "close": 57.29,
+      "max_buy": 57.71,
+      "stop": 51.56,
+      "lock": 63.02,
+      "box_top": 56.03,
+      "volume_ratio": 2.72,
+      "catalyst": "Q3 beat: record revenue $310.6M (+19.2%), adj EPS $0.61, backlog record $1.43B, FY26 revenue guide raised to $1.10-1.14B (Nov 5); 52-wk high Nov 24, 12% weekly gain. Extended run: ~13% above prior box top 50.73 - chasing risk.",
+      "earnings_date": "2027-02-25",
+      "reddit": {
+        "sentiment": "n/a",
+        "note": "Not in Reddit scan today; info only."
+      }
+    }
+  ],
   "trending": [
-    {
-      "ticker": "AMTM",
-      "name": "Amentum Holdings Inc",
-      "price": 24.8,
-      "pct_change": 20.1,
-      "volume": 10171342,
-      "source": "Finviz screen",
-      "status_note": "Extended: +20% on 5.6x vol (EPS beat, first $500M buyback) but close 24.80 is 6.1% over box top 23.37 (max buy 24.07). Needs a pullback to <=24.07 or a new box. Reddit info only: bullish."
-    },
-    {
-      "ticker": "ANF",
-      "name": "Abercrombie & Fitch Co",
-      "price": 168.1,
-      "pct_change": 19.69,
-      "volume": 4698370,
-      "source": "Finviz screen",
-      "status_note": "Trending up, not buyable yet: +19.7% on 4.0x volume (Q3 beat, raised FY26 outlook = earnings just reported) but close 168.10 is 2.3% under 14-day box top 172.00. Needs a close above 172.00 (max buy ~177.16) on >=1.5x volume. Reddit info only: bullish."
-    },
     {
       "ticker": "COGT",
       "name": "Cogent Biosciences Inc",
-      "price": 33.01,
-      "pct_change": 17.43,
-      "volume": 7106010,
+      "price": 36.08,
+      "pct_change": 9.3,
+      "volume": 6124290,
       "source": "Finviz screen",
-      "status_note": "Not qualified: -3.0% vs 14-day box top 34.04, vol 3.19x, uptrend=False."
+      "status_note": "Not uptrend (50-day not rising) though +9.3% today, 2.7% over box top 35.13 on 2.62x vol. Fails trend rule. Reddit info only: bullish."
     },
     {
-      "ticker": "STOK",
-      "name": "Stoke Therapeutics Inc",
-      "price": 32.84,
-      "pct_change": 16.74,
-      "volume": 1619323,
+      "ticker": "RKT",
+      "name": "Rocket Companies Inc",
+      "price": 15.3,
+      "pct_change": 7.37,
+      "volume": 59525002,
       "source": "Finviz screen",
-      "status_note": "15% over box top, vol 1.47x, not uptrend - fails. Reddit info only: mixed."
+      "status_note": "Uptrend, 0.5% under box top 15.38 on 1.53x vol (+7.4% today). Needs close above 15.38 (max buy 15.84). Reddit info only: mixed."
     },
     {
-      "ticker": "KYMR",
-      "name": "Kymera Therapeutics Inc",
-      "price": 173.92,
-      "pct_change": 15.66,
-      "volume": 6447646,
+      "ticker": "BMRN",
+      "name": "Biomarin Pharmaceutical Inc",
+      "price": 68.86,
+      "pct_change": 3.77,
+      "volume": 4432662,
       "source": "Finviz screen",
-      "status_note": "Extended: close 173.92 is 7.7% over box top 161.49 on 6.1x vol (max buy 166.34). Needs pullback or new box. Reddit info only: bullish."
+      "status_note": "Not uptrend (50-day not rising) though 0.35% over box top 68.62 on 1.68x vol. Reddit info only: bullish."
     },
     {
-      "ticker": "INSM",
-      "name": "Insmed Inc",
-      "price": 170.15,
-      "pct_change": 14.13,
-      "volume": 78936185,
-      "source": "Finviz screen, Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "Extended: close 170.15 is 13.4% over box top 150.00 on 22.8x volume. Max buy 154.50 passed; needs pullback or new box; check catalyst. Reddit info only: bullish."
+      "ticker": "WLDSW",
+      "name": "Wearable Devices Ltd.",
+      "price": 71.18,
+      "pct_change": 73.61,
+      "volume": null,
+      "source": "Nasdaq top gainers",
+      "status_note": null
     },
     {
-      "ticker": "ERAS",
-      "name": "Erasca Inc",
-      "price": 15.83,
-      "pct_change": 13.97,
-      "volume": 10654149,
-      "source": "Finviz screen",
-      "status_note": "Not qualified: -8.7% vs 14-day box top 17.34, vol 1.91x, uptrend=False."
+      "ticker": "RIBBU",
+      "name": "Ribbon Acquisition Corp Unit",
+      "price": 95.17,
+      "pct_change": 68.89,
+      "volume": null,
+      "source": "Nasdaq top gainers",
+      "status_note": null
     },
     {
-      "ticker": "TRVI",
-      "name": "Trevi Therapeutics Inc",
-      "price": 15.34,
-      "pct_change": 12.22,
-      "volume": 3153330,
-      "source": "Finviz screen",
-      "status_note": "0.9% under box top 15.48, vol 1.46x, below $-trend (not uptrend) and price >=10 ok. Needs close above 15.48 on >=1.5x vol. Reddit info only: bullish."
+      "ticker": "META",
+      "name": "Meta Platforms, Inc.",
+      "price": 609.89,
+      "pct_change": 3.4,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
     },
     {
-      "ticker": "VRDN",
-      "name": "Viridian Therapeutics Inc",
-      "price": 35.7,
-      "pct_change": 11.95,
-      "volume": 3560674,
-      "source": "Finviz screen",
-      "status_note": "Extended 11.2% over box top and volume only 1.45x (<1.5x). Reddit info only: bullish."
+      "ticker": "SPCX",
+      "name": "Space Exploration Technologies Corp. Class A Common Stock",
+      "price": 127.44,
+      "pct_change": 1.3,
+      "volume": 145600323,
+      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
+      "status_note": null
     },
     {
-      "ticker": "CYTK",
-      "name": "Cytokinetics Inc",
-      "price": 59.9,
-      "pct_change": 11.36,
-      "volume": 3032385,
-      "source": "Finviz screen",
-      "status_note": "Not qualified: -7.8% vs 14-day box top 64.96, vol 1.45x, uptrend=False."
+      "ticker": "ANT",
+      "name": "Anthropic, PBC Class A Common Stock",
+      "price": 82.79,
+      "pct_change": 1.08,
+      "volume": 291721087,
+      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
+      "status_note": "New listing; insufficient Yahoo bars (<70 days) to run box/uptrend rules. Not evaluated."
+    },
+    {
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "price": 355.58,
+      "pct_change": 0.43,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
+    },
+    {
+      "ticker": "AVGO",
+      "name": "Broadcom Inc.",
+      "price": 300.86,
+      "pct_change": -0.07,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": null
     }
   ],
   "holding_notes": [
     {
       "ticker": "DEO",
-      "note": "Hold. Open: stop 90.41, lock 110.76 (not reached). No Reddit/news change noted; no manual stop raise."
+      "note": "HOLD. Close 101.76 (vol 0.82x), stop 90.41, lock 110.76 (+10%) not reached. Box top 102.72. Candidate box bottom 96.61 (Nov 23) has held 2 sessions; if Nov 26 low holds it confirms and trail would be 94.68 (only via trail mechanics, no manual raise). Reddit info only: bearish (5 undated search hits)."
     }
   ]
 }
