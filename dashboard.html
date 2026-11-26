@@ -74,6 +74,16 @@
   .pp-chip b{font-weight:600;margin-right:8px}
   .pp-chip small{display:block;color:var(--sec);font-size:10px;letter-spacing:.06em;margin-top:2px}
   .pp-notes{margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--sec)}
+  /* ---------- From ZipTrader (YouTube) (pipeline.json -> youtube) ---------- */
+  .yt-vids{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-family:var(--mono);font-size:12px}
+  .yt-vids a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair)}
+  .yt-vids a:hover{border-color:var(--amber)}
+  .yt-vids small{color:var(--sec);margin-left:8px}
+  .yt-note{font-family:var(--mono);font-size:11px;color:var(--sec);margin:10px 0 0;letter-spacing:.04em}
+  .yt-tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:2px 6px;border:1px solid var(--hair);text-transform:uppercase}
+  .yt-tag.q{color:#0B0B0D;background:var(--green);border-color:var(--green)}
+  .yt-tag.w{color:var(--blue);border-color:var(--blue)}
+  .yt-tag.x{color:var(--sec)}
 
   /* ---------- filter bar ---------- */
   .fbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:8px}
@@ -395,6 +405,9 @@
 
   <div class="lbl">Pipeline picks <span class="meta" id="ppmeta"></span></div>
   <div id="pipeline"><div class="empty">Loading pipeline…</div></div>
+
+  <div class="lbl">From ZipTrader (YouTube) <span class="meta" id="ytmeta"></span></div>
+  <div id="youtube"><div class="empty">Loading YouTube mentions…</div></div>
 
   <div class="lbl">Signal watchlist <span class="meta" id="wmeta"></span></div>
 
@@ -1753,6 +1766,7 @@ async function loadPipeline(){
   const el=document.getElementById('pipeline'), meta=document.getElementById('ppmeta');
   let P=null;
   try{ const r=await fetch('pipeline.json?'+Date.now()); P=r.ok?await r.json():null; }catch(e){ P=null; }
+  renderYouTube(P&&P.youtube);
   if(!P){ el.innerHTML='<div class="empty">No pipeline qualifiers today (pipeline.json not published yet).</div>'; return; }
   meta.textContent='US · updated '+ppTime(P.generated_at)+(P.source_scrape_at?' · scrape '+ppTime(P.source_scrape_at):'');
   const Q=P.qualifiers||[], T=P.trending||[], H=P.holding_notes||[];
@@ -1760,7 +1774,7 @@ async function loadPipeline(){
   if(Q.length){
     out+=`<div class="mwrap"><table class="pp-tbl"><thead><tr><th>Ticker</th><th>Close</th><th>Max buy</th><th>Stop</th><th>Lock</th><th>Vol ×</th><th style="text-align:left">Reddit</th><th style="text-align:left">Catalyst</th></tr></thead><tbody>`+
       Q.map(q=>{const rd=q.reddit||{}; const rn=[rd.sentiment,rd.note].filter(Boolean).join(' · ');
-        return `<tr><td><span class="tick-cell">${ppEsc(q.ticker)}</span>${q.name?`<div class="sub">${ppEsc(q.name)}</div>`:''}</td>`+
+        return `<tr><td><span class="tick-cell">${ppEsc(q.ticker)}</span>${q.name?`<div class="sub">${ppEsc(q.name)}</div>`:''}${q.source&&q.source.includes('youtube')?'<div class="sub acc">via ZipTrader (YouTube)</div>':''}</td>`+
         `<td>${ppNum(q.close)}</td><td class="acc">${ppNum(q.max_buy)}</td><td class="down">${ppNum(q.stop)}</td><td class="up">${ppNum(q.lock)}</td>`+
         `<td>${q.volume_ratio==null?'—':ppNum(q.volume_ratio,1)+'×'}</td><td class="wrap">${ppEsc(rn)||'—'}</td><td class="wrap">${ppEsc(q.catalyst)||'—'}</td></tr>`;}).join('')+
       `</tbody></table></div>`;
@@ -1777,6 +1791,35 @@ async function loadPipeline(){
   if(H.length){
     out+='<div class="pp-notes">'+H.map(h=>(h.ticker?'<b class="acc">'+ppEsc(h.ticker)+'</b> ':'')+ppEsc(h.note)).join('<br>')+'</div>';
   }
+  el.innerHTML=out;
+}
+// ---------- From ZipTrader (YouTube) ----------
+// Built from pipeline.json -> youtube (box: /home/box/shared/youtube_mentions.json). Context only:
+// a name is a buy candidate only when its playbook status is "qualifier" (it then also shows in Pipeline picks).
+function renderYouTube(Y){
+  const el=document.getElementById('youtube'), meta=document.getElementById('ytmeta');
+  if(!el) return;
+  if(!Y||!(Y.videos||[]).length){ meta.textContent=''; el.innerHTML='<div class="empty">No ZipTrader videos tracked yet.</div>'; return; }
+  meta.textContent='context only unless it passes the rules · checked '+ppTime(Y.checked_at)+(Y.asof_close?' · close '+ppEsc(Y.asof_close):'');
+  const V=Y.videos||[], S=Y.stocks||[], X=Y.sponsored_excluded||[];
+  let out='<div class="yt-vids">'+V.map(v=>`<div>▶ <a href="${ppEsc(v.url)}" target="_blank" rel="noopener">${ppEsc(v.title)}</a><small>${ppEsc(v.published_at||'')}</small></div>`).join('')+'</div>';
+  if(S.length){
+    out+=`<div class="mwrap"><table class="pp-tbl"><thead><tr><th>Ticker</th><th>Stance</th><th style="text-align:left">What was said</th><th style="text-align:left">Playbook status</th></tr></thead><tbody>`+
+      S.map(s=>{
+        const st=s.status||'watch', cls=st==='qualifier'?'q':st==='excluded'?'x':'w';
+        const stance=s.stance||'—', sc=stance==='bullish'?'up':stance==='bearish'?'down':'';
+        const ts=s.timestamp?` <a href="${ppEsc(s.video_url)}&t=${ppEsc(String(s.timestamp).split(':').reduce((a,b)=>a*60+(+b),0))}s" target="_blank" rel="noopener" class="sub">@${ppEsc(s.timestamp)}</a>`:'';
+        const lvl=s.creator_level?`<div class="sub">Level he's watching: ${ppEsc(s.creator_level)}</div>`:'';
+        const pb=st==='qualifier'
+          ? `<span class="yt-tag q">qualifier</span> max buy <b class="acc">${ppNum(s.max_buy)}</b> · stop <b class="down">${ppNum(s.stop)}</b> · lock <b class="up">${ppNum(s.lock)}</b>`
+          : `<span class="yt-tag ${cls}">${ppEsc(st)}</span> ${ppEsc(s.note)}`;
+        return `<tr><td><span class="tick-cell">${ppEsc(s.ticker)}</span>${s.company?`<div class="sub">${ppEsc(s.company)}</div>`:''}</td>`+
+          `<td class="${sc}">${ppEsc(stance)}</td><td class="wrap">${ppEsc(s.context)}${ts}${lvl}</td><td class="wrap">${pb}</td></tr>`;}).join('')+
+      `</tbody></table></div>`;
+  } else {
+    out+='<div class="empty">No stocks discussed in the latest tracked videos.</div>';
+  }
+  out+='<div class="yt-note">Sponsor reads and ads are excluded'+(X.length?': '+X.map(x=>ppEsc(x.ticker||x.name)).join(', '):' (none had tickers)')+'. These are the creator\'s opinions, not buy signals — only a "qualifier" passes the Darvas rules.</div>';
   el.innerHTML=out;
 }
 document.getElementById('fSort').addEventListener('change',renderTable);
