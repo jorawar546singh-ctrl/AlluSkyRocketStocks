@@ -16,7 +16,8 @@
       "reddit": {
         "sentiment": "n/a",
         "note": "Not in Reddit scan today; info only."
-      }
+      },
+      "source": "pipeline"
     }
   ],
   "trending": [
@@ -116,5 +117,181 @@
       "ticker": "DEO",
       "note": "HOLD. Close 101.76 (vol 0.82x), stop 90.41, lock 110.76 (+10%) not reached. Box top 102.72. Candidate box bottom 96.61 (Nov 23) has held 2 sessions; if Nov 26 low holds it confirms and trail would be 94.68 (only via trail mechanics, no manual raise). Reddit info only: bearish (5 undated search hits)."
     }
-  ]
+  ],
+  "youtube": {
+    "channel": {
+      "handle": "@ZipTrader",
+      "url": "https://www.youtube.com/@ziptrader"
+    },
+    "checked_at": "2026-11-26T02:31:46-07:00",
+    "asof_close": "2026-11-25",
+    "videos": [
+      {
+        "video_id": "TYPcEac-MTw",
+        "title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "published_at": "2026-11-25"
+      }
+    ],
+    "stocks": [
+      {
+        "ticker": "CRWV",
+        "company": "CoreWeave Inc",
+        "stance": "bullish",
+        "context": "'AI landlord': revenue +168%, raised guide, CEO cancelled share-sale plan, $132.5B backlog (~10 yrs of sales); back near $40 IPO price after 22% bounce Monday. Risk: ~$40B debt.",
+        "timestamp": "4:42",
+        "creator_level": "wants a move back above ~$61 (post-earnings high)",
+        "video_id": "TYPcEac-MTw",
+        "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "status": "watch",
+        "note": "31.4% under 14-day box top 62.03 (1.41x vol); needs close above 62.03 on >=1.5x vol (max buy 63.89); downtrend (below falling 50-day avg); 69% off 52-wk high; $23.7B",
+        "max_buy": null,
+        "stop": null,
+        "lock": null,
+        "box_top": 62.03,
+        "volume_ratio": 1.41,
+        "close": 42.57,
+        "earnings_date": null
+      },
+      {
+        "ticker": "SNDK",
+        "company": "Sandisk Corp",
+        "stance": "bullish",
+        "context": "AI flash storage; revenue ~5x YoY, data center ~half of sales, just did an 8-for-1 split; down 70%+ from June high on memory-price worries; ~$7 EPS guide for the quarter = 'under 3 years of earnings'.",
+        "timestamp": "7:07",
+        "creator_level": "close back above ~$94 = reversal signal",
+        "video_id": "TYPcEac-MTw",
+        "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "status": "watch",
+        "note": "41.8% under 14-day box top 126.38 (1.45x vol); needs close above 126.38 on >=1.5x vol (max buy 130.17); downtrend (below falling 50-day avg); 75% off 52-wk high; $83.8B",
+        "max_buy": null,
+        "stop": null,
+        "lock": null,
+        "box_top": 126.38,
+        "volume_ratio": 1.45,
+        "close": 73.61,
+        "earnings_date": null
+      },
+      {
+        "ticker": "BE",
+        "company": "Bloom Energy Corp",
+        "stance": "bullish",
+        "context": "On-site fuel cells for AI data centers; Q rev $1.24B (+138%), 3rd guide raise, added to S&P 500, Oracle/AEP/Brookfield deals; cut in half twice this year.",
+        "timestamp": "9:27",
+        "creator_level": "break back above $193 (post-earnings breakdown level)",
+        "video_id": "TYPcEac-MTw",
+        "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "status": "watch",
+        "note": "29.8% under 14-day box top 217.85 (1.07x vol); needs close above 217.85 on >=1.5x vol (max buy 224.38); downtrend (below falling 50-day avg); 56% off 52-wk high; $45.2B",
+        "max_buy": null,
+        "stop": null,
+        "lock": null,
+        "box_top": 217.85,
+        "volume_ratio": 1.07,
+        "close": 152.89,
+        "earnings_date": null
+      },
+      {
+        "ticker": "AMD",
+        "company": "Advanced Micro Devices Inc",
+        "stance": "bullish",
+        "context": "Second-source AI GPUs + server CPUs; OpenAI 6 GW deal with warrants for up to 160M shares, Anthropic $20B+ first order, Helios ramping; shrugged off a China short report; >1/3 off October high.",
+        "timestamp": "11:12",
+        "creator_level": null,
+        "video_id": "TYPcEac-MTw",
+        "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "status": "watch",
+        "note": "31.6% under 14-day box top 594.00 (1.65x vol); needs close above 594.00 on >=1.5x vol (max buy 611.82); downtrend (below falling 50-day avg); 38% off 52-wk high; $665.9B",
+        "max_buy": null,
+        "stop": null,
+        "lock": null,
+        "box_top": 594.0,
+        "volume_ratio": 1.65,
+        "close": 406.03,
+        "earnings_date": "2027-02-02"
+      },
+      {
+        "ticker": "NVDA",
+        "company": "NVIDIA Corp",
+        "stance": "bullish",
+        "context": "Fell ~47% from high, then +31% Monday as Jensen Huang returned; CUDA moat, Vera Rubin systems, last Q rev $115.8B (+103%), $130B guide; expects volatility/investigations short term, 'great dip buy' long term.",
+        "timestamp": "13:31",
+        "creator_level": null,
+        "video_id": "TYPcEac-MTw",
+        "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "status": "watch",
+        "note": "23.9% under 14-day box top 196.25 (1.84x vol); needs close above 196.25 on >=1.5x vol (max buy 202.14); downtrend (below falling 50-day avg); 39% off 52-wk high; $3.60T",
+        "max_buy": null,
+        "stop": null,
+        "lock": null,
+        "box_top": 196.25,
+        "volume_ratio": 1.84,
+        "close": 149.3,
+        "earnings_date": null
+      },
+      {
+        "ticker": "NVTS",
+        "company": "Navitas Semiconductor Corp",
+        "stance": "bullish",
+        "context": "MAIN PICK ('screaming buy'): GaN/SiC power chips, built an 800-volt power board with Nvidia, rev +33% q/q, backlog into mid-2027, ~$531M cash/no debt vs ~$1.7B cap; ~80% off highs at ~$6.50. Still losing money and diluting.",
+        "timestamp": "15:46",
+        "creator_level": "~$6.50 at recording",
+        "video_id": "TYPcEac-MTw",
+        "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
+        "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
+        "status": "excluded",
+        "note": "under $10 (close 6.80); playbook skips it",
+        "max_buy": null,
+        "stop": null,
+        "lock": null,
+        "box_top": 10.4,
+        "volume_ratio": 1.11,
+        "close": 6.8,
+        "earnings_date": null
+      }
+    ],
+    "sponsored_excluded": [],
+    "other_assets": [
+      {
+        "name": "OpenAI",
+        "type": "private",
+        "timestamp": "4:42",
+        "context": "Customer of CoreWeave/AMD; holds AMD share warrants.",
+        "video_id": "TYPcEac-MTw"
+      },
+      {
+        "name": "Anthropic",
+        "type": "recent IPO (ticker not stated)",
+        "timestamp": "1:41",
+        "context": "Its IPO/side deal (~$107B) pulled money out of other tech stocks; big AMD order.",
+        "video_id": "TYPcEac-MTw"
+      },
+      {
+        "name": "SK Hynix",
+        "type": "foreign (Korea)",
+        "timestamp": "7:47",
+        "context": "Partnering with SanDisk on high-bandwidth flash.",
+        "video_id": "TYPcEac-MTw"
+      },
+      {
+        "name": "Wayve ('Wave')",
+        "type": "private",
+        "timestamp": "5:24",
+        "context": "New CoreWeave self-driving AI training deal (auto-caption spelled it 'Wave').",
+        "video_id": "TYPcEac-MTw"
+      },
+      {
+        "name": "US Treasuries",
+        "type": "bonds",
+        "timestamp": "2:01",
+        "context": "Higher rates pulling money into Treasuries / draining liquidity.",
+        "video_id": "TYPcEac-MTw"
+      }
+    ]
+  }
 }
