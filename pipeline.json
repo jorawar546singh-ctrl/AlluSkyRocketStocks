@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-25T17:20:00-07:00",
-  "source_scrape_at": "2026-11-25T14:38:17-07:00",
+  "generated_at": "2026-11-26T17:18:58-07:00",
+  "source_scrape_at": "2026-11-26T14:31:31-07:00",
   "qualifiers": [
     {
       "ticker": "TGLS",
@@ -14,8 +14,8 @@
       "catalyst": "Q3 beat: record revenue $310.6M (+19.2%), adj EPS $0.61, backlog record $1.43B, FY26 revenue guide raised to $1.10-1.14B (Nov 5); 52-wk high Nov 24, 12% weekly gain. Extended run: ~13% above prior box top 50.73 - chasing risk.",
       "earnings_date": "2027-02-25",
       "reddit": {
-        "sentiment": "n/a",
-        "note": "Not in Reddit scan today; info only."
+        "sentiment": "mixed",
+        "note": "Info only (5 search hits (0 in target subs); undated, recency unverified); not a buy rule."
       },
       "source": "pipeline"
     }
@@ -26,27 +26,27 @@
       "name": "Cogent Biosciences Inc",
       "price": 36.08,
       "pct_change": 9.3,
-      "volume": 6124290,
+      "volume": 6128774,
       "source": "Finviz screen",
-      "status_note": "Not uptrend (50-day not rising) though +9.3% today, 2.7% over box top 35.13 on 2.62x vol. Fails trend rule. Reddit info only: bullish."
+      "status_note": "Not an uptrend (50-day avg 30.68 not rising) though 2.7% over box top 35.13 on 2.62x vol. Catalyst: FDA approved EKITNA (GIST) Nov 24, six days early (+~18%). Fails trend rule; watch for a new box. Reddit info only: bearish."
     },
     {
       "ticker": "RKT",
       "name": "Rocket Companies Inc",
       "price": 15.3,
       "pct_change": 7.37,
-      "volume": 59525002,
+      "volume": 59560846,
       "source": "Finviz screen",
-      "status_note": "Uptrend, 0.5% under box top 15.38 on 1.53x vol (+7.4% today). Needs close above 15.38 (max buy 15.84). Reddit info only: mixed."
+      "status_note": "Uptrend, 0.5% under box top 15.38 on 1.53x vol. Needs close above 15.38 (max buy 15.84). Reddit info only: bullish."
     },
     {
       "ticker": "BMRN",
       "name": "Biomarin Pharmaceutical Inc",
       "price": 68.86,
       "pct_change": 3.77,
-      "volume": 4432662,
+      "volume": 4463261,
       "source": "Finviz screen",
-      "status_note": "Not uptrend (50-day not rising) though 0.35% over box top 68.62 on 1.68x vol. Reddit info only: bullish."
+      "status_note": "Not an uptrend (50-day avg 58.36 not rising, prev 58.50) though 0.3% over box top 68.62 on 1.69x vol. Catalyst: +9% Nov 24 and +4.8% Nov 25 with no company news (biotech/M&A sector enthusiasm, institutional buying); Q3 on Nov 2 cut 2026 guide. Fails trend rule. Reddit info only: bearish."
     },
     {
       "ticker": "WLDSW",
@@ -73,25 +73,25 @@
       "pct_change": 3.4,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Downtrend/fading, not buyable: 5.9% under 14-day box top 648.45 (0.87x vol); needs close above 648.45 on >=1.5x vol (max buy 667.90); downtrend (below falling 50-day avg); 22% off 52-wk high; $1.56T"
     },
     {
       "ticker": "SPCX",
       "name": "Space Exploration Technologies Corp. Class A Common Stock",
       "price": 127.44,
       "pct_change": 1.3,
-      "volume": 145600323,
+      "volume": 146008476,
       "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Downtrend/fading, not buyable: 13.7% under 14-day box top 147.60 (1.44x vol); needs close above 147.60 on >=1.5x vol (max buy 152.03); downtrend (below falling 50-day avg); 44% off 52-wk high; $1.73T"
     },
     {
       "ticker": "ANT",
       "name": "Anthropic, PBC Class A Common Stock",
       "price": 82.79,
       "pct_change": 1.08,
-      "volume": 291721087,
+      "volume": 291730641,
       "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "New listing; insufficient Yahoo bars (<70 days) to run box/uptrend rules. Not evaluated."
+      "status_note": "New listing; insufficient bars to run the box/uptrend rules. Not evaluated. Reddit info only: mixed."
     },
     {
       "ticker": "AAPL",
@@ -100,7 +100,7 @@
       "pct_change": 0.43,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "close 355.58: 1.5% under 14-day box top 360.83 (1.24x vol); needs close above 360.83 on >=1.5x vol (max buy 371.65); 2% off 52-wk high; $5.17T Reddit info only: bullish."
     },
     {
       "ticker": "AVGO",
@@ -109,13 +109,13 @@
       "pct_change": -0.07,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": null
+      "status_note": "Downtrend/fading, not buyable: 18.6% under 14-day box top 369.82 (1.31x vol); needs close above 369.82 on >=1.5x vol (max buy 380.91); downtrend (below falling 50-day avg); 39% off 52-wk high; $1.44T"
     }
   ],
   "holding_notes": [
     {
       "ticker": "DEO",
-      "note": "HOLD. Close 101.76 (vol 0.82x), stop 90.41, lock 110.76 (+10%) not reached. Box top 102.72. Candidate box bottom 96.61 (Nov 23) has held 2 sessions; if Nov 26 low holds it confirms and trail would be 94.68 (only via trail mechanics, no manual raise). Reddit info only: bearish (5 undated search hits)."
+      "note": "HOLD. Nov 26 is Thanksgiving (US market closed), so last bar is Nov 25: close 101.76 (vol 0.82x), stop 90.41, lock 110.76 (+10%) not reached; box top 102.72. Candidate box bottom 96.61 has held 2 of 3 days; if Nov 27 holds it confirms and trail would be 94.68 (trail mechanics only, no manual raise). Reddit info only: mixed. No YouTube/news items for DEO."
     }
   ],
   "youtube": {
@@ -123,8 +123,8 @@
       "handle": "@ZipTrader",
       "url": "https://www.youtube.com/@ziptrader"
     },
-    "checked_at": "2026-11-26T02:31:46-07:00",
-    "asof_close": "2026-11-25",
+    "checked_at": "2026-11-26T16:30:41-07:00",
+    "asof_close": "2026-11-26",
     "videos": [
       {
         "video_id": "TYPcEac-MTw",
@@ -145,12 +145,12 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "31.4% under 14-day box top 62.03 (1.41x vol); needs close above 62.03 on >=1.5x vol (max buy 63.89); downtrend (below falling 50-day avg); 69% off 52-wk high; $23.7B",
+        "note": "31.4% under 14-day box top 62.03 (1.42x vol); needs close above 62.03 on >=1.5x vol (max buy 63.89); downtrend (below falling 50-day avg); 69% off 52-wk high; $23.7B",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 62.03,
-        "volume_ratio": 1.41,
+        "volume_ratio": 1.42,
         "close": 42.57,
         "earnings_date": null
       },
@@ -185,12 +185,12 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "29.8% under 14-day box top 217.85 (1.07x vol); needs close above 217.85 on >=1.5x vol (max buy 224.38); downtrend (below falling 50-day avg); 56% off 52-wk high; $45.2B",
+        "note": "29.8% under 14-day box top 217.85 (1.08x vol); needs close above 217.85 on >=1.5x vol (max buy 224.38); downtrend (below falling 50-day avg); 56% off 52-wk high; $45.2B",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 217.85,
-        "volume_ratio": 1.07,
+        "volume_ratio": 1.08,
         "close": 152.89,
         "earnings_date": null
       },
@@ -205,12 +205,12 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "31.6% under 14-day box top 594.00 (1.65x vol); needs close above 594.00 on >=1.5x vol (max buy 611.82); downtrend (below falling 50-day avg); 38% off 52-wk high; $665.9B",
+        "note": "31.6% under 14-day box top 594.00 (1.66x vol); needs close above 594.00 on >=1.5x vol (max buy 611.82); downtrend (below falling 50-day avg); 38% off 52-wk high; $665.9B",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 594.0,
-        "volume_ratio": 1.65,
+        "volume_ratio": 1.66,
         "close": 406.03,
         "earnings_date": "2027-02-02"
       },
@@ -225,12 +225,12 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "23.9% under 14-day box top 196.25 (1.84x vol); needs close above 196.25 on >=1.5x vol (max buy 202.14); downtrend (below falling 50-day avg); 39% off 52-wk high; $3.60T",
+        "note": "23.9% under 14-day box top 196.25 (1.86x vol); needs close above 196.25 on >=1.5x vol (max buy 202.14); downtrend (below falling 50-day avg); 39% off 52-wk high; $3.60T",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 196.25,
-        "volume_ratio": 1.84,
+        "volume_ratio": 1.86,
         "close": 149.3,
         "earnings_date": null
       },
@@ -250,7 +250,7 @@
         "stop": null,
         "lock": null,
         "box_top": 10.4,
-        "volume_ratio": 1.11,
+        "volume_ratio": 1.12,
         "close": 6.8,
         "earnings_date": null
       }
