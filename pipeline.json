@@ -1,121 +1,121 @@
 {
-  "generated_at": "2026-11-26T17:18:58-07:00",
-  "source_scrape_at": "2026-11-26T14:31:31-07:00",
+  "generated_at": "2026-11-27T17:15:49-07:00",
+  "source_scrape_at": "2026-11-27T14:36:33-07:00",
   "qualifiers": [
     {
       "ticker": "TGLS",
       "name": "Tecnoglass Holdings Inc",
-      "close": 57.29,
-      "max_buy": 57.71,
-      "stop": 51.56,
-      "lock": 63.02,
-      "box_top": 56.03,
-      "volume_ratio": 2.72,
-      "catalyst": "Q3 beat: record revenue $310.6M (+19.2%), adj EPS $0.61, backlog record $1.43B, FY26 revenue guide raised to $1.10-1.14B (Nov 5); 52-wk high Nov 24, 12% weekly gain. Extended run: ~13% above prior box top 50.73 - chasing risk.",
+      "close": 59.35,
+      "max_buy": 59.6,
+      "stop": 53.41,
+      "lock": 65.28,
+      "box_top": 57.86,
+      "volume_ratio": 1.94,
+      "catalyst": "Q3 beat (record rev, record $1.43B backlog, FY guide raised); joins S&P SmallCap 600 on Dec 1 (possible index buying); Sidoti PT to $69. Extended run: ~+57% in 30 days, at 52-wk high, closed +3.6% today on 1.94x vol -- chasing risk. Also qualified Nov 25 (not new). Not in scanner signals.",
       "earnings_date": "2027-02-25",
       "reddit": {
         "sentiment": "mixed",
-        "note": "Info only (5 search hits (0 in target subs); undated, recency unverified); not a buy rule."
+        "note": "Info only; not a buy rule. 5 search hits (1 in target subs); undated, recency unverified"
       },
       "source": "pipeline"
     }
   ],
   "trending": [
     {
-      "ticker": "COGT",
-      "name": "Cogent Biosciences Inc",
-      "price": 36.08,
-      "pct_change": 9.3,
-      "volume": 6128774,
+      "ticker": "KNTK",
+      "name": "Kinetik Holdings Inc",
+      "price": 59.76,
+      "pct_change": 9.25,
+      "volume": 2294671,
       "source": "Finviz screen",
-      "status_note": "Not an uptrend (50-day avg 30.68 not rising) though 2.7% over box top 35.13 on 2.62x vol. Catalyst: FDA approved EKITNA (GIST) Nov 24, six days early (+~18%). Fails trend rule; watch for a new box. Reddit info only: bearish."
+      "status_note": "extended 6.5% over box top 56.13 on 1.83x vol; +9.25% on reports Targa Resources is in talks to buy it (~$9B) -- buyout/takeover talk, not buyable | close 59.76 | Reddit (info only): mixed"
     },
     {
-      "ticker": "RKT",
-      "name": "Rocket Companies Inc",
-      "price": 15.3,
-      "pct_change": 7.37,
-      "volume": 59560846,
+      "ticker": "AMTM",
+      "name": "Amentum Holdings Inc",
+      "price": 24.71,
+      "pct_change": -0.6,
+      "volume": 3153318,
       "source": "Finviz screen",
-      "status_note": "Uptrend, 0.5% under box top 15.38 on 1.53x vol. Needs close above 15.38 (max buy 15.84). Reddit info only: bullish."
+      "status_note": "3.4% under 14-day box top 25.57 (1.51x vol); needs close above 25.57 on >=1.5x vol (max buy 26.34); 35% off 52-wk high; $6.0B | close 24.71 | Reddit (info only): none"
     },
     {
-      "ticker": "BMRN",
-      "name": "Biomarin Pharmaceutical Inc",
-      "price": 68.86,
-      "pct_change": 3.77,
-      "volume": 4463261,
-      "source": "Finviz screen",
-      "status_note": "Not an uptrend (50-day avg 58.36 not rising, prev 58.50) though 0.3% over box top 68.62 on 1.69x vol. Catalyst: +9% Nov 24 and +4.8% Nov 25 with no company news (biotech/M&A sector enthusiasm, institutional buying); Q3 on Nov 2 cut 2026 guide. Fails trend rule. Reddit info only: bearish."
-    },
-    {
-      "ticker": "WLDSW",
-      "name": "Wearable Devices Ltd.",
-      "price": 71.18,
-      "pct_change": 73.61,
+      "ticker": "AEHL",
+      "name": "Antelope Enterprise Holdings Limited",
+      "price": 12.9,
+      "pct_change": 80.67,
       "volume": null,
       "source": "Nasdaq top gainers",
-      "status_note": null
+      "status_note": "under $300M market cap ($245M) | close 12.9 | Reddit (info only): bullish"
     },
     {
-      "ticker": "RIBBU",
-      "name": "Ribbon Acquisition Corp Unit",
-      "price": 95.17,
-      "pct_change": 68.89,
-      "volume": null,
-      "source": "Nasdaq top gainers",
-      "status_note": null
-    },
-    {
-      "ticker": "META",
-      "name": "Meta Platforms, Inc.",
-      "price": 609.89,
-      "pct_change": 3.4,
-      "volume": null,
-      "source": "Nasdaq most active ($)",
-      "status_note": "Downtrend/fading, not buyable: 5.9% under 14-day box top 648.45 (0.87x vol); needs close above 648.45 on >=1.5x vol (max buy 667.90); downtrend (below falling 50-day avg); 22% off 52-wk high; $1.56T"
-    },
-    {
-      "ticker": "SPCX",
-      "name": "Space Exploration Technologies Corp. Class A Common Stock",
-      "price": 127.44,
-      "pct_change": 1.3,
-      "volume": 146008476,
+      "ticker": "SNDK",
+      "name": "Sandisk Corporation Common Stock",
+      "price": 85.36,
+      "pct_change": 15.96,
+      "volume": 97645466,
       "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "Downtrend/fading, not buyable: 13.7% under 14-day box top 147.60 (1.44x vol); needs close above 147.60 on >=1.5x vol (max buy 152.03); downtrend (below falling 50-day avg); 44% off 52-wk high; $1.73T"
+      "status_note": "41.8% under 14-day box top 126.38 (1.45x vol); needs close above 126.38 on >=1.5x vol (max buy 130.17); downtrend (below falling 50-day avg); 75% off 52-wk high; $97.2B | close 73.61 | Reddit (info only): bearish"
     },
     {
       "ticker": "ANT",
       "name": "Anthropic, PBC Class A Common Stock",
-      "price": 82.79,
-      "pct_change": 1.08,
-      "volume": 291730641,
+      "price": 91.88,
+      "pct_change": 10.98,
+      "volume": 143652368,
       "source": "Nasdaq most active (shares), Nasdaq most active ($)",
-      "status_note": "New listing; insufficient bars to run the box/uptrend rules. Not evaluated. Reddit info only: mixed."
+      "status_note": "no price data -- check manually | close None | Reddit (info only): bullish"
     },
     {
-      "ticker": "AAPL",
-      "name": "Apple Inc.",
-      "price": 355.58,
-      "pct_change": 0.43,
+      "ticker": "MU",
+      "name": "Micron Technology, Inc.",
+      "price": 646.95,
+      "pct_change": 7.6,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "close 355.58: 1.5% under 14-day box top 360.83 (1.24x vol); needs close above 360.83 on >=1.5x vol (max buy 371.65); 2% off 52-wk high; $5.17T Reddit info only: bullish."
+      "status_note": "21.8% under 14-day box top 827.58 (0.88x vol); needs close above 827.58 on >=1.5x vol (max buy 852.41); downtrend (below falling 50-day avg); 48% off 52-wk high; $828.7B | close 646.95 | Reddit (info only): mixed"
     },
     {
-      "ticker": "AVGO",
-      "name": "Broadcom Inc.",
-      "price": 300.86,
-      "pct_change": -0.07,
+      "ticker": "INTC",
+      "name": "Intel Corporation",
+      "price": 57.4,
+      "pct_change": 5.38,
+      "volume": 76482987,
+      "source": "Nasdaq most active (shares), Nasdaq most active ($)",
+      "status_note": "10.4% under 14-day box top 64.06 (0.60x vol); needs close above 64.06 on >=1.5x vol (max buy 65.98); downtrend (below falling 50-day avg); 60% off 52-wk high; $305.1B | close 57.4 | Reddit (info only): mixed"
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla, Inc.",
+      "price": 400.0,
+      "pct_change": 5.22,
       "volume": null,
       "source": "Nasdaq most active ($)",
-      "status_note": "Downtrend/fading, not buyable: 18.6% under 14-day box top 369.82 (1.31x vol); needs close above 369.82 on >=1.5x vol (max buy 380.91); downtrend (below falling 50-day avg); 39% off 52-wk high; $1.44T"
+      "status_note": "1.1% under 14-day box top 404.40 (0.73x vol); needs close above 404.40 on >=1.5x vol (max buy 416.53); 20% off 52-wk high; $1.58T | close 400.0 | Reddit (info only): bullish"
+    },
+    {
+      "ticker": "SPCX",
+      "name": "Space Exploration Technologies Corp. Class A Common Stock",
+      "price": 133.59,
+      "pct_change": 4.83,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": "9.5% under 14-day box top 147.60 (0.49x vol); needs close above 147.60 on >=1.5x vol (max buy 152.03); downtrend (below falling 50-day avg); 41% off 52-wk high; $1.81T | close 133.59"
+    },
+    {
+      "ticker": "AMD",
+      "name": "Advanced Micro Devices, Inc.",
+      "price": 424.54,
+      "pct_change": 4.56,
+      "volume": null,
+      "source": "Nasdaq most active ($)",
+      "status_note": "28.5% under 14-day box top 594.00 (0.71x vol); needs close above 594.00 on >=1.5x vol (max buy 611.82); downtrend (below falling 50-day avg); 36% off 52-wk high; $696.3B | close 424.54 | Reddit (info only): none"
     }
   ],
   "holding_notes": [
     {
       "ticker": "DEO",
-      "note": "HOLD. Nov 26 is Thanksgiving (US market closed), so last bar is Nov 25: close 101.76 (vol 0.82x), stop 90.41, lock 110.76 (+10%) not reached; box top 102.72. Candidate box bottom 96.61 has held 2 of 3 days; if Nov 27 holds it confirms and trail would be 94.68 (trail mechanics only, no manual raise). Reddit info only: mixed. No YouTube/news items for DEO."
+      "note": "hold; close 101.70 (entry 100.69), stop 90.41, lock 110.76 not reached; 1.0% under 14-day box top 102.72 on 0.37x vol; earnings 2027-01-28. Reddit/YouTube/news: nothing material found for DEO in today's files."
     }
   ],
   "youtube": {
@@ -123,8 +123,8 @@
       "handle": "@ZipTrader",
       "url": "https://www.youtube.com/@ziptrader"
     },
-    "checked_at": "2026-11-26T16:30:41-07:00",
-    "asof_close": "2026-11-26",
+    "checked_at": "2026-11-27T16:33:54-07:00",
+    "asof_close": "2026-11-27",
     "videos": [
       {
         "video_id": "TYPcEac-MTw",
@@ -145,13 +145,13 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "31.4% under 14-day box top 62.03 (1.42x vol); needs close above 62.03 on >=1.5x vol (max buy 63.89); downtrend (below falling 50-day avg); 69% off 52-wk high; $23.7B",
+        "note": "28.8% under 14-day box top 62.03 (0.70x vol); needs close above 62.03 on >=1.5x vol (max buy 63.89); downtrend (below falling 50-day avg); 68% off 52-wk high; $24.6B",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 62.03,
-        "volume_ratio": 1.42,
-        "close": 42.57,
+        "volume_ratio": 0.7,
+        "close": 44.15,
         "earnings_date": null
       },
       {
@@ -165,7 +165,7 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "41.8% under 14-day box top 126.38 (1.45x vol); needs close above 126.38 on >=1.5x vol (max buy 130.17); downtrend (below falling 50-day avg); 75% off 52-wk high; $83.8B",
+        "note": "41.8% under 14-day box top 126.38 (1.45x vol); needs close above 126.38 on >=1.5x vol (max buy 130.17); downtrend (below falling 50-day avg); 75% off 52-wk high; $97.2B",
         "max_buy": null,
         "stop": null,
         "lock": null,
@@ -185,13 +185,13 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "29.8% under 14-day box top 217.85 (1.08x vol); needs close above 217.85 on >=1.5x vol (max buy 224.38); downtrend (below falling 50-day avg); 56% off 52-wk high; $45.2B",
+        "note": "25.2% under 14-day box top 217.85 (0.58x vol); needs close above 217.85 on >=1.5x vol (max buy 224.38); downtrend (below falling 50-day avg); 54% off 52-wk high; $48.2B",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 217.85,
-        "volume_ratio": 1.08,
-        "close": 152.89,
+        "volume_ratio": 0.58,
+        "close": 163.02,
         "earnings_date": null
       },
       {
@@ -205,13 +205,13 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "31.6% under 14-day box top 594.00 (1.66x vol); needs close above 594.00 on >=1.5x vol (max buy 611.82); downtrend (below falling 50-day avg); 38% off 52-wk high; $665.9B",
+        "note": "28.5% under 14-day box top 594.00 (0.71x vol); needs close above 594.00 on >=1.5x vol (max buy 611.82); downtrend (below falling 50-day avg); 36% off 52-wk high; $696.3B",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 594.0,
-        "volume_ratio": 1.66,
-        "close": 406.03,
+        "volume_ratio": 0.71,
+        "close": 424.54,
         "earnings_date": "2027-02-02"
       },
       {
@@ -225,13 +225,13 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "watch",
-        "note": "23.9% under 14-day box top 196.25 (1.86x vol); needs close above 196.25 on >=1.5x vol (max buy 202.14); downtrend (below falling 50-day avg); 39% off 52-wk high; $3.60T",
+        "note": "22.8% under 14-day box top 194.90 (0.92x vol); needs close above 194.90 on >=1.5x vol (max buy 200.75); downtrend (below falling 50-day avg); 38% off 52-wk high; $3.63T",
         "max_buy": null,
         "stop": null,
         "lock": null,
-        "box_top": 196.25,
-        "volume_ratio": 1.86,
-        "close": 149.3,
+        "box_top": 194.9,
+        "volume_ratio": 0.92,
+        "close": 150.49,
         "earnings_date": null
       },
       {
@@ -245,13 +245,13 @@
         "video_title": "THE #1 CRASHED STOCK TO BUY NOW",
         "video_url": "https://www.youtube.com/watch?v=TYPcEac-MTw",
         "status": "excluded",
-        "note": "under $10 (close 6.80); playbook skips it",
+        "note": "under $10 (close 7.26); playbook skips it",
         "max_buy": null,
         "stop": null,
         "lock": null,
         "box_top": 10.4,
-        "volume_ratio": 1.12,
-        "close": 6.8,
+        "volume_ratio": 0.53,
+        "close": 7.26,
         "earnings_date": null
       }
     ],
